@@ -306,14 +306,29 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                   </div>
                   <h3 className="text-white font-bold text-xs uppercase tracking-widest">Inspector</h3>
                 </div>
-                {selectedObject && (
-                  <button 
-                    onClick={() => setSelectedWorldObjectId(null)}
-                    className="text-slate-500 hover:text-white transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {selectedObject && (
+                    <button 
+                      onClick={() => {
+                        const event = new KeyboardEvent('keydown', { code: 'KeyF' });
+                        window.dispatchEvent(event);
+                      }}
+                      className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg transition-all"
+                      title="Focus Camera (F)"
+                    >
+                      <Target size={14} />
+                    </button>
+                  )}
+                  {selectedObject && (
+                    <button 
+                      onClick={() => setSelectedWorldObjectId(null)}
+                      className="p-1.5 text-slate-500 hover:text-white transition-colors"
+                      title="Deselect"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -336,71 +351,54 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                     </div>
 
                     {/* Transform */}
-                    <div className="space-y-3 pt-3 border-t border-slate-800">
-                      <h4 className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Transform</h4>
+                    <div className="space-y-4 pt-3 border-t border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Transform</h4>
+                        <button 
+                          onClick={() => updateSelected({ pos: [selectedObject.pos[0], 0, selectedObject.pos[2]] })}
+                          className="text-[8px] text-amber-500 hover:text-amber-400 font-black uppercase transition-colors"
+                        >
+                          Snap to Ground
+                        </button>
+                      </div>
                       
-                      {['X', 'Y', 'Z'].map((axis, i) => (
-                        <div key={axis} className="space-y-1">
-                          <div className="flex justify-between text-[9px] text-slate-400 px-1 font-mono uppercase">
-                            <span>Position {axis}</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['X', 'Y', 'Z'].map((axis, i) => (
+                          <div key={axis} className="space-y-1">
+                            <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Pos {axis}</label>
                             <input 
                               type="number" step="0.1"
-                              value={selectedObject.pos[i]}
+                              value={Number(selectedObject.pos[i].toFixed(2))}
                               onChange={(e) => {
                                 const newPos = [...selectedObject.pos];
                                 newPos[i] = parseFloat(e.target.value) || 0;
                                 updateSelected({ pos: newPos as [number, number, number] });
                               }}
-                              className="bg-slate-800 text-white w-12 text-center rounded border border-slate-700 outline-none"
+                              className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
                             />
                           </div>
-                          <input 
-                            type="range" min={i === 1 ? -10 : -100} max={i === 1 ? 50 : 100} step="0.1" 
-                            value={selectedObject.pos[i]} 
-                            onChange={(e) => {
-                              const newPos = [...selectedObject.pos];
-                              newPos[i] = parseFloat(e.target.value);
-                              updateSelected({ pos: newPos as [number, number, number] });
-                            }}
-                            className={`w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-${i === 1 ? 'emerald' : 'amber'}-500`}
-                          />
-                        </div>
-                      ))}
-
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[9px] text-slate-400 px-1 font-mono uppercase">
-                          <span>Rotation Y</span>
-                          <input 
-                            type="number" step="0.1"
-                            value={selectedObject.rot[1]}
-                            onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
-                            className="bg-slate-800 text-white w-12 text-center rounded border border-slate-700 outline-none"
-                          />
-                        </div>
-                        <input 
-                          type="range" min={-Math.PI} max={Math.PI} step="0.01" 
-                          value={selectedObject.rot[1]} 
-                          onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value), 0] })}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                        />
+                        ))}
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[9px] text-slate-400 px-1 font-mono uppercase">
-                          <span>Uniform Scale</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Rotation (Y)</label>
                           <input 
                             type="number" step="0.1"
-                            value={selectedObject.scale}
-                            onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
-                            className="bg-slate-800 text-white w-12 text-center rounded border border-slate-700 outline-none"
+                            value={Number(selectedObject.rot[1].toFixed(2))}
+                            onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
+                            className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
                           />
                         </div>
-                        <input 
-                          type="range" min="0.1" max="10" step="0.1" 
-                          value={selectedObject.scale} 
-                          onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) })}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                        />
+                        <div className="space-y-1">
+                          <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Scale</label>
+                          <input 
+                            type="number" step="0.1"
+                            value={Number(selectedObject.scale.toFixed(2))}
+                            onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
+                            className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
+                          />
+                        </div>
                       </div>
                     </div>
 
