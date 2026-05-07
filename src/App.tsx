@@ -121,9 +121,9 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'd') {
         const accountRole = getAccountRole(user?.email);
-        const hasAccess = accountRole === 'dev' || accountRole === 'admin' || accountRole === 'mod';
+        const isDev = accountRole === 'dev';
 
-        if (!hasAccess) {
+        if (!isDev) {
           logger.warn("auth", "Unauthorized attempt to toggle dev mode");
           return;
         }

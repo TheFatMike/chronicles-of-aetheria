@@ -37,14 +37,15 @@ export const useChatCommands = (
 
     // Check permissions
     if (command !== "help") {
-      if (['tp', 'dev', 'spawners'].includes(command) && !isMod) return false;
+      if (['tp', 'spawners'].includes(command) && !isMod) return false;
+      if (command === 'dev' && !isDev) return false;
       if (['give', 'role', 'promote'].includes(command) && !isAdmin) return false;
       if (!isMod && !isAdmin) return false;
     }
 
     switch (command) {
       case "dev":
-        if (!isMod) return true;
+        if (!isDev) return true;
         setDevMode(!devMode);
         return true;
 
@@ -186,7 +187,7 @@ export const useChatCommands = (
       case "help": {
         const commands = [
           { name: "/help", desc: "List available commands", level: 0 },
-          { name: "/dev", desc: "Toggle development mode", level: 1 },
+          { name: "/dev", desc: "Toggle development mode", level: 3 },
           { name: "/spawners", desc: "Open spawner management tool", level: 3 },
           { name: "/tp [x] [y] [z]", desc: "Teleport to coordinates", level: 1 },
           { name: "/give [itemName]", desc: "Spawn an item into your inventory", level: 2 },

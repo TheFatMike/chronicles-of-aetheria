@@ -77,8 +77,12 @@ export const EditorCamera = () => {
   }, [gl]);
 
   useFrame((_state, delta) => {
-    if (!isEditorOpen || isTransforming) return;
+    if (!isEditorOpen) return;
 
+    // We allow camera rotation/movement even if isTransforming is true,
+    // because right-click (camera) and left-click (gizmo) are separate.
+    // However, we might want to slow down or lock movement if desired.
+    
     const speed = keys.current["ShiftLeft"] ? 40 : 15;
     const moveDir = new THREE.Vector3();
     
@@ -86,8 +90,30 @@ export const EditorCamera = () => {
     if (keys.current["KeyS"]) moveDir.z -= 1; // Backward
     if (keys.current["KeyA"]) moveDir.x += 1; // Left
     if (keys.current["KeyD"]) moveDir.x -= 1; // Right
-    if (keys.current["KeyE"]) moveDir.y += 1;
-    if (keys.current["KeyQ"]) moveDir.y -= 1;
+    if (keys.current["KeyE"]) moveDir.y += 1; // Up
+    if (keys.current["KeyQ"]) moveDir.y -= 1; // Down
+
+    // Focus feature: Press 'F' to snap camera to selected object
+    if (keys.current["KeyF"]) {
+      const selectedId = useGameStore.getState().selectedWorldObjectId;
+      const worldObjects = useGameStore.getState().worldObjects;
+      if (selectedId && worldObjects[selectedId]) {
+        const obj = worldObjects[selectedId];
+        const targetPos = new THREE.Vector3(...obj.pos);
+        // Move camera to a nice viewing distance
+        const offset = new THREE.Vector3(5, 5, 5);
+        currentPos.current.copy(targetPos).add(offset);
+        camera.position.copy(currentPos.current);
+        camera.lookAt(targetPos);
+        
+        // Update mouse state to match new orientation
+        const lookDir = targetPos.clone().sub(currentPos.current).normalize();
+        mouseState.current.theta = Math.atan2(lookDir.x, lookDir.z);
+        mouseState.current.phi = Math.acos(lookDir.y);
+        
+        keys.current["KeyF"] = false; // Trigger once
+      }
+    }
 
     // Move relative to camera orientation
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, mouseState.current.theta, 0));

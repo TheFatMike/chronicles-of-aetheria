@@ -22,11 +22,14 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
     players,
     id: currentPlayerId,
     isEditorOpen,
-    setEditorOpen
+    setEditorOpen,
+    gridSnap,
+    setGridSnap,
+    editorTransformMode,
+    setEditorTransformMode
   } = useGameStore();
 
   const [activeCategory, setActiveCategory] = useState('nature');
-  const [gridSnap, setGridSnap] = useState(false);
   
   // Pathing Defaults
   const [activePathId, setActivePathId] = useState('new_path');
@@ -176,6 +179,34 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                 </button>
               </div>
 
+              {/* Transform Modes */}
+              <div className="p-3 bg-slate-900/10 flex gap-1 border-b border-slate-800">
+                <button 
+                  onClick={() => setEditorTransformMode('translate')}
+                  className={`flex-1 py-1.5 rounded-md text-[9px] font-black transition-all border ${
+                    editorTransformMode === 'translate' ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  MOVE (G)
+                </button>
+                <button 
+                  onClick={() => setEditorTransformMode('rotate')}
+                  className={`flex-1 py-1.5 rounded-md text-[9px] font-black transition-all border ${
+                    editorTransformMode === 'rotate' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  ROT (R)
+                </button>
+                <button 
+                  onClick={() => setEditorTransformMode('scale')}
+                  className={`flex-1 py-1.5 rounded-md text-[9px] font-black transition-all border ${
+                    editorTransformMode === 'scale' ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  SCALE (K)
+                </button>
+              </div>
+
               <div className="p-4 space-y-4 overflow-y-auto custom-scrollbar">
                 <div className="flex gap-1">
                   {CATEGORIES.map(cat => (
@@ -247,7 +278,8 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Fly</span> <span className="text-amber-500 font-bold">WASD</span></div>
                     <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Up/Dn</span> <span className="text-amber-500 font-bold">E / Q</span></div>
-                    <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Move</span> <span className="text-emerald-500 font-bold">M</span></div>
+                    <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Focus</span> <span className="text-blue-500 font-bold">F</span></div>
+                    <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Move</span> <span className="text-emerald-500 font-bold">G</span></div>
                     <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Scale</span> <span className="text-emerald-500 font-bold">K</span></div>
                     <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Rot</span> <span className="text-emerald-500 font-bold">R</span></div>
                     <div className="flex justify-between text-[8px]"><span className="text-slate-400 font-bold uppercase">Look</span> <span className="text-blue-500 font-bold">R-CLICK</span></div>
@@ -345,6 +377,24 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                           type="range" min={-Math.PI} max={Math.PI} step="0.01" 
                           value={selectedObject.rot[1]} 
                           onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value), 0] })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] text-slate-400 px-1 font-mono uppercase">
+                          <span>Uniform Scale</span>
+                          <input 
+                            type="number" step="0.1"
+                            value={selectedObject.scale}
+                            onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
+                            className="bg-slate-800 text-white w-12 text-center rounded border border-slate-700 outline-none"
+                          />
+                        </div>
+                        <input 
+                          type="range" min="0.1" max="10" step="0.1" 
+                          value={selectedObject.scale} 
+                          onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) })}
                           className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                         />
                       </div>

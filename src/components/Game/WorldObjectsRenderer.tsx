@@ -12,19 +12,23 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   const setSelectedWorldObjectId = useGameStore(state => state.setSelectedWorldObjectId);
   const setTransforming = useGameStore(state => state.setTransforming);
 
-  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const transformMode = useGameStore(state => state.editorTransformMode);
+  const setTransformMode = useGameStore(state => state.setEditorTransformMode);
+  const gridSnap = useGameStore(state => state.gridSnap);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isEditorOpen || !selectedWorldObjectId) return;
+      if (!isEditorOpen) return;
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+      
       const key = e.key.toLowerCase();
-      if (key === 'm' || key === 'g') setTransformMode('translate');
-      if (key === 'r' || key === 'e') setTransformMode('rotate');
+      if (key === 'g') setTransformMode('translate');
+      if (key === 'r') setTransformMode('rotate');
       if (key === 'k') setTransformMode('scale');
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditorOpen, selectedWorldObjectId]);
+  }, [isEditorOpen, setTransformMode]);
 
   return (
     <>
@@ -35,7 +39,7 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
             e.stopPropagation();
             if (e.shiftKey || editorSelectedType === 'delete') {
               if (socket) socket.emit("remove_world_object", { id: obj.id });
-            } else if (editorSelectedType === 'edit') {
+            } else if (editorSelectedType === 'edit' || !editorSelectedType) {
               setSelectedWorldObjectId(obj.id);
             }
           }
@@ -50,6 +54,9 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
                 position={obj.pos}
                 rotation={obj.rot}
                 scale={obj.scale}
+                translationSnap={gridSnap ? 0.5 : null}
+                rotationSnap={gridSnap ? Math.PI / 12 : null}
+                scaleSnap={gridSnap ? 0.1 : null}
                 onMouseDown={() => setTransforming(true)}
                 onMouseUp={(e: any) => {
                   setTransforming(false);

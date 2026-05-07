@@ -22,14 +22,25 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
   const editorSelectedType = useGameStore(state => state.editorSelectedType);
   const devMode = useGameStore(state => state.devMode);
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
-  const isTransforming = useGameStore(state => state.isTransforming);
+  const gridSnap = useGameStore(state => state.gridSnap);
 
   const onFloorClick = (e: any) => {
+    // Only place on left click (button 0)
+    if (e.button !== 0) return;
     if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') return;
     e.stopPropagation();
     
-    const { point } = e;
+    let { point } = e;
     
+    // Apply grid snap to placement
+    if (gridSnap) {
+      point = new THREE.Vector3(
+        Math.round(point.x * 2) / 2,
+        point.y,
+        Math.round(point.z * 2) / 2
+      );
+    }
+
     // Dispatch custom event for specialized placement (like waypoints with auto-increment)
     const placeEvent = new CustomEvent('editor_place_object', { 
       detail: { point, type: editorSelectedType } 

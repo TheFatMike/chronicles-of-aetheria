@@ -96,6 +96,8 @@ export interface UISlice {
   mobileJoystickPos: { x: number; y: number } | null;
   isEditorOpen: boolean;
   isTransforming: boolean;
+  gridSnap: boolean;
+  editorTransformMode: 'translate' | 'rotate' | 'scale';
   editorSelectedType: import('../types').WorldObjectType | null;
   selectedWorldObjectId: string | null;
   teleportRequest: [number, number, number] | null;
@@ -107,6 +109,8 @@ export interface UISlice {
   setMobileJoystickPos: (pos: { x: number; y: number } | null) => void;
   setEditorOpen: (isOpen: boolean) => void;
   setTransforming: (val: boolean) => void;
+  setGridSnap: (val: boolean) => void;
+  setEditorTransformMode: (mode: 'translate' | 'rotate' | 'scale') => void;
   setEditorSelectedType: (type: import('../types').WorldObjectType | null) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;

@@ -10,6 +10,8 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   mobileJoystickPos: null,
   isEditorOpen: false,
   isTransforming: false,
+  gridSnap: false,
+  editorTransformMode: 'translate',
   editorSelectedType: null,
   selectedWorldObjectId: null,
   teleportRequest: null,
@@ -26,6 +28,8 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   
   setEditorOpen: (isOpen) => set({ isEditorOpen: isOpen }),
   setTransforming: (isTransforming) => set({ isTransforming }),
+  setGridSnap: (gridSnap) => set({ gridSnap }),
+  setEditorTransformMode: (editorTransformMode) => set({ editorTransformMode }),
   setEditorSelectedType: (type) => set({ editorSelectedType: type, selectedWorldObjectId: null }),
   setSelectedWorldObjectId: (id) => set({ selectedWorldObjectId: id }),
   requestTeleport: (pos) => set({ teleportRequest: pos }),
