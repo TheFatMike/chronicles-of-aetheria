@@ -8,8 +8,9 @@ import { useGameStore } from "../../store/useGameStore";
 interface InventoryProps {
   items: (InventoryItem | null)[];
   onClose: () => void;
-  onUpdateInventory: (newInventory: (InventoryItem | null)[]) => void;
-  onEquip?: (item: InventoryItem) => void;
+  onMoveItem: (fromIndex: number, toIndex: number) => void;
+  onSplitStack: (fromIndex: number, amount: number) => void;
+  onEquip?: (inventoryIndex: number) => void;
 }
 
 const getRarityColor = (rarity: ItemRarity | undefined) => {
@@ -34,7 +35,7 @@ const getRarityBg = (rarity: ItemRarity | undefined) => {
   }
 };
 
-export const Inventory = React.memo(({ items, onClose, onUpdateInventory, onEquip }: InventoryProps) => {
+export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack, onEquip }: InventoryProps) => {
   const [selectedItem, setSelectedItem] = React.useState<InventoryItem | null>(null);
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
   const [splitModalItem, setSplitModalItem] = React.useState<InventoryItem | null>(null);
@@ -77,60 +78,8 @@ export const Inventory = React.memo(({ items, onClose, onUpdateInventory, onEqui
         const fromIndex = data.fromIndex;
         if (fromIndex === toIndex) return;
 
-        const newSlots = [...slots];
-        const itemMoving = newSlots[fromIndex];
-        if (!itemMoving) return;
-
-        const itemAtTarget = newSlots[toIndex];
-        const isSplitting = data.isSplitting;
-
-        if (isSplitting && itemMoving.quantity && itemMoving.quantity > 1) {
-          // SPLIT LOGIC
-          const splitAmount = Math.floor(itemMoving.quantity / 2);
-          
-          if (!itemAtTarget) {
-            // Split into empty slot
-            const newItem = { ...itemMoving, id: Math.random().toString(36).substr(2, 9), quantity: splitAmount };
-            newSlots[toIndex] = newItem;
-            newSlots[fromIndex] = { ...itemMoving, quantity: itemMoving.quantity - splitAmount };
-          } else if (itemAtTarget.itemId === itemMoving.itemId && itemAtTarget.stackable) {
-            // Split into existing stack (Merge)
-            const maxStack = itemAtTarget.maxStack || 99;
-            const canAdd = Math.min(splitAmount, maxStack - (itemAtTarget.quantity || 1));
-            
-            if (canAdd > 0) {
-              newSlots[toIndex] = { ...itemAtTarget, quantity: (itemAtTarget.quantity || 1) + canAdd };
-              newSlots[fromIndex] = { ...itemMoving, quantity: itemMoving.quantity - canAdd };
-            }
-          }
-        } else if (itemAtTarget && itemAtTarget.itemId === itemMoving.itemId && itemAtTarget.stackable) {
-          // MERGE LOGIC (Full stack merge)
-          const maxStack = itemAtTarget.maxStack || 99;
-          const currentTargetQty = itemAtTarget.quantity || 1;
-          const currentMovingQty = itemMoving.quantity || 1;
-          
-          const canAdd = Math.min(currentMovingQty, maxStack - currentTargetQty);
-          
-          if (canAdd > 0) {
-            newSlots[toIndex] = { ...itemAtTarget, quantity: currentTargetQty + canAdd };
-            const remaining = currentMovingQty - canAdd;
-            if (remaining > 0) {
-              newSlots[fromIndex] = { ...itemMoving, quantity: remaining };
-            } else {
-              newSlots[fromIndex] = null;
-            }
-          } else {
-            // Cannot add any, just swap
-            newSlots[toIndex] = itemMoving;
-            newSlots[fromIndex] = itemAtTarget;
-          }
-        } else {
-          // SWAP/MOVE LOGIC
-          newSlots[toIndex] = itemMoving;
-          newSlots[fromIndex] = itemAtTarget;
-        }
-
-        onUpdateInventory(newSlots);
+        // Notify server of the move/swap
+        onMoveItem(fromIndex, toIndex);
       }
     } catch (err) {
       console.error("Failed to update items", err);
@@ -176,7 +125,7 @@ export const Inventory = React.memo(({ items, onClose, onUpdateInventory, onEqui
               <Briefcase className="w-6 h-6 text-[#c2a472]" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-display font-black text-[#f4e4bc] tracking-tight uppercase">TREASURY</h2>
+              <h2 className="text-xl sm:text-2xl font-display font-black text-[#f4e4bc] tracking-tight uppercase">INVENTORY</h2>
               <p className="text-[8px] sm:text-[10px] text-[#8b6b4d] font-fantasy uppercase tracking-[0.2em] mt-0.5">Bound Pack</p>
             </div>
           </div>
@@ -265,8 +214,11 @@ export const Inventory = React.memo(({ items, onClose, onUpdateInventory, onEqui
                   {onEquip && ["weapon", "head", "chest", "legs", "boots", "offhand", "accessory", "armor"].includes(selectedItem.type) && (
                     <button
                       onClick={() => {
-                        onEquip(selectedItem);
-                        setSelectedItem(null);
+                        const idx = items.findIndex(i => i?.id === selectedItem.id);
+                        if (idx !== -1) {
+                          onEquip(idx);
+                          setSelectedItem(null);
+                        }
                       }}
                       className="w-full py-2.5 sm:py-3 bg-[#c2a472] hover:bg-[#d4b98a] text-[#1a140f] font-display font-black uppercase tracking-widest rounded transition-colors shadow-lg shadow-[#c2a472]/10 text-xs sm:text-sm"
                     >
@@ -377,28 +329,7 @@ export const Inventory = React.memo(({ items, onClose, onUpdateInventory, onEqui
                 </button>
                 <button
                   onClick={() => {
-                    const newSlots = [...slots];
-                    const fromIndex = newSlots.findIndex(i => i?.id === splitModalItem.id);
-                    if (fromIndex === -1) return;
-
-                    const emptyIndex = newSlots.findIndex(i => i === null);
-                    if (emptyIndex === -1) {
-                      alert("Inventory full!");
-                      return;
-                    }
-
-                    newSlots[emptyIndex] = { 
-                      ...splitModalItem, 
-                      id: Math.random().toString(36).substr(2, 9), 
-                      quantity: splitAmount 
-                    };
-                    newSlots[fromIndex] = { 
-                      ...splitModalItem, 
-                      quantity: splitModalItem.quantity! - splitAmount 
-                    };
-                    
-                    onUpdateInventory(newSlots);
-                    setSelectedItem(newSlots[fromIndex]);
+                    onSplitStack(items.findIndex(i => i?.id === splitModalItem.id), splitAmount);
                     setSplitModalItem(null);
                   }}
                   className="py-3 bg-[#c2a472] text-[#1a140f] font-display font-black uppercase tracking-widest rounded hover:bg-[#d4b98a] transition-colors"

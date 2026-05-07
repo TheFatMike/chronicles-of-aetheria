@@ -6,42 +6,72 @@ export const CHARACTER_CLASSES = [
     name: "Warrior", 
     description: "Masters of close combat with iron skin and unmatched strength.",
     color: "#b91c1c", 
-    stats: { strength: 15, dexterity: 8, wisdom: 6, intelligence: 5, stamina: 14 }
+    stats: { strength: 15, dexterity: 8, wisdom: 6, intelligence: 5, stamina: 14 },
+    startingGear: [
+      { name: "Training Sword", icon: "Sword" },
+      { name: "Wooden Shield", icon: "Shield" },
+      { name: "Iron Breastplate", icon: "Shirt" }
+    ]
   },
   { 
     id: "mage", 
     name: "Mage", 
     description: "Wielders of arcane energy, capable of bending reality to their will.",
     color: "#2563eb", 
-    stats: { strength: 4, dexterity: 10, wisdom: 12, intelligence: 18, stamina: 8 }
+    stats: { strength: 4, dexterity: 10, wisdom: 12, intelligence: 18, stamina: 8 },
+    startingGear: [
+      { name: "Apprentice Staff", icon: "Wand" },
+      { name: "Cloth Tunic", icon: "Shirt" },
+      { name: "Mana Potion", icon: "FlaskConical" }
+    ]
   },
   { 
     id: "ranger", 
     name: "Ranger", 
     description: "Swift trackers who strike from the shadows with deadly precision.",
     color: "#15803d", 
-    stats: { strength: 9, dexterity: 16, wisdom: 8, intelligence: 10, stamina: 10 }
+    stats: { strength: 9, dexterity: 16, wisdom: 8, intelligence: 10, stamina: 10 },
+    startingGear: [
+      { name: "Short Bow", icon: "Target" },
+      { name: "Leather Vest", icon: "Shirt" },
+      { name: "Health Potion", icon: "FlaskConical" }
+    ]
   },
   {
     id: "priest",
     name: "Priest",
     description: "Divinely inspired healers who draw strength from faith and wisdom.",
     color: "#eab308",
-    stats: { strength: 6, dexterity: 7, wisdom: 18, intelligence: 12, stamina: 10 }
+    stats: { strength: 6, dexterity: 7, wisdom: 18, intelligence: 12, stamina: 10 },
+    startingGear: [
+      { name: "Apprentice Staff", icon: "Wand" },
+      { name: "Cloth Tunic", icon: "Shirt" },
+      { name: "Mana Potion", icon: "FlaskConical" }
+    ]
   },
   {
     id: "rogue",
     name: "Rogue",
     description: "Cunning infiltrators who strike with lethal speed and unmatched agility.",
     color: "#6b21a8",
-    stats: { strength: 8, dexterity: 18, wisdom: 7, intelligence: 11, stamina: 9 }
+    stats: { strength: 8, dexterity: 18, wisdom: 7, intelligence: 11, stamina: 9 },
+    startingGear: [
+      { name: "Rusty Dagger", icon: "Sword" },
+      { name: "Leather Vest", icon: "Shirt" },
+      { name: "Health Potion", icon: "FlaskConical" }
+    ]
   },
   {
     id: "paladin",
     name: "Paladin",
     description: "Holy warriors who protect the weak and smite evil with divine power.",
     color: "#fde047",
-    stats: { strength: 12, dexterity: 6, wisdom: 14, intelligence: 8, stamina: 16 }
+    stats: { strength: 12, dexterity: 6, wisdom: 14, intelligence: 8, stamina: 16 },
+    startingGear: [
+      { name: "Greatsword", icon: "Sword" },
+      { name: "Iron Breastplate", icon: "Shirt" },
+      { name: "Health Potion", icon: "FlaskConical" }
+    ]
   }
 ];
 

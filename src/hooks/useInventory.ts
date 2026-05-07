@@ -10,13 +10,23 @@ export const useInventory = (
   socket: Socket | null
 ) => {
   
-  const updateInventory = useCallback(async (newInventory: (InventoryItem | null)[]) => {
+  const moveItem = useCallback(async (fromIndex: number, toIndex: number) => {
     if (!user || !selectedCharacter || !socket) return;
     
-    // Optimistic UI update
+    // We update optimistically but the server is the source of truth
+    const newInventory = [...selectedCharacter.inventory];
+    const itemA = newInventory[fromIndex];
+    newInventory[fromIndex] = newInventory[toIndex];
+    newInventory[toIndex] = itemA;
+    
     setSelectedCharacter(prev => prev ? { ...prev, inventory: newInventory } : null);
-    socket.emit("update_inventory", { inventory: newInventory });
+    socket.emit("move_item", { fromIndex, toIndex });
   }, [user, selectedCharacter, setSelectedCharacter, socket]);
+
+  const splitStack = useCallback(async (fromIndex: number, amount: number) => {
+    if (!user || !selectedCharacter || !socket) return;
+    socket.emit("split_stack", { fromIndex, amount });
+  }, [user, selectedCharacter, socket]);
 
   const updateHotbar = useCallback(async (newHotbar: (HotbarSlot | null)[]) => {
     if (!user || !selectedCharacter || !socket) return;
@@ -26,12 +36,11 @@ export const useInventory = (
     socket.emit("update_hotbar", { hotbar: newHotbar });
   }, [user, selectedCharacter, setSelectedCharacter, socket]);
 
-  const equipItem = useCallback(async (item: InventoryItem) => {
+  const equipItem = useCallback(async (inventoryIndex: number) => {
     if (!user || !selectedCharacter || !socket) return;
     
-    // We let the server calculate the stats and reply via session_start or player_stats
-    socket.emit("equip_item", { item });
-  }, [user, selectedCharacter, setSelectedCharacter, socket]);
+    socket.emit("equip_item", { inventoryIndex });
+  }, [user, selectedCharacter, socket]);
 
   const unequipItem = useCallback(async (slot: keyof EquipmentSlots) => {
     if (!user || !selectedCharacter || !socket) return;
@@ -39,6 +48,6 @@ export const useInventory = (
     socket.emit("unequip_item", { slot });
   }, [user, selectedCharacter, setSelectedCharacter, socket]);
 
-  return { updateInventory, updateHotbar, equipItem, unequipItem };
+  return { moveItem, splitStack, updateHotbar, equipItem, unequipItem };
 };
 

@@ -27,6 +27,7 @@ export const initDb = async () => {
     }
     
     db = getFirestore();
+    db.settings({ ignoreUndefinedProperties: true });
     return db;
   } catch (error: any) {
     serverLogger.error("system", `Firebase Init Error: ${error.message}`);
@@ -34,6 +35,7 @@ export const initDb = async () => {
     // Fallback for environment variables or ADC if key missing
     if (admin.apps.length === 0) admin.initializeApp();
     db = getFirestore();
+    db.settings({ ignoreUndefinedProperties: true });
     return db;
   }
 };

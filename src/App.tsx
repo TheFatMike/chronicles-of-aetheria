@@ -65,7 +65,7 @@ export default function App() {
     deleteCharacter
   } = useCharacters(user, socket);
 
-  const { updateInventory, updateHotbar, equipItem, unequipItem } = useInventory(user, selectedCharacter, setSelectedCharacter, socket);
+  const { moveItem, splitStack, updateHotbar, equipItem, unequipItem } = useInventory(user, selectedCharacter, setSelectedCharacter, socket);
   const { executeCommand } = useChatCommands(user, selectedCharacter, setSelectedCharacter, socket);
   const { useSlot, basicAttack, stopCombat } = useCombat(selectedCharacter, setSelectedCharacter, socket);
 
@@ -207,6 +207,37 @@ export default function App() {
     };
     socket.on("quest_update", handleQuestUpdate);
     return () => { socket.off("quest_update", handleQuestUpdate); };
+  }, [socket]);
+
+  // Listen for Session Start (Full Character Sync)
+  useEffect(() => {
+    if (!socket) return;
+    const handleSessionStart = (confirmedState: any) => {
+      setSelectedCharacter(prev => prev ? {
+        ...prev,
+        inventory: confirmedState.inventory,
+        equipment: confirmedState.equipment,
+        hp: confirmedState.hp,
+        maxHp: confirmedState.maxHp,
+        mp: confirmedState.mp,
+        maxMp: confirmedState.maxMp,
+        stats: confirmedState.stats,
+        level: confirmedState.level,
+        quests: confirmedState.quests
+      } : null);
+    };
+    socket.on("session_start", handleSessionStart);
+    return () => { socket.off("session_start", handleSessionStart); };
+  }, [socket]);
+
+  // Listen for Inventory Updates
+  useEffect(() => {
+    if (!socket) return;
+    const handleInventoryUpdate = (data: any) => {
+      setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
+    };
+    socket.on("inventory_update", handleInventoryUpdate);
+    return () => { socket.off("inventory_update", handleInventoryUpdate); };
   }, [socket]);
 
   // Join Logic
@@ -393,7 +424,8 @@ export default function App() {
             <GameMenus 
               selectedCharacter={selectedCharacter}
               socket={socket}
-              updateInventory={updateInventory}
+              moveItem={moveItem}
+              splitStack={splitStack}
               equipItem={equipItem}
               unequipItem={unequipItem}
             />

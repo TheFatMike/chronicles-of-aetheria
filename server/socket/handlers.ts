@@ -5,10 +5,12 @@ import { serverLogger } from "../logger";
 import { db } from "../db";
 import { CharacterModel } from "../../src/models/CharacterModel";
 import { CHARACTER_CLASSES } from "../../src/constants";
+import { EquipmentSlots } from "../../src/types";
 import { SAMPLE_QUESTS } from "../../src/data/quests";
 import { handleCastSkill } from "../logic/combat";
 import { initializeSpawners, GET_HITBOXES } from "../systems/gameEngine";
 import { filterNearby, checkWorldCollision } from "../systems/spatial";
+import { CLASS_STARTING_GEAR, generateItemInstance } from "../data/items";
 
 
 export const registerHandlers = (io: Server, socket: Socket) => {
@@ -190,8 +192,21 @@ export const registerHandlers = (io: Server, socket: Socket) => {
         
         // HARDCODED SERVER-SIDE STATS (CANNOT BE HACKED)
         const baseStats = selectedClassData.stats;
-        const defaultEquipment = { head: null, chest: null, legs: null, boots: null, weapon: null, offhand: null, accessory: null };
-        const { maxHp, maxMp } = CharacterModel.calculateDerivedStats(baseStats, defaultEquipment);
+        // STARTING GEAR SYSTEM
+        const startingItems = CLASS_STARTING_GEAR[classId] || [];
+        const initialInventory = Array(30).fill(null);
+        let initialEquipment: EquipmentSlots = { head: null, chest: null, legs: null, boots: null, weapon: null, offhand: null, accessory: null };
+        
+        // Populate inventory only (no auto-equip per user request)
+        startingItems.forEach((itemId) => {
+          const itemInstance = generateItemInstance(itemId);
+          if (itemInstance) {
+            const emptyIdx = initialInventory.findIndex(s => s === null);
+            if (emptyIdx !== -1) initialInventory[emptyIdx] = itemInstance;
+          }
+        });
+
+        const { maxHp, maxMp } = CharacterModel.calculateDerivedStats(baseStats, initialEquipment);
 
         const charData = {
           name: characterName.trim(),
@@ -201,9 +216,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
           stats: baseStats,
           hp: maxHp,
           mp: maxMp,
-          inventory: Array(30).fill(null), // Empty starter inventory
+          inventory: initialInventory,
           hotbar: Array(10).fill(null),
-          equipment: defaultEquipment,
+          equipment: initialEquipment,
           role: userRole,
           createdAt: admin.firestore.FieldValue.serverTimestamp()
         };
@@ -236,16 +251,50 @@ export const registerHandlers = (io: Server, socket: Socket) => {
       const dx = player.pos[0] - target.pos[0];
       const dz = player.pos[2] - target.pos[2];
       const distSq = dx*dx + dz*dz;
+
       if (distSq < 25) { 
         if (target.loot && target.loot.length > 0) {
-          socket.emit("chat_message", {
-            id: "sys-" + Date.now(),
-            sender: "SYSTEM",
-            text: `You looted: ${target.loot.join(", ")}`,
-            timestamp: Date.now(),
-            color: "#ffd700",
-            role: "player"
+          const lootedItems: string[] = [];
+          const newInventory = [...player.inventory];
+          
+          target.loot.forEach((itemId: string) => {
+            const emptyIdx = newInventory.findIndex(s => s === null);
+            if (emptyIdx !== -1) {
+              const itemInstance = generateItemInstance(itemId);
+              if (itemInstance) {
+                newInventory[emptyIdx] = itemInstance;
+                lootedItems.push(itemInstance.name);
+              }
+            }
           });
+
+          if (lootedItems.length > 0) {
+            player.inventory = newInventory;
+            socket.emit("inventory_update", { inventory: newInventory });
+            
+            // Save to DB
+            db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+              inventory: newInventory
+            }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Loot save failed", e.message));
+
+            socket.emit("chat_message", {
+              id: "sys-" + Date.now(),
+              sender: "SYSTEM",
+              text: `You looted: ${lootedItems.join(", ")}`,
+              timestamp: Date.now(),
+              color: "#ffd700",
+              role: "player"
+            });
+          } else {
+            socket.emit("chat_message", {
+              id: "sys-" + Date.now(),
+              sender: "SYSTEM",
+              text: "No space in inventory!",
+              timestamp: Date.now(),
+              color: "#ff4444",
+              role: "player"
+            });
+          }
         }
         entities.delete(target.id);
         io.emit("entity_despawn", target.id);
@@ -409,7 +458,14 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     const player = players.get(socket.id);
     if (!player) return;
 
-    const updated = CharacterModel.equipItem(player, data.item);
+    // SECURITY: Use server-side inventory to find the item, not client-provided data
+    const itemInInventory = player.inventory[data.inventoryIndex];
+    if (!itemInInventory) {
+      serverLogger.warn("anti-cheat", `${player.characterName} tried to equip non-existent item at slot ${data.inventoryIndex}`);
+      return;
+    }
+
+    const updated = CharacterModel.equipItem(player, itemInInventory);
     if (updated) {
       players.set(socket.id, { ...updated, id: socket.id });
       socket.emit("session_start", players.get(socket.id)); // Sync full state back
@@ -428,6 +484,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     const player = players.get(socket.id);
     if (!player) return;
 
+    // SECURITY: Slot is validated by CharacterModel.unequipItem
     const updated = CharacterModel.unequipItem(player, data.slot);
     if (updated) {
       players.set(socket.id, { ...updated, id: socket.id });
@@ -443,15 +500,59 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     }
   });
 
-  socket.on("update_inventory", (data) => {
+  socket.on("move_item", (data) => {
     const player = players.get(socket.id);
     if (!player) return;
 
-    // TODO: Add more validation here (e.g. check item counts/types)
-    player.inventory = data.inventory;
+    const { fromIndex, toIndex } = data;
+    if (fromIndex < 0 || fromIndex >= 30 || toIndex < 0 || toIndex >= 30) return;
+
+    const newInventory = [...player.inventory];
+    const itemA = newInventory[fromIndex];
+    const itemB = newInventory[toIndex];
+
+    // Simple swap
+    newInventory[toIndex] = itemA;
+    newInventory[fromIndex] = itemB;
     
+    player.inventory = newInventory;
+    socket.emit("inventory_update", { inventory: newInventory });
+
     db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      inventory: data.inventory
+      inventory: newInventory
+    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+  });
+
+  socket.on("split_stack", (data) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+
+    const { fromIndex, amount } = data;
+    const item = player.inventory[fromIndex];
+    
+    if (!item || !item.stackable || (item.quantity || 1) <= amount || amount <= 0) return;
+
+    const emptyIdx = player.inventory.findIndex((s: any) => s === null);
+    if (emptyIdx === -1) return; // No space
+
+    const newInventory = [...player.inventory];
+    
+    // Create new stack
+    const newStack = { 
+      ...item, 
+      id: Math.random().toString(36).substring(2, 11), 
+      quantity: amount 
+    };
+    
+    // Update old stack
+    newInventory[fromIndex] = { ...item, quantity: item.quantity - amount };
+    newInventory[emptyIdx] = newStack;
+
+    player.inventory = newInventory;
+    socket.emit("inventory_update", { inventory: newInventory });
+
+    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+      inventory: newInventory
     }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
   });
 

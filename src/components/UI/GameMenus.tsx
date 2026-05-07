@@ -12,15 +12,17 @@ import { Character, InventoryItem, EquipmentSlots } from "../../types";
 interface GameMenusProps {
   selectedCharacter: Character;
   socket: any;
-  updateInventory: (inventory: (InventoryItem | null)[]) => void;
-  equipItem: (item: InventoryItem) => void;
+  moveItem: (from: number, to: number) => void;
+  splitStack: (from: number, amount: number) => void;
+  equipItem: (inventoryIndex: number) => void;
   unequipItem: (slotId: keyof EquipmentSlots) => void;
 }
 
 export const GameMenus = ({
   selectedCharacter,
   socket,
-  updateInventory,
+  moveItem,
+  splitStack,
   equipItem,
   unequipItem
 }: GameMenusProps) => {
@@ -73,7 +75,8 @@ export const GameMenus = ({
         <Inventory
           items={selectedCharacter.inventory || []}
           onClose={() => setActiveMenu(null)}
-          onUpdateInventory={updateInventory}
+          onMoveItem={moveItem}
+          onSplitStack={splitStack}
           onEquip={equipItem}
         />
       )}

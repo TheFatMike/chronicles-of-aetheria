@@ -1,7 +1,8 @@
-import { useState, memo } from "react";
+import React, { useState, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CHARACTER_CLASSES } from "../../constants";
-import { ChevronRight, ChevronLeft, User, Shield, Info } from "lucide-react";
+import * as Icons from "lucide-react";
+import { ChevronRight, ChevronLeft, User, Shield, Info, Briefcase } from "lucide-react";
 
 interface CharacterCreationProps {
   onComplete: (data: { characterName: string; class: string; color: string }) => void;
@@ -118,6 +119,30 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Starting Gear Preview */}
+          <div className="mt-8 border-t border-[#4a3a2a] pt-6">
+            <h3 className="text-[#8b6b4d] font-fantasy text-[10px] uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+              <Briefcase size={14} />
+              Initial Provisions
+            </h3>
+            <div className="flex gap-3">
+              {(selectedClass as any).startingGear?.map((item: any, i: number) => (
+                <div key={i} className="group relative">
+                  <div className="w-12 h-12 bg-black/60 border-2 border-[#4a3a2a] rounded flex items-center justify-center hover:border-[#c2a472] transition-colors cursor-help">
+                    {React.createElement((Icons as any)[item.icon] || Icons.HelpCircle, {
+                      size: 20,
+                      className: "text-[#c2a472] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    })}
+                  </div>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1a1410] border border-[#4a3a2a] rounded text-[8px] font-fantasy uppercase tracking-widest text-[#f4e4bc] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                    {item.name}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
