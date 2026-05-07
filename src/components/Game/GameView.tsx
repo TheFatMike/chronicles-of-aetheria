@@ -26,6 +26,13 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
       <Canvas 
         shadows={{ type: THREE.PCFShadowMap }} 
         camera={{ position: [0, 5, 10], fov: 75 }}
+        dpr={[1, 2]}
+        performance={{ min: 0.5 }}
+        gl={{ 
+          antialias: true, 
+          powerPreference: "high-performance",
+          preserveDrawingBuffer: true
+        }}
         onPointerMissed={() => setTarget(null)}
       >
         <Suspense fallback={null}>

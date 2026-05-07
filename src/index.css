@@ -9,6 +9,25 @@
   --font-fantasy: "MedievalSharp", cursive;
 }
 
+/* UI Scaling for High Resolution Monitors */
+@media (min-width: 2560px) {
+  :root {
+    font-size: 18px; /* 1440p Scaling */
+  }
+}
+
+@media (min-width: 3840px) {
+  :root {
+    font-size: 24px; /* 4K Scaling */
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    font-size: 14px; /* Tablet/Small Laptop Scaling */
+  }
+}
+
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;

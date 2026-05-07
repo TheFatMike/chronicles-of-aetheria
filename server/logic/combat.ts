@@ -3,6 +3,7 @@ import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } fr
 import { players, entities, lastSkillUse } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
+import { updateQuestProgress } from "./quest";
 
 export const handleCastSkill = (socket: any, io: any, data: any) => {
   const player = players.get(socket.id);
@@ -99,45 +100,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         serverLogger.info("combat", `${player.characterName} killed ${target.name}!`);
 
         // QUEST PROGRESS TRACKING
-        if (player.quests) {
-          let questChanged = false;
-          Object.values(player.quests).forEach((quest: any) => {
-            if (quest.status === "active") {
-              quest.objectives.forEach((obj: any) => {
-                if (obj.type === "kill" && obj.targetId === target.class && !obj.completed) {
-                  obj.currentCount = Math.min(obj.count, (obj.currentCount || 0) + 1);
-                  if (obj.currentCount >= obj.count) {
-                    obj.completed = true;
-                    socket.emit("chat_message", {
-                      id: "sys-q-" + Date.now(),
-                      sender: "QUEST",
-                      text: `Objective Complete: ${obj.targetName} (${obj.currentCount}/${obj.count})`,
-                      timestamp: Date.now(),
-                      color: "#c2a472"
-                    });
-                  } else {
-                    socket.emit("chat_message", {
-                      id: "sys-q-" + Date.now(),
-                      sender: "QUEST",
-                      text: `${quest.title}: ${obj.targetName} ${obj.currentCount}/${obj.count}`,
-                      timestamp: Date.now(),
-                      color: "#c2a472"
-                    });
-                  }
-                  questChanged = true;
-                }
-              });
-            }
-          });
-
-          if (questChanged) {
-            socket.emit("quest_update", player.quests);
-            // PERSIST TO DB
-            db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-              quests: player.quests
-            }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Quest save failed", e.message));
-          }
-        }
+        updateQuestProgress(socket, player, "kill", target.class);
         
         setTimeout(() => {
           if (entities.has(target.id) && entities.get(target.id).isDead) {

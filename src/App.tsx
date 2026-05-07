@@ -17,7 +17,7 @@ import { useSocket } from "./hooks/useSocket";
 import { useGameStore } from "./store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { Chat } from "./components/UI/Chat";
-import { GameMenus } from "./components/UI/GameMenus";
+import { MenuManager } from "./components/UI/MenuManager";
 import { Hotbar } from "./components/UI/Hotbar";
 import { LoadingScreen } from "./components/UI/LoadingScreen";
 import { TargetFrame } from "./components/UI/TargetFrame";
@@ -421,7 +421,7 @@ export default function App() {
               </>
             )}
 
-            <GameMenus 
+            <MenuManager 
               selectedCharacter={selectedCharacter}
               socket={socket}
               moveItem={moveItem}

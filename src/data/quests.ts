@@ -49,5 +49,39 @@ export const SAMPLE_QUESTS: Record<string, Quest> = {
       exp: 150,
       gold: 75
     }
+  },
+  "starter_equip": {
+    id: "starter_equip",
+    title: "Armed and Dangerous",
+    description: "An adventurer is only as good as their steel. Open thy inventory and equip thy starting gear.",
+    giverName: "Instructor Kael",
+    giverId: "instructor_kael",
+    level: 1,
+    status: "available",
+    objectives: [
+      {
+        id: "obj_weapon",
+        type: "equip",
+        targetId: "weapon",
+        targetName: "Weapon",
+        count: 1,
+        currentCount: 0,
+        completed: false
+      },
+      {
+        id: "obj_armor",
+        type: "equip",
+        targetId: "chest",
+        targetName: "Chest Armor",
+        count: 1,
+        currentCount: 0,
+        completed: false
+      }
+    ],
+    reward: {
+      exp: 50,
+      gold: 25,
+      items: ["health-potion"]
+    }
   }
 };

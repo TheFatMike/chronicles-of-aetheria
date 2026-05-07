@@ -14,12 +14,5 @@ export const SPAWNER_OBJECTS: WorldObject[] = [
     "pos": [-25, 0, 25],
     "rot": [0, 0, 0],
     "scale": 1
-  },
-  {
-    "id": "spawner-demo-guard",
-    "type": "spawner_guard",
-    "pos": [0, 0, 15],
-    "rot": [0, 0, 0],
-    "scale": 1
   }
 ];

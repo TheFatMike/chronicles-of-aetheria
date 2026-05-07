@@ -9,7 +9,7 @@ import { SkillBook } from "./SkillBook";
 import { CharacterInfo } from "./CharacterInfo";
 import { Character, InventoryItem, EquipmentSlots } from "../../types";
 
-interface GameMenusProps {
+interface MenuManagerProps {
   selectedCharacter: Character;
   socket: any;
   moveItem: (from: number, to: number) => void;
@@ -18,14 +18,14 @@ interface GameMenusProps {
   unequipItem: (slotId: keyof EquipmentSlots) => void;
 }
 
-export const GameMenus = ({
+export const MenuManager = ({
   selectedCharacter,
   socket,
   moveItem,
   splitStack,
   equipItem,
   unequipItem
-}: GameMenusProps) => {
+}: MenuManagerProps) => {
   const { 
     activeMenu, 
     setActiveMenu, 

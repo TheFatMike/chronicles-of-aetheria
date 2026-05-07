@@ -1,4 +1,5 @@
 import { memo, useState, useEffect } from "react";
+import * as THREE from "three";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";
@@ -16,6 +17,12 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   const setTransformMode = useGameStore(state => state.setEditorTransformMode);
   const gridSnap = useGameStore(state => state.gridSnap);
 
+  const [transformRef, setTransformRef] = useState<THREE.Group | null>(null);
+
+  useEffect(() => {
+    if (!selectedWorldObjectId) setTransformRef(null);
+  }, [selectedWorldObjectId]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isEditorOpen) return;
@@ -30,8 +37,36 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isEditorOpen, setTransformMode]);
 
+  const onTransformMouseUp = (e: any) => {
+    setTransforming(false);
+    if (!selectedWorldObjectId || !transformRef) return;
+    
+    const obj = useGameStore.getState().worldObjects[selectedWorldObjectId];
+    if (!obj || !socket) return;
+
+    socket.emit("save_world_object", {
+      ...obj,
+      pos: [transformRef.position.x, transformRef.position.y, transformRef.position.z],
+      rot: [transformRef.rotation.x, transformRef.rotation.y, transformRef.rotation.z],
+      scale: transformRef.scale.x // Uniform scale
+    });
+  };
+
   return (
     <>
+      {isEditorOpen && selectedWorldObjectId && (
+        <TransformControls
+          makeDefault
+          object={transformRef || undefined}
+          mode={transformMode}
+          translationSnap={gridSnap ? 0.5 : null}
+          rotationSnap={gridSnap ? Math.PI / 12 : null}
+          scaleSnap={gridSnap ? 0.1 : null}
+          onMouseDown={() => setTransforming(true)}
+          onMouseUp={onTransformMouseUp}
+        />
+      )}
+
       {worldObjects.map(obj => {
         const isSelected = selectedWorldObjectId === obj.id;
         const modelProps = {
@@ -46,106 +81,56 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
         };
 
         return (
-          <group key={obj.id}>
-            {isSelected && isEditorOpen ? (
-              <TransformControls
-                makeDefault
-                mode={transformMode}
-                position={obj.pos}
-                rotation={obj.rot}
-                scale={obj.scale}
-                translationSnap={gridSnap ? 0.5 : null}
-                rotationSnap={gridSnap ? Math.PI / 12 : null}
-                scaleSnap={gridSnap ? 0.1 : null}
-                onMouseDown={() => setTransforming(true)}
-                onMouseUp={(e: any) => {
-                  setTransforming(false);
-                  const target = e.target.object;
-                  if (socket) {
-                    socket.emit("save_world_object", {
-                      ...obj,
-                      pos: [target.position.x, target.position.y, target.position.z],
-                      rot: [target.rotation.x, target.rotation.y, target.rotation.z],
-                      scale: target.scale.x // Uniform scale
-                    });
-                  }
-                }}
-              >
-                <group>
-                  {obj.type === 'tree' && <Tree {...modelProps} />}
-                  {obj.type === 'rock' && <Rock {...modelProps} />}
-                  {obj.type === 'house' && <House {...modelProps} />}
-                  {obj.type === 'tent' && <Tent {...modelProps} />}
-                  {obj.type === 'bush' && <Bush {...modelProps} />}
-                  {obj.type === 'fence' && <Fence {...modelProps} />}
-                  {obj.type === 'campfire' && <Campfire {...modelProps} />}
-                  {obj.type === 'barrel' && <Barrel {...modelProps} />}
-                  {obj.type === 'dummy' && <Dummy {...modelProps} />}
-                  {obj.type === 'chest' && <Chest {...modelProps} />}
-                  {obj.type === 'well' && <Well {...modelProps} />}
-                  {obj.type === 'signpost' && <SignPost {...modelProps} />}
-                  {obj.type === 'waypoint' && <Waypoint {...modelProps} />}
+          <group 
+            key={obj.id} 
+            position={obj.pos} 
+            rotation={obj.rot} 
+            scale={obj.scale}
+            ref={(ref) => {
+              if (isSelected && transformRef !== ref) setTransformRef(ref as THREE.Group);
+            }}
+          >
+            <group>
+              {obj.type === 'tree' && <Tree {...modelProps} />}
+              {obj.type === 'rock' && <Rock {...modelProps} />}
+              {obj.type === 'house' && <House {...modelProps} />}
+              {obj.type === 'tent' && <Tent {...modelProps} />}
+              {obj.type === 'bush' && <Bush {...modelProps} />}
+              {obj.type === 'fence' && <Fence {...modelProps} />}
+              {obj.type === 'campfire' && <Campfire {...modelProps} />}
+              {obj.type === 'barrel' && <Barrel {...modelProps} />}
+              {obj.type === 'dummy' && <Dummy {...modelProps} />}
+              {obj.type === 'chest' && <Chest {...modelProps} />}
+              {obj.type === 'well' && <Well {...modelProps} />}
+              {obj.type === 'signpost' && <SignPost {...modelProps} />}
+              {obj.type === 'waypoint' && <Waypoint {...modelProps} />}
 
-                  {/* Hitboxes (Attached during transform) */}
-                  {obj.hitboxes?.map((hb, i) => (
-                    <group key={`hb-active-${obj.id}-${i}`} position={[hb.x, 0.05, hb.z]}>
-                      {hb.type === 'circle' ? (
-                        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                          <ringGeometry args={[hb.r - 0.05, hb.r, 32]} />
-                          <meshBasicMaterial color="#ef4444" transparent opacity={0.6} />
-                        </mesh>
-                      ) : (
-                        <mesh>
-                          <boxGeometry args={[hb.w, 0.1, hb.d]} />
-                          <meshBasicMaterial color="#ef4444" wireframe />
-                        </mesh>
-                      )}
-                    </group>
-                  ))}
+              {/* Hitboxes */}
+              {isEditorOpen && obj.hitboxes?.map((hb, i) => (
+                <group key={`hb-${obj.id}-${i}`} position={[hb.x, 0.05, hb.z]}>
+                  {hb.type === 'circle' ? (
+                    <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                      <ringGeometry args={[hb.r - 0.05, hb.r, 32]} />
+                      <meshBasicMaterial color="#ef4444" transparent opacity={0.6} />
+                    </mesh>
+                  ) : (
+                    <mesh>
+                      <boxGeometry args={[hb.w, 0.1, hb.d]} />
+                      <meshBasicMaterial color="#ef4444" wireframe />
+                    </mesh>
+                  )}
                 </group>
-              </TransformControls>
-            ) : (
-              <group position={obj.pos} rotation={obj.rot} scale={obj.scale}>
-                {obj.type === 'tree' && <Tree {...modelProps} />}
-                {obj.type === 'rock' && <Rock {...modelProps} />}
-                {obj.type === 'house' && <House {...modelProps} />}
-                {obj.type === 'tent' && <Tent {...modelProps} />}
-                {obj.type === 'bush' && <Bush {...modelProps} />}
-                {obj.type === 'fence' && <Fence {...modelProps} />}
-                {obj.type === 'campfire' && <Campfire {...modelProps} />}
-                {obj.type === 'barrel' && <Barrel {...modelProps} />}
-                {obj.type === 'dummy' && <Dummy {...modelProps} />}
-                {obj.type === 'chest' && <Chest {...modelProps} />}
-                {obj.type === 'well' && <Well {...modelProps} />}
-                {obj.type === 'signpost' && <SignPost {...modelProps} />}
-                {obj.type === 'waypoint' && isEditorOpen && <Waypoint {...modelProps} />}
+              ))}
+            </group>
 
-                {/* Hitboxes (Attached normally) */}
-                {isEditorOpen && obj.hitboxes?.map((hb, i) => (
-                  <group key={`hb-idle-${obj.id}-${i}`} position={[hb.x, 0.05, hb.z]}>
-                    {hb.type === 'circle' ? (
-                      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                        <ringGeometry args={[hb.r - 0.05, hb.r, 32]} />
-                        <meshBasicMaterial color="#ef4444" transparent opacity={0.6} />
-                      </mesh>
-                    ) : (
-                      <mesh>
-                        <boxGeometry args={[hb.w, 0.1, hb.d]} />
-                        <meshBasicMaterial color="#ef4444" wireframe />
-                      </mesh>
-                    )}
-                  </group>
-                ))}
-              </group>
-            )}
-
-            {obj.type.startsWith('spawner_') && isEditorOpen && (
-              <group position={obj.pos}>
-                <mesh {...modelProps}>
-                  <boxGeometry args={[1, 1, 1]} />
-                  <meshBasicMaterial color={editorSelectedType ? '#ef4444' : '#6b21a8'} wireframe />
-                </mesh>
-              </group>
+            {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
+              <mesh {...modelProps}>
+                <boxGeometry args={[1, 1, 1]} />
+                <meshBasicMaterial 
+                  color={obj.type.startsWith('npc_') ? '#3b82f6' : (editorSelectedType ? '#ef4444' : '#6b21a8')} 
+                  wireframe 
+                />
+              </mesh>
             )}
 
             {isSelected && (

@@ -48,7 +48,7 @@ export interface Character {
 
 export type HotbarSlot = { type: 'item', data: InventoryItem } | { type: 'skill', data: Skill };
 
-export type QuestObjectiveType = 'kill' | 'talk' | 'collect';
+export type QuestObjectiveType = 'kill' | 'talk' | 'collect' | 'equip';
 
 export interface QuestObjective {
   id: string;
@@ -124,7 +124,7 @@ export interface PlayerData {
   maxMp?: number;
 }
 
-export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'delete' | 'edit';
+export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'delete' | 'edit';
 
 export interface WorldObject {
   id: string;

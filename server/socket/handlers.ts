@@ -11,6 +11,9 @@ import { handleCastSkill } from "../logic/combat";
 import { initializeSpawners, GET_HITBOXES } from "../systems/gameEngine";
 import { filterNearby, checkWorldCollision } from "../systems/spatial";
 import { CLASS_STARTING_GEAR, generateItemInstance } from "../data/items";
+import { ENTITY_TEMPLATES } from "../data/entityTemplates";
+import { calculateMaxHP } from "../../src/lib/gameUtils";
+import { updateQuestProgress, validateQuestState } from "../logic/quest";
 
 
 export const registerHandlers = (io: Server, socket: Socket) => {
@@ -323,7 +326,36 @@ export const registerHandlers = (io: Server, socket: Socket) => {
         io.emit("spawners_sync", Array.from(spawners.values()));
       }
 
-      // 4. Broadcast to everyone
+      // 4. Special case: Individual NPCs
+      if (type.startsWith("npc_")) {
+        const entityId = `npc-${id}`;
+        const npcKey = type.split("npc_")[1];
+        const template = ENTITY_TEMPLATES[npcKey] || ENTITY_TEMPLATES['guard'];
+        const stats = template.baseStats;
+        const maxHp = calculateMaxHP(stats);
+
+        const npcEntity = {
+          id: entityId,
+          worldObjectId: id,
+          name: template.name,
+          type: 'npc',
+          class: template.class,
+          level: template.id === 'instructor_kael' ? 100 : 25,
+          pos: [...pos],
+          homePos: [...pos],
+          rot: [...rot],
+          hp: maxHp,
+          maxHp: maxHp,
+          stats: stats,
+          isMoving: false,
+          aiState: 'IDLE',
+          lastUpdate: Date.now()
+        };
+        entities.set(entityId, npcEntity);
+        io.emit("entity_spawn", npcEntity);
+      }
+
+      // 5. Broadcast to everyone
       io.emit("world_object_updated", worldObj);
       serverLogger.info("world", `${player.characterName} updated ${type} (${id})`);
     } catch (e: any) {
@@ -345,10 +377,16 @@ export const registerHandlers = (io: Server, socket: Socket) => {
       // 2. Update Server Memory
       worldObjects.delete(id);
 
-      // 3. Special case: Spawners
+      // 3. Special case: Spawners or Individual NPCs
       if (existing?.type.startsWith("spawner_")) {
         await initializeSpawners();
         io.emit("spawners_sync", Array.from(spawners.values()));
+      } else if (existing?.type.startsWith("npc_")) {
+        const entityId = `npc-${id}`;
+        if (entities.has(entityId)) {
+          entities.delete(entityId);
+          io.emit("entity_despawn", entityId);
+        }
       }
 
       // 4. Broadcast to everyone
@@ -405,6 +443,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
       timestamp: Date.now(),
       color: "#c2a472"
     });
+
+    // Check if objectives are already met
+    validateQuestState(socket, player);
   });
 
   socket.on("turn_in_quest", (data) => {
@@ -477,6 +518,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
         maxHp: updated.maxHp,
         maxMp: updated.maxMp
       }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Equip save failed", e.message));
+
+      // Quest Progress: Equip check
+      updateQuestProgress(socket, player, "equip", itemInInventory.type);
     }
   });
 

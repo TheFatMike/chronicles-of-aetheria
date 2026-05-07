@@ -10,6 +10,8 @@ import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { filterNearby, checkWorldCollision } from "./spatial";
 
 export const GET_HITBOXES = (type: string, scale: number = 1): any[] => {
+  if (type.startsWith('npc_')) return [{ type: 'circle', x: 0, z: 0, r: 0.5 * scale }];
+
   switch (type) {
     case 'house': {
       const s = 2 * scale; 
@@ -80,6 +82,7 @@ export const initializeWorld = async () => {
       if (typeStr === "slime") { name = "Marsh Slime"; entityClass = "Slime"; level = 1; maxEntities = 3; radius = 8; }
       else if (typeStr === "wolf") { name = "Forest Wolf"; entityClass = "Wolf"; level = 3; maxEntities = 3; radius = 10; }
       else if (typeStr === "guard") { name = "Guard Captain"; entityClass = "Guard"; level = 25; maxEntities = 1; radius = 2; type = "npc"; }
+      else if (typeStr === "instructor_kael") { name = "Instructor Kael"; entityClass = "instructor_kael"; level = 100; maxEntities = 1; radius = 1; type = "npc"; }
 
       const sId = obj.id || `spawn-${spawnerIdCounter++}`;
       spawners.set(sId, {
@@ -96,7 +99,35 @@ export const initializeWorld = async () => {
       });
     }
 
-    // 2. Setup Hitboxes and Add to World Map
+    // 2. Setup Individual NPCs (Persistent, non-respawning unless re-init)
+    if (obj.type.startsWith("npc_")) {
+      const npcKey = obj.type.split("npc_")[1];
+      const template = ENTITY_TEMPLATES[npcKey] || ENTITY_TEMPLATES['guard'];
+      
+      const entityId = `npc-${obj.id}`;
+      const stats = template.baseStats;
+      const maxHp = calculateMaxHP(stats);
+      
+      entities.set(entityId, {
+        id: entityId,
+        worldObjectId: obj.id, // Link back to world object
+        name: template.name,
+        type: 'npc',
+        class: template.class,
+        level: template.id === 'instructor_kael' ? 100 : 25,
+        pos: [...obj.pos],
+        homePos: [...obj.pos],
+        rot: [...obj.rot],
+        hp: maxHp,
+        maxHp: maxHp,
+        stats: stats,
+        isMoving: false,
+        aiState: 'IDLE',
+        lastUpdate: Date.now()
+      });
+    }
+
+    // 3. Setup Hitboxes and Add to World Map
     const hitboxes = GET_HITBOXES(obj.type, obj.scale);
     worldObjects.set(obj.id, {
       ...obj,

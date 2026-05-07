@@ -64,5 +64,18 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     moveSpeed: 0.05,
     respawnTime: 60,
     lootTable: []
+  },
+  instructor_kael: {
+    id: 'instructor_kael',
+    name: 'Instructor Kael',
+    class: 'Instructor',
+    type: 'npc',
+    baseStats: { strength: 100, dexterity: 100, wisdom: 100, intelligence: 100, stamina: 500 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    lootTable: []
   }
 };
