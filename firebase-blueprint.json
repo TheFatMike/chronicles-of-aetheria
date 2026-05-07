@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Base account information for the player.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["player", "mod", "admin", "dev"] },
+        "lastActive": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName"]
+    },
+    "Character": {
+      "title": "Game Character",
+      "description": "Specific character instance with stats and class.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "class": { "type": "string" },
+        "color": { "type": "string" },
+        "level": { "type": "integer" },
+        "hp": { "type": "integer" },
+        "maxHp": { "type": "integer" },
+        "mp": { "type": "integer" },
+        "maxMp": { "type": "integer" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "strength": { "type": "integer" },
+            "dexterity": { "type": "integer" },
+            "wisdom": { "type": "integer" },
+            "intelligence": { "type": "integer" },
+            "stamina": { "type": "integer" }
+          }
+        },
+        "inventory": { "type": "array" },
+        "hotbar": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "class", "color", "level", "hp", "maxHp", "mp", "maxMp", "stats", "inventory", "hotbar", "createdAt"]
+    },
+    "Spawner": {
+      "title": "Entity Spawner",
+      "description": "Defines a location where NPCs or Enemies spawn.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["npc", "enemy"] },
+        "entityClass": { "type": "string" },
+        "level": { "type": "integer" },
+        "pos": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "spawnRadius": { "type": "number" },
+        "maxEntities": { "type": "integer" },
+        "respawnTime": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "type", "entityClass", "level", "pos", "spawnRadius", "maxEntities", "respawnTime"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "User account collection."
+    },
+    "users/{userId}/characters": {
+      "schema": "Character",
+      "description": "Sub-collection of characters owned by a specific user."
+    },
+    "spawners": {
+      "schema": "Spawner",
+      "description": "Global entity spawners managed by devs."
+    },
+    "characterNames/{name}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "ownerId": { "type": "string" }
+        },
+        "required": ["ownerId"]
+      },
+      "description": "Unique index of character names to prevent duplicates."
+    },
+    "test/connection": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" }
+        }
+      },
+      "description": "Public path used for health checks and connection testing."
+    }
+  }
+}

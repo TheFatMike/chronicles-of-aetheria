@@ -1,0 +1,210 @@
+import { useState, memo } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { CHARACTER_CLASSES } from "../../constants";
+import { ChevronRight, ChevronLeft, User, Shield, Info } from "lucide-react";
+
+interface CharacterCreationProps {
+  onComplete: (data: { characterName: string; class: string; color: string }) => void;
+  onCancel: () => void;
+  error?: string | null;
+  isLoading?: boolean;
+  onClearError?: () => void;
+  canCancel?: boolean;
+}
+
+export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading, onClearError, canCancel = true }: CharacterCreationProps) => {
+  const [step, setStep] = useState(0);
+  const [characterName, setCharacterName] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [selectedClassIdx, setSelectedClassIdx] = useState(0);
+
+  const selectedClass = CHARACTER_CLASSES[selectedClassIdx];
+
+  const validateName = (name: string) => {
+    if (name.length > 0 && name.length < 3) {
+      return "Name is too short (min 3)";
+    }
+    if (name.length > 16) {
+      return "Name is too long (max 16)";
+    }
+    if (name.length > 0 && !/^[a-zA-Z0-9 ]+$/.test(name)) {
+      return "Letters, numbers, and spaces only";
+    }
+    return null;
+  };
+
+  const handleNameChange = (val: string) => {
+    setCharacterName(val);
+    setLocalError(validateName(val));
+    if (error && onClearError) onClearError();
+  };
+
+  const handleComplete = () => {
+    const err = validateName(characterName);
+    if (err || characterName.length < 3) {
+      if (!err) setLocalError("Name is too short (min 3)");
+      return;
+    }
+    onComplete({
+      characterName: characterName.trim(),
+      class: selectedClass.id,
+      color: selectedClass.color,
+    });
+  };
+
+  const displayError = localError || error;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10"></div>
+      
+      {/* Back Button */}
+      {canCancel && (
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={onCancel}
+          className="fixed top-8 left-8 flex items-center gap-3 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors z-60 group px-4 py-2 border-2 border-transparent hover:border-[#4a3a2a] rounded bg-black/20"
+        >
+          <ChevronRight size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-fantasy text-xs uppercase tracking-[0.3em]">Back to Selection</span>
+        </motion.button>
+      )}
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-5xl w-full grid grid-cols-12 gap-8 relative z-10"
+      >
+        {/* Left: Preview/Class Display */}
+        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-4 border-[#4a3a2a] rounded p-12 flex flex-col justify-between overflow-hidden relative shadow-2xl">
+          <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-transparent to-black/20 pointer-events-none" />
+          
+          <div>
+             <div className="flex items-center gap-4 mb-6">
+                <div className="h-[2px] flex-1 bg-linear-to-r from-transparent to-[#8b6b4d]" />
+                <span className="text-[#8b6b4d] uppercase tracking-[0.4em] text-xs font-display font-bold">Divine Ascendance</span>
+                <div className="h-[2px] flex-1 bg-linear-to-l from-transparent to-[#8b6b4d]" />
+             </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedClass.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                <h1 className="text-7xl font-display font-black text-[#f4e4bc] mb-6 leading-tight drop-shadow-lg">{selectedClass.name}</h1>
+                <p className="text-[#a88a6d] font-serif italic text-xl leading-relaxed max-w-sm border-l-2 border-[#8b6b4d] pl-6 py-2">
+                  {selectedClass.description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+            {Object.entries(selectedClass.stats).map(([stat, val]) => (
+              <div key={stat} className="bg-black/60 border border-[#4a3a2a] p-5 rounded relative group">
+                <span className="text-[#6d5540] text-[10px] uppercase font-fantasy mb-1 block tracking-wider">{stat}</span>
+                <div className="flex items-end gap-3">
+                  <span className="text-3xl font-display font-bold text-[#f4e4bc] leading-none">{val as number}</span>
+                  <div className="flex-1 h-1.5 bg-[#4a3a2a] rounded-full mb-1 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${((val as number) / 20) * 100}%` }}
+                      className="h-full shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                      style={{ backgroundColor: selectedClass.color }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Controls */}
+        <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-4 border-[#4a3a2a] rounded p-10 flex flex-col justify-between shadow-2xl relative">
+          <div className="space-y-12">
+            <div>
+              <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-8 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+                <User size={16} />
+                Vessel Identity
+              </h3>
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={characterName}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="Enter Name..."
+                  disabled={isLoading}
+                  className={`w-full bg-black/40 border-2 p-5 font-serif text-lg text-[#f4e4bc] placeholder:text-[#4a3a2a] focus:outline-none transition-colors tracking-wide ${
+                    displayError ? "border-red-900 focus:border-red-500" : "border-[#4a3a2a] focus:border-[#c2a472]"
+                  } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  maxLength={20}
+                />
+                <AnimatePresence>
+                  {displayError && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-red-500 text-[10px] font-fantasy uppercase tracking-widest mt-2 flex items-center gap-2"
+                    >
+                      <Info size={12} />
+                      {displayError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-8 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+                <Shield size={16} />
+                Ascension Path
+              </h3>
+              <div className="grid grid-cols-1 gap-3">
+                {CHARACTER_CLASSES.map((c: any, i: number) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedClassIdx(i)}
+                    className={`w-full p-5 flex justify-between items-center border-2 transition-all group ${
+                      selectedClassIdx === i 
+                        ? "border-[#c2a472] bg-[#c2a472] text-[#1a1410]" 
+                        : "border-[#4a3a2a] bg-black/20 text-[#6d5540] hover:border-[#6d5540]"
+                    }`}
+                  >
+                    <span className="text-sm font-fantasy uppercase tracking-widest">{c.name}</span>
+                    {selectedClassIdx === i ? <ChevronRight size={18} /> : <div className="w-1.5 h-1.5 bg-[#4a3a2a] rotate-45 group-hover:bg-[#6d5540]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12">
+            <button
+              onClick={handleComplete}
+              disabled={characterName.length < 3 || !!localError || isLoading}
+              className={`w-full py-6 text-sm font-fantasy uppercase tracking-[0.4em] transition-all shadow-xl flex items-center justify-center gap-3 ${
+                characterName.length >= 3 && !localError && !isLoading
+                ? "bg-[#c2a472] text-[#1a1410] hover:bg-[#d4b98a] active:scale-[0.98] border-t-2 border-t-[#f4e4bc] border-b-2 border-b-[#8b6b4d]"
+                : "bg-[#1a1410] text-[#4a3a2a] cursor-not-allowed border-2 border-[#4a3a2a]"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#1a1410] border-t-transparent rounded-full animate-spin" />
+                  Binding...
+                </>
+              ) : (
+                "Embody Hero"
+              )}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+});
+
+CharacterCreation.displayName = "CharacterCreation";

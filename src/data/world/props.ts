@@ -1,0 +1,9 @@
+import { WorldObject } from "../../types";
+
+export const PROP_OBJECTS: WorldObject[] = [
+  { id: "campfire-1", type: "campfire", pos: [0.44, 0, -0.32], rot: [0, 2.78, 0], scale: 1.15 },
+  { id: "dummy-1", type: "dummy", pos: [-3.56, 0, -0.54], rot: [0, 2.04, 0], scale: 0.93 },
+  
+  // Misc/Edit markers (cleaned up or kept if needed)
+  // For now I'll just keep the main ones.
+];

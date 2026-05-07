@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isMasterDev() || (isSignedIn() && request.auth.token.email_verified == true);
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isMasterDev() {
+      return isSignedIn() && request.auth.token.email.lower() == "michaeljhoward94@gmail.com";
+    }
+
+    function isAdmin() {
+      return isMasterDev() || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isDev() {
+      return isMasterDev();
+    }
+
+    // --- Entity Validations ---
+    function isValidSpawner(data) {
+      let requiredKeys = ['name', 'type', 'entityClass', 'level', 'pos', 'spawnRadius', 'maxEntities', 'respawnTime'];
+      return data.keys().hasAll(requiredKeys) &&
+             data.name is string && data.name.size() <= 64 &&
+             data.type in ['npc', 'enemy'] &&
+             data.entityClass is string &&
+             data.level is int &&
+             data.pos is list && data.pos.size() == 3 &&
+             data.spawnRadius is number &&
+             data.maxEntities is int &&
+             data.respawnTime is int;
+    }
+
+    function isValidUser(data) {
+      let requiredKeys = ['displayName', 'email', 'lastActive'];
+      return data.keys().hasAll(requiredKeys) &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 32 &&
+             data.email is string && data.email.size() <= 256 &&
+             (!('role' in data) || data.role in ['player', 'mod', 'admin', 'dev']);
+    }
+
+    function isValidNameClaim(data) {
+      return data.keys().hasAll(['ownerId']) &&
+             isOwner(data.ownerId);
+    }
+
+    function isCharacterSchema(data) {
+      let requiredKeys = ['name', 'class', 'color', 'level', 'createdAt', 'stats', 'inventory', 'hotbar'];
+      
+      return data.keys().hasAll(requiredKeys) &&
+             (!('role' in data) || data.role in ['player', 'mod', 'admin', 'dev']) &&
+             data.name is string && data.name.size() >= 3 && data.name.size() <= 16 &&
+             data.name.matches('^[a-zA-Z0-9 ]+$') &&
+             data.class in ['warrior', 'mage', 'ranger', 'priest', 'rogue'] &&
+             data.color is string && data.color.size() <= 7 &&
+             data.level is int && data.level >= 1 && data.level <= 100 &&
+             ( !('hp' in data) || (data.hp is int && data.hp >= 0 && data.hp <= 50000) ) &&
+             ( !('maxHp' in data) || (data.maxHp is int && data.maxHp > 0 && data.maxHp <= 50000) ) &&
+             ( !('mp' in data) || (data.mp is int && data.mp >= 0 && data.mp <= 50000) ) &&
+             ( !('maxMp' in data) || (data.maxMp is int && data.maxMp >= 0 && data.maxMp <= 50000) ) &&
+             data.stats is map &&
+             data.stats.keys().hasAll(['strength', 'dexterity', 'wisdom', 'intelligence', 'stamina']) &&
+             data.stats.keys().size() == 5 &&
+             data.inventory is list &&
+             data.inventory.size() <= 50 &&
+             data.hotbar is list &&
+             data.hotbar.size() <= 10 &&
+             ( !('equipment' in data) || data.equipment is map );
+    }
+
+    function isValidCharacter(data) {
+      return isCharacterSchema(data) && 
+             data.createdAt == request.time &&
+             data.level == 1;
+    }
+
+    // --- Path Rules ---
+    match /characterNames/{name} {
+      allow get: if isSignedIn(); // Allow checking if a name exists
+      allow create: if isEmailVerified() && isValidNameClaim(incoming()) && isValidId(name);
+      allow delete: if isEmailVerified() && isOwner(existing().ownerId) && isValidId(name);
+    }
+
+    match /test/connection {
+      allow get: if true;
+    }
+
+    match /spawners/{spawnerId} {
+      allow read: if isSignedIn();
+      allow write: if isDev() && isValidId(spawnerId);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId); // Protect PII
+      
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && (
+        (incoming().diff(existing()).affectedKeys().hasOnly(['lastActive', 'displayName']) &&
+         incoming().get('role', 'player') == existing().get('role', 'player')) ||
+        isMasterDev()
+      );
+
+      match /characters/{charId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidCharacter(incoming()) && 
+                        isValidId(charId) &&
+                        existsAfter(/databases/$(database)/documents/characterNames/$(incoming().name.lower()));
+        allow update: if isOwner(userId) && isCharacterSchema(incoming()) && (
+          incoming().createdAt == existing().createdAt &&
+          incoming().name == existing().name &&
+          incoming().class == existing().class &&
+          incoming().get('role', 'player') == existing().get('role', 'player') &&
+          (
+            // Action: Update Loadout
+            (incoming().diff(existing()).affectedKeys().hasOnly(['hotbar', 'inventory', 'equipment', 'hp', 'mp', 'maxHp', 'maxMp'])) ||
+            // Action: Level Up
+            (incoming().diff(existing()).affectedKeys().hasOnly(['level', 'stats', 'maxHp', 'maxMp', 'hp', 'mp']))
+          )
+        );
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

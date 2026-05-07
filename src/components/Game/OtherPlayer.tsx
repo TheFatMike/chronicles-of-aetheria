@@ -1,0 +1,40 @@
+import { memo } from "react";
+import { Humanoid } from "./Humanoid";
+import { useGameStore } from "../../store/useGameStore";
+import { useShallow } from "zustand/react/shallow";
+import { BaseEntity } from "./BaseEntity";
+
+interface OtherPlayerProps {
+  id: string;
+}
+
+export const OtherPlayer = memo(({ id }: OtherPlayerProps) => {
+  // Subscribe only to this player's data
+  const player = useGameStore(useShallow((state) => state.players[id]));
+  
+  if (!player) return null;
+
+  return (
+    <BaseEntity
+      id={id}
+      name={player.characterName}
+      type="player"
+      level={1} // Could be in player state
+      position={player.pos}
+      rotation={player.rot}
+      color={player.color}
+      role={player.class}
+      nameOffset={1.8}
+    >
+      <Humanoid 
+        color={player.color} 
+        isMoving={player.isMoving} 
+        isGrounded={player.isGrounded} 
+        isAttacking={player.isAttacking}
+      />
+
+    </BaseEntity>
+  );
+});
+
+OtherPlayer.displayName = "OtherPlayer";

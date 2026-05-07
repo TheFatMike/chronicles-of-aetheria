@@ -1,0 +1,168 @@
+import { memo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { BaseEntity } from "./BaseEntity";
+
+interface EnemyProps {
+  id: string;
+  name: string;
+  level: number;
+  position: [number, number, number];
+  color?: string;
+  hp?: number;
+  maxHp?: number;
+  isDead?: boolean;
+  onAttack?: () => void;
+  onLoot?: (id: string) => void;
+}
+
+export const SlimeEnemy = memo(({ id, name, level, position, color = "#22c55e", hp, maxHp, isDead, onAttack, onLoot }: EnemyProps) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
+  
+  useFrame((state) => {
+    if (!meshRef.current || isDead) return;
+    const time = state.clock.getElapsedTime();
+
+    // Slime bounce animation
+    const bounceHeight = 0.2;
+    const bounceSpeed = 3;
+    const bounce = Math.abs(Math.sin(time * bounceSpeed));
+    
+    meshRef.current.position.y = bounce * bounceHeight + 0.4;
+    meshRef.current.scale.y = 1 - bounce * 0.2;
+    meshRef.current.scale.x = 1 + bounce * 0.1;
+    meshRef.current.scale.z = 1 + bounce * 0.1;
+  });
+
+  return (
+    <BaseEntity
+      id={id}
+      name={name}
+      type="enemy"
+      level={level}
+      position={position}
+      color={color}
+      hp={hp}
+      maxHp={maxHp}
+      nameOffset={1.2}
+      selectionColor="#ef4444"
+      isDead={isDead}
+      onInteract={isDead ? () => onLoot?.(id) : undefined}
+      onAttack={onAttack}
+    >
+      <mesh 
+        ref={meshRef} 
+        position={[0, isDead ? 0.1 : 0.4, 0]}
+        scale={isDead ? [1.5, 0.1, 1.5] : [1, 1, 1]}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <sphereGeometry args={[0.4, 16, 16]} />
+        <meshStandardMaterial 
+          color={hovered ? "#fb7185" : color} 
+          transparent 
+          opacity={0.8} 
+          roughness={0.2}
+          emissive={hovered ? "#e11d48" : color}
+          emissiveIntensity={0.2}
+        />
+        
+        {/* Core */}
+        <mesh scale={0.5}>
+          <sphereGeometry args={[0.3, 16, 16]} />
+          <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
+        </mesh>
+      </mesh>
+    </BaseEntity>
+  );
+});
+
+export const SkeletonEnemy = memo(({ id, name, level, position, color = "#d1d5db", hp, maxHp, isDead, onAttack, onLoot }: EnemyProps) => {
+  return (
+    <BaseEntity
+      id={id}
+      name={name}
+      type="enemy"
+      level={level}
+      position={position}
+      color={color}
+      hp={hp}
+      maxHp={maxHp}
+      isDead={isDead}
+      nameOffset={isDead ? 0.5 : 2.2}
+      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      onInteract={isDead ? () => onLoot?.(id) : undefined}
+      onAttack={onAttack}
+    >
+      <group position={[0, isDead ? 0.2 : 1, 0]} rotation={isDead ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        {/* Ribcage */}
+        <mesh castShadow>
+          <boxGeometry args={[0.6, 0.8, 0.3]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Head */}
+        <mesh position={[0, 0.7, 0]} castShadow>
+          <sphereGeometry args={[0.25, 8, 8]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Limbs */}
+        <mesh position={[-0.4, -0.4, 0]} castShadow>
+          <boxGeometry args={[0.1, 0.8, 0.1]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <mesh position={[0.4, -0.4, 0]} castShadow>
+          <boxGeometry args={[0.1, 0.8, 0.1]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      </group>
+    </BaseEntity>
+  );
+});
+
+export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534", hp, maxHp, isDead, onAttack, onLoot }: EnemyProps) => {
+  return (
+    <BaseEntity
+      id={id}
+      name={name}
+      type="enemy"
+      level={level}
+      position={position}
+      color={color}
+      hp={hp}
+      maxHp={maxHp}
+      isDead={isDead}
+      nameOffset={isDead ? 0.5 : 1.5}
+      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      onInteract={isDead ? () => onLoot?.(id) : undefined}
+      onAttack={onAttack}
+    >
+      <group position={[0, isDead ? 0.2 : 0.6, 0]} rotation={isDead ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        {/* Body */}
+        <mesh castShadow>
+          <sphereGeometry args={[0.4, 8, 8]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Head */}
+        <mesh position={[0, 0.5, 0]} castShadow>
+          <sphereGeometry args={[0.3, 8, 8]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Ears */}
+        <mesh position={[-0.3, 0.6, 0]} rotation={[0, 0, 0.5]}>
+          <coneGeometry args={[0.1, 0.3, 4]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <mesh position={[0.3, 0.6, 0]} rotation={[0, 0, -0.5]}>
+          <coneGeometry args={[0.1, 0.3, 4]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      </group>
+    </BaseEntity>
+  );
+});
+
+
+SlimeEnemy.displayName = "SlimeEnemy";
+SkeletonEnemy.displayName = "SkeletonEnemy";
+GoblinEnemy.displayName = "GoblinEnemy";
