@@ -135,7 +135,7 @@ export const useSocket = (token: string | null) => {
     socket.on("world_object_updated", (obj) => {
       // Only log if not a campfire (to prevent flicker spam)
       if (obj.type !== "campfire") {
-        logger.debug("socket", `World object updated: ${obj.type} (${obj.id})`);
+        logger.debug("socket", `World object updated: ${obj.type} (${obj.id}) model: ${obj.modelUrl || 'none'}`);
       }
       useGameStore.getState().addWorldObject(obj);
     });

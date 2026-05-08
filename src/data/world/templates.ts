@@ -3,6 +3,7 @@ import { WorldObjectType } from "../../types";
 export interface ObjectTemplate {
   type: WorldObjectType;
   scale: number;
+  modelUrl?: string;
   // Future: add physics, sound, interactions here
 }
 
@@ -22,6 +23,15 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   house: {
     type: 'house',
     scale: 1,
+  },
+  tent: {
+    type: 'tent',
+    scale: 1.2,
+  },
+  tower_base: {
+    type: 'tower_base',
+    scale: 1,
+    modelUrl: '/assets/models/tower_base.glb'
   },
   fence: {
     type: 'fence',

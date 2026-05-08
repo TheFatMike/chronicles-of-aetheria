@@ -61,9 +61,16 @@ export const EditorCamera = () => {
       }
     };
 
+    const handleWheel = (e: WheelEvent) => {
+      const zoomSpeed = keys.current["ShiftLeft"] ? 5 : 2;
+      const zoomDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      currentPos.current.add(zoomDir.multiplyScalar(-e.deltaY * 0.01 * zoomSpeed));
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     gl.domElement.addEventListener("mousedown", handleMouseDown);
+    gl.domElement.addEventListener("wheel", handleWheel);
     window.addEventListener("mouseup", handleMouseUp);
     window.addEventListener("mousemove", handleMouseMove);
 
@@ -71,6 +78,7 @@ export const EditorCamera = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       gl.domElement.removeEventListener("mousedown", handleMouseDown);
+      gl.domElement.removeEventListener("wheel", handleWheel);
       window.removeEventListener("mouseup", handleMouseUp);
       window.removeEventListener("mousemove", handleMouseMove);
     };

@@ -55,34 +55,63 @@ export const House = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick 
 
 export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick }: EnvironmentProps) => (
   <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
-    {/* Left Side Fabric */}
-    <mesh position={[-0.6, 0.6, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
-      <boxGeometry args={[1.7, 0.05, 2]} />
-      <meshStandardMaterial color="#f1f5f9" />
+    {/* Main Tent Body - Left Side */}
+    <mesh position={[-0.7, 0.65, 0]} rotation={[0, 0, Math.PI / 4]} castShadow receiveShadow>
+      <boxGeometry args={[1.9, 0.08, 2.4]} />
+      <meshStandardMaterial color="#f8fafc" roughness={0.8} />
     </mesh>
-    {/* Right Side Fabric */}
-    <mesh position={[0.6, 0.6, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow>
-      <boxGeometry args={[1.7, 0.05, 2]} />
-      <meshStandardMaterial color="#f1f5f9" />
+    {/* Main Tent Body - Right Side */}
+    <mesh position={[0.7, 0.65, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow receiveShadow>
+      <boxGeometry args={[1.9, 0.08, 2.4]} />
+      <meshStandardMaterial color="#f8fafc" roughness={0.8} />
     </mesh>
-    {/* Back Wall (Triangular) */}
-    <mesh position={[0, 0.6, -1]} rotation={[0, 0, 0]} castShadow>
-      <coneGeometry args={[1.2, 1.2, 4]} />
+    
+    {/* Back Wall */}
+    <mesh position={[0, 0.65, -1.15]} rotation={[0, 0, 0]} castShadow receiveShadow>
+      <coneGeometry args={[1.35, 1.3, 4]} />
+      <meshStandardMaterial color="#e2e8f0" roughness={0.9} />
+    </mesh>
+
+    {/* Interior Floor/Ground Cover */}
+    <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[1.8, 2.2]} />
+      <meshStandardMaterial color="#334155" roughness={1} />
+    </mesh>
+
+    {/* Ridge Pole (Dark Wood) */}
+    <mesh position={[0, 1.35, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <cylinderGeometry args={[0.06, 0.06, 2.5, 8]} />
+      <meshStandardMaterial color="#2d1a0a" roughness={0.7} />
+    </mesh>
+
+    {/* Support Poles (Front) */}
+    <group position={[0, 0, 1.1]}>
+      <mesh position={[-0.95, 0.65, 0]} rotation={[0, 0, 0.1]} castShadow>
+        <cylinderGeometry args={[0.04, 0.04, 1.4, 6]} />
+        <meshStandardMaterial color="#2d1a0a" />
+      </mesh>
+      <mesh position={[0.95, 0.65, 0]} rotation={[0, 0, -0.1]} castShadow>
+        <cylinderGeometry args={[0.04, 0.04, 1.4, 6]} />
+        <meshStandardMaterial color="#2d1a0a" />
+      </mesh>
+    </group>
+
+    {/* Tent Stakes (Small details) */}
+    {[[-1.1, 0, 1.1], [1.1, 0, 1.1], [-1.1, 0, -1.1], [1.1, 0, -1.1]].map((pos, i) => (
+      <mesh key={i} position={pos as [number, number, number]} castShadow>
+        <cylinderGeometry args={[0.03, 0.02, 0.3, 4]} />
+        <meshStandardMaterial color="#64748b" metalness={0.5} roughness={0.3} />
+      </mesh>
+    ))}
+
+    {/* Ropes (Simplified using thin cylinders) */}
+    <mesh position={[-1, 0.6, 1.1]} rotation={[0, 0, Math.PI / 3]} castShadow>
+      <cylinderGeometry args={[0.01, 0.01, 0.8, 4]} />
       <meshStandardMaterial color="#cbd5e1" />
     </mesh>
-    {/* Ridge Pole */}
-    <mesh position={[0, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-      <cylinderGeometry args={[0.05, 0.05, 2.2, 6]} />
-      <meshStandardMaterial color="#451a03" />
-    </mesh>
-    {/* Front Support Poles */}
-    <mesh position={[-0.8, 0.6, 1]} castShadow>
-      <cylinderGeometry args={[0.03, 0.03, 1.3, 6]} />
-      <meshStandardMaterial color="#451a03" />
-    </mesh>
-    <mesh position={[0.8, 0.6, 1]} castShadow>
-      <cylinderGeometry args={[0.03, 0.03, 1.3, 6]} />
-      <meshStandardMaterial color="#451a03" />
+    <mesh position={[1, 0.6, 1.1]} rotation={[0, 0, -Math.PI / 3]} castShadow>
+      <cylinderGeometry args={[0.01, 0.01, 0.8, 4]} />
+      <meshStandardMaterial color="#cbd5e1" />
     </mesh>
   </group>
 ));

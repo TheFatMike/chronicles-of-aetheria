@@ -124,7 +124,7 @@ export interface PlayerData {
   maxMp?: number;
 }
 
-export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'delete' | 'edit';
+export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'delete' | 'edit';
 
 export interface WorldObject {
   id: string;
@@ -132,6 +132,7 @@ export interface WorldObject {
   pos: [number, number, number];
   rot: [number, number, number];
   scale: number;
+  modelUrl?: string;
   hitboxes?: any[]; // Server-synced collision data
   waypointId?: string; // For pathing
   nextWaypointId?: string; // For linking

@@ -1,7 +1,9 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
 import * as THREE from "three";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
+import { OBJECT_TEMPLATES } from "../../data/world/templates";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";
 import { TransformControls } from "@react-three/drei";
 
@@ -41,6 +43,8 @@ const EditorGizmo = memo(({
 
 EditorGizmo.displayName = "EditorGizmo";
 
+import { GLBModel } from "./GLBModel";
+
 const WorldObjectItem = memo(({ 
   obj, 
   isSelected, 
@@ -70,6 +74,11 @@ const WorldObjectItem = memo(({
   const modelProps = {
     onClick: (e: any) => {
       if (!isEditorOpen) return;
+      
+      // If we are in placement mode, let the click pass through to the floor
+      const isPlacing = editorSelectedType && !['edit', 'delete'].includes(editorSelectedType);
+      if (isPlacing) return;
+
       e.stopPropagation();
       if (e.shiftKey || editorSelectedType === 'delete') {
         if (socket) socket.emit("remove_world_object", { id: obj.id });
@@ -83,56 +92,55 @@ const WorldObjectItem = memo(({
     <group 
       position={obj.pos} 
       rotation={obj.rot} 
-      scale={obj.scale}
       ref={groupRef}
     >
-      <group>
-        {obj.type === 'tree' && <Tree {...modelProps} />}
-        {obj.type === 'rock' && <Rock {...modelProps} />}
-        {obj.type === 'house' && <House {...modelProps} />}
-        {obj.type === 'tent' && <Tent {...modelProps} />}
-        {obj.type === 'bush' && <Bush {...modelProps} />}
-        {obj.type === 'fence' && <Fence {...modelProps} />}
-        {obj.type === 'campfire' && <Campfire {...modelProps} />}
-        {obj.type === 'barrel' && <Barrel {...modelProps} />}
-        {obj.type === 'dummy' && <Dummy {...modelProps} />}
-        {obj.type === 'chest' && <Chest {...modelProps} />}
-        {obj.type === 'well' && <Well {...modelProps} />}
-        {obj.type === 'signpost' && <SignPost {...modelProps} />}
-        {obj.type === 'waypoint' && <Waypoint {...modelProps} />}
+      {/* Model Group - Scaled */}
+      <group scale={obj.scale}>
+        {/* Priority 1: Custom GLB Model */}
+        {obj.modelUrl ? (
+          <GLBModel url={obj.modelUrl} {...modelProps} />
+        ) : (
+          /* Priority 2: Built-in Procedural Models */
+          <>
+            {obj.type === 'tree' && <Tree {...modelProps} />}
+            {obj.type === 'rock' && <Rock {...modelProps} />}
+            {obj.type === 'house' && <House {...modelProps} />}
+            {obj.type === 'tent' && <Tent {...modelProps} />}
+            {obj.type === 'bush' && <Bush {...modelProps} />}
+            {obj.type === 'fence' && <Fence {...modelProps} />}
+            {obj.type === 'campfire' && <Campfire {...modelProps} />}
+            {obj.type === 'barrel' && <Barrel {...modelProps} />}
+            {obj.type === 'dummy' && <Dummy {...modelProps} />}
+            {obj.type === 'chest' && <Chest {...modelProps} />}
+            {obj.type === 'well' && <Well {...modelProps} />}
+            {obj.type === 'signpost' && <SignPost {...modelProps} />}
+            {obj.type === 'waypoint' && <Waypoint {...modelProps} />}
+          </>
+        )}
 
-        {/* Hitboxes */}
-        {isEditorOpen && obj.hitboxes?.map((hb: any, i: number) => (
-          <group key={`hb-${obj.id}-${i}`} position={[hb.x, 0.05, hb.z]}>
-            {hb.type === 'circle' ? (
-              <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[hb.r - 0.05, hb.r, 32]} />
-                <meshBasicMaterial color="#ef4444" transparent opacity={0.6} />
-              </mesh>
-            ) : (
-              <mesh>
-                <boxGeometry args={[hb.w, 0.1, hb.d]} />
-                <meshBasicMaterial color="#ef4444" wireframe />
-              </mesh>
-            )}
-          </group>
-        ))}
+        {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
+          <mesh {...modelProps}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshBasicMaterial 
+              color={obj.type.startsWith('npc_') ? '#3b82f6' : (editorSelectedType ? '#ef4444' : '#6b21a8')} 
+              wireframe 
+            />
+          </mesh>
+        )}
       </group>
 
-      {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
-        <mesh {...modelProps}>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshBasicMaterial 
-            color={obj.type.startsWith('npc_') ? '#3b82f6' : (editorSelectedType ? '#ef4444' : '#6b21a8')} 
-            wireframe 
-          />
-        </mesh>
-      )}
+      {/* Hitboxes are now handled automatically by Mesh Collision on the client. */}
+
+      {/* Permanent visual indicator so we know it's there even if model is missing */}
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
+        <ringGeometry args={[0.8, 1, 32]} />
+        <meshBasicMaterial color={obj.modelUrl ? "#3b82f6" : "#ffffff"} transparent opacity={0.3} depthWrite={false} />
+      </mesh>
 
       {isSelected && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
           <ringGeometry args={[1.5, 1.6, 32]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.8} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.8} depthWrite={false} />
         </mesh>
       )}
     </group>
@@ -140,6 +148,69 @@ const WorldObjectItem = memo(({
 });
 
 WorldObjectItem.displayName = "WorldObjectItem";
+
+const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSelectedType: string | null, gridSnap: boolean }) => {
+  const [pos, setPos] = useState<[number, number, number]>([0, 0, 0]);
+  const { scene, raycaster, mouse, camera } = useThree();
+
+  useFrame(() => {
+    if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') return;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    const floor = intersects.find(i => i.object.type === 'Mesh' && (i.object as any).geometry?.type === 'PlaneGeometry');
+    
+    if (floor) {
+      let p = floor.point;
+      if (gridSnap) {
+        p.set(
+          Math.round(p.x * 2) / 2,
+          p.y,
+          Math.round(p.z * 2) / 2
+        );
+      }
+      setPos([p.x, p.y + 0.1, p.z]);
+    }
+  });
+
+  if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') return null;
+
+  // Use the same logic as WorldObjectItem but with ghost material
+  const template = OBJECT_TEMPLATES[editorSelectedType];
+  const ghostProps = { position: pos, scale: template?.scale || 1, rotation: [0, 0, 0] as [number, number, number] };
+  
+  return (
+    <group position={pos} scale={1} rotation={[0, 0, 0]} raycast={() => null}>
+      <group>
+        {/* If the template has a modelUrl, show the GLB ghost! */}
+        {template?.modelUrl ? (
+          <GLBModel url={template.modelUrl} {...ghostProps} castShadow={false} />
+        ) : (
+          <>
+            {editorSelectedType === 'tree' && <Tree {...ghostProps} />}
+            {editorSelectedType === 'rock' && <Rock {...ghostProps} />}
+            {editorSelectedType === 'house' && <House {...ghostProps} />}
+            {editorSelectedType === 'tent' && <Tent {...ghostProps} />}
+            {editorSelectedType === 'bush' && <Bush {...ghostProps} />}
+            {editorSelectedType === 'fence' && <Fence {...ghostProps} />}
+            {editorSelectedType === 'campfire' && <Campfire {...ghostProps} />}
+            {editorSelectedType === 'barrel' && <Barrel {...ghostProps} />}
+            {editorSelectedType === 'dummy' && <Dummy {...ghostProps} />}
+            {editorSelectedType === 'chest' && <Chest {...ghostProps} />}
+            {editorSelectedType === 'well' && <Well {...ghostProps} />}
+            {editorSelectedType === 'signpost' && <SignPost {...ghostProps} />}
+            {editorSelectedType === 'waypoint' && <Waypoint {...ghostProps} />}
+          </>
+        )}
+      </group>
+      {/* Visual aid for exact center */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+        <ringGeometry args={[0.4, 0.5, 32]} />
+        <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} />
+      </mesh>
+    </group>
+  );
+});
 
 export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   // Use shallow selector for objects list to avoid re-renders if content doesn't change
@@ -215,6 +286,10 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
         onEnd={onTransformMouseUp}
         onChange={onTransformChange}
       />
+
+      {isEditorOpen && editorSelectedType && (
+        <PlacementGhost editorSelectedType={editorSelectedType} gridSnap={gridSnap} />
+      )}
 
       {worldObjects.map(obj => (
         <WorldObjectItem 

@@ -161,6 +161,16 @@ export const usePlayerMovement = (
     };
   }, [gl, SENSITIVITY, MIN_RADIUS, MAX_RADIUS]);
 
+  const playerMeshesRef = useRef<THREE.Object3D[]>([]);
+
+  useEffect(() => {
+    if (meshRef.current) {
+      const meshes: THREE.Object3D[] = [];
+      meshRef.current.traverse(child => { if ((child as THREE.Mesh).isMesh) meshes.push(child); });
+      playerMeshesRef.current = meshes;
+    }
+  }, [meshRef]);
+
   const updateCamera = (pos: [number, number, number] | THREE.Vector3) => {
     const { theta, phi, radius } = cameraState.current;
     const p = Array.isArray(pos) ? pos : [pos.x, pos.y, pos.z];
@@ -231,15 +241,97 @@ export const usePlayerMovement = (
       velocity.current.y -= GRAVITY * clampedDelta;
     }
 
+      // --- 3D WALL COLLISION (HORIZONTAL RAYCASTING) ---
+    const horizontalVel = new THREE.Vector3(velocity.current.x, 0, velocity.current.z);
+    if (horizontalVel.lengthSq() > 0.001) {
+      const dir = horizontalVel.clone().normalize();
+      
+      const rayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.8, meshRef.current.position.z);
+      const wallRay = new THREE.Raycaster(rayOrigin, dir, 0, 0.4);
+      const wallIntersects = wallRay.intersectObjects(_state.scene.children, true);
+      
+      let wallHit = false;
+      for (const hit of wallIntersects) {
+        const name = hit.object.name || "";
+        if (
+          playerMeshesRef.current.includes(hit.object) || 
+          (hit.object as any).material?.wireframe ||
+          name.includes("editor_helper") ||
+          name.includes("hb-")
+        ) continue;
+        
+        wallHit = true;
+        break;
+      }
+
+      if (wallHit) {
+        // --- SLIDING LOGIC ---
+        // Try X only
+        const xDir = new THREE.Vector3(velocity.current.x > 0 ? 1 : -1, 0, 0);
+        const xRay = new THREE.Raycaster(rayOrigin, xDir, 0, 0.4);
+        const xHit = xRay.intersectObjects(_state.scene.children, true).some(h => {
+          const n = h.object.name || "";
+          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper") && !n.includes("hb-");
+        });
+
+        // Try Z only
+        const zDir = new THREE.Vector3(0, 0, velocity.current.z > 0 ? 1 : -1);
+        const zRay = new THREE.Raycaster(rayOrigin, zDir, 0, 0.4);
+        const zHit = zRay.intersectObjects(_state.scene.children, true).some(h => {
+          const n = h.object.name || "";
+          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper") && !n.includes("hb-");
+        });
+
+        if (xHit && zHit) {
+          velocity.current.x = 0;
+          velocity.current.z = 0;
+        } else if (xHit) {
+          velocity.current.x = 0;
+        } else if (zHit) {
+          velocity.current.z = 0;
+        }
+      }
+    }
+
     meshRef.current.position.x += velocity.current.x * clampedDelta;
     meshRef.current.position.y += velocity.current.y * clampedDelta;
     meshRef.current.position.z += velocity.current.z * clampedDelta;
 
-    // Ground Check
-    if (meshRef.current.position.y < 0) {
-      meshRef.current.position.y = 0;
-      velocity.current.y = 0;
-      isGrounded.current = true;
+    // --- 3D GROUND DETECTION (RAYCASTING) ---
+    const groundRayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.5, meshRef.current.position.z);
+    const rayDir = new THREE.Vector3(0, -1, 0);
+    const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 50);
+    
+    // We want to hit the floor and world objects, but not ourselves or hitboxes
+    const intersects = raycaster.intersectObjects(_state.scene.children, true);
+    
+    let groundY = 0;
+    let hitSomething = false;
+
+    for (const intersect of intersects) {
+      const name = intersect.object.name || "";
+      // IMPROVEMENT: Ignore invisible meshes (like collision hulls) and player/helpers
+      if (
+        !intersect.object.visible ||
+        playerMeshesRef.current.includes(intersect.object) || 
+        (intersect.object as any).material?.wireframe ||
+        name.includes("editor_helper") ||
+        name.includes("hb-")
+      ) continue;
+      
+      groundY = intersect.point.y;
+      hitSomething = true;
+      break;
+    }
+
+    if (meshRef.current.position.y <= groundY + 0.01) {
+      if (velocity.current.y <= 0) {
+        meshRef.current.position.y = groundY;
+        velocity.current.y = 0;
+        isGrounded.current = true;
+      }
+    } else {
+      isGrounded.current = false;
     }
 
     // Void Safety: If player falls out of the map, teleport to start
@@ -256,19 +348,43 @@ export const usePlayerMovement = (
       const offsetY = radius * Math.cos(phi);
       const offsetZ = radius * Math.sin(phi) * Math.cos(theta);
 
+      const lookTarget = new THREE.Vector3(
+        meshRef.current.position.x,
+        meshRef.current.position.y + 1.5, // Look at head
+        meshRef.current.position.z
+      );
+
       targetCamPos.current.set(
         meshRef.current.position.x + offsetX,
         meshRef.current.position.y + offsetY + 1.5,
         meshRef.current.position.z + offsetZ
       );
+
+      // --- CAMERA COLLISION ---
+      const camRayDir = targetCamPos.current.clone().sub(lookTarget).normalize();
+      const camRayDist = targetCamPos.current.distanceTo(lookTarget);
+      const camRaycaster = new THREE.Raycaster(lookTarget, camRayDir, 0, camRayDist);
       
-      // Frame-rate independent lerp to fix jitter
-      camera.position.lerp(targetCamPos.current, 1 - Math.exp(-15 * delta));
-      camera.lookAt(
-        meshRef.current.position.x,
-        meshRef.current.position.y + 1,
-        meshRef.current.position.z
-      );
+      const camIntersects = camRaycaster.intersectObjects(_state.scene.children, true);
+      let bestCamPos = targetCamPos.current.clone();
+
+      for (const hit of camIntersects) {
+        const name = hit.object.name || "";
+        if (
+          playerMeshesRef.current.includes(hit.object) || 
+          (hit.object as any).material?.wireframe ||
+          name.includes("editor_helper") ||
+          name.includes("hb-")
+        ) continue;
+        
+        // We hit a wall/roof! Zoom in to hit point (with 0.2m padding)
+        bestCamPos.copy(hit.point).add(camRayDir.clone().multiplyScalar(-0.2));
+        break;
+      }
+      
+      // Frame-rate independent lerp for camera position
+      camera.position.lerp(bestCamPos, 1 - Math.exp(-15 * delta));
+      camera.lookAt(lookTarget);
     }
   });
 

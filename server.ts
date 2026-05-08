@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import admin from "firebase-admin";
 import { initDb } from "./server/db";
 import { serverLogger, logBuffer } from "./server/logger";
-import { startHeartbeat, initializeSpawners } from "./server/systems/gameEngine";
+import { startHeartbeat, initializeSpawners, initializeWorld } from "./server/systems/gameEngine";
 import { registerHandlers } from "./server/socket/handlers";
 import { players, entities, spawners } from "./server/state";
 
@@ -72,6 +72,7 @@ async function bootstrap() {
   io.on("connection", (socket) => registerHandlers(io, socket));
 
   // 5. Game Engine
+  await initializeWorld();
   await initializeSpawners();
   startHeartbeat(io);
 

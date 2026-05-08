@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { TreePine, Mountain, Home, Tent as TentIcon, Save, Trash2, X, MousePointer2, Flame, Flower2, Container, Square as FenceIcon, Target, Briefcase, Droplets, MapPin, Copy, Grid } from 'lucide-react';
 
 const CATEGORIES = [
-  { id: 'nature', icon: <TreePine size={16} />, label: 'Nature', items: ['tree', 'rock', 'bush', 'flower', 'well'] },
-  { id: 'town', icon: <Home size={16} />, label: 'Town', items: ['house', 'tent', 'fence', 'signpost', 'barrel'] },
+  { id: 'nature', icon: <TreePine size={16} />, label: 'Nature', items: ['tree', 'rock', 'bush', 'flower'] },
+  { id: 'town', icon: <Home size={16} />, label: 'Town', items: ['house', 'tent', 'tower_base', 'fence', 'signpost', 'barrel'] },
   { id: 'npcs', icon: <MousePointer2 size={16} />, label: 'NPCs', items: ['npc_instructor_kael', 'npc_guard_captain'] },
   { id: 'props', icon: <Droplets size={16} />, label: 'Props', items: ['campfire', 'chest', 'dummy', 'well'] },
   { id: 'systems', icon: <Target size={16} />, label: 'Systems', items: ['spawner_slime', 'spawner_wolf', 'spawner_guard', 'spawner_instructor_kael', 'waypoint'] },
@@ -107,6 +107,7 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
     'rock': <Mountain size={20} />,
     'house': <Home size={20} />,
     'tent': <TentIcon size={20} />,
+    'tower_base': <Mountain size={20} className="text-slate-400" />,
     'bush': <Flower2 size={20} />,
     'fence': <FenceIcon size={20} />,
     'campfire': <Flame size={20} />,
@@ -234,6 +235,7 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                     <button
                       key={type}
                       onClick={() => setEditorSelectedType(type as any)}
+                      title={type.replace(/_/g, ' ').toUpperCase()}
                       className={`aspect-square flex items-center justify-center rounded-xl border-2 transition-all ${
                         editorSelectedType === type 
                           ? 'bg-amber-500 border-amber-300 text-white shadow-lg shadow-amber-500/20 scale-95' 
@@ -399,6 +401,23 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
                             className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
                           />
                         </div>
+                      </div>
+
+                      {/* GLB Model Support */}
+                      <div className="space-y-1 pt-2">
+                        <label className="text-[7px] text-amber-500/80 font-black uppercase block px-1 flex items-center gap-1">
+                          <Save size={8} /> Custom GLB Model (Optional)
+                        </label>
+                        <input 
+                          type="text"
+                          placeholder="/assets/models/tent.glb"
+                          value={selectedObject.modelUrl || ''}
+                          onChange={(e) => updateSelected({ modelUrl: e.target.value })}
+                          className="w-full bg-slate-900 text-white text-[9px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50"
+                        />
+                        <p className="text-[7px] text-slate-600 italic px-1 leading-tight">
+                          Leave empty for default procedural model. Place GLB files in /public/assets/models/
+                        </p>
                       </div>
                     </div>
 

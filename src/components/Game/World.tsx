@@ -6,6 +6,7 @@ import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { GAME_CONFIG } from "../../config";
 import { WorldObjectsRenderer } from "./WorldObjectsRenderer";
+import { OBJECT_TEMPLATES } from "../../data/world/templates";
 import { SpawnerBeacons } from "./SpawnerBeacons";
 import { EntityRenderer } from "./EntityRenderer";
 import { EditorCamera } from "./EditorCamera";
@@ -53,12 +54,15 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       const rx = (Math.random() - 0.5) * jitter;
       const rz = (Math.random() - 0.5) * jitter;
 
+      const template = OBJECT_TEMPLATES[editorSelectedType];
+
       socket.emit("save_world_object", {
         id: crypto.randomUUID(),
         type: editorSelectedType,
         pos: [point.x + rx, 0, point.z + rz],
         rot: [0, Math.random() * Math.PI * 2, 0],
-        scale: 0.8 + Math.random() * 0.4
+        scale: (template?.scale || 1) * (0.9 + Math.random() * 0.2),
+        modelUrl: template?.modelUrl
       });
     }
   };
@@ -80,12 +84,18 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         args={[GAME_CONFIG.WORLD.SIZE, GAME_CONFIG.WORLD.SIZE]} 
         rotation={[-Math.PI / 2, 0, 0]} 
         receiveShadow
-        onClick={onFloorClick}
+        onPointerDown={onFloorClick}
       >
         <meshStandardMaterial color="#14532d" roughness={0.9} metalness={0.05} />
       </Plane>
       
-      <Plane args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+      <Plane 
+        args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} 
+        rotation={[-Math.PI / 2, 0, 0]} 
+        position={[0, 0.02, 0]} 
+        receiveShadow
+        onPointerDown={onFloorClick}
+      >
         <meshStandardMaterial color="#44403c" roughness={1} />
       </Plane>
       

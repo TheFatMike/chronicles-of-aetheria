@@ -9,7 +9,7 @@ import { EquipmentSlots } from "../../src/types";
 import { SAMPLE_QUESTS } from "../../src/data/quests";
 import { handleCastSkill } from "../logic/combat";
 import { initializeSpawners, GET_HITBOXES } from "../systems/gameEngine";
-import { filterNearby, checkWorldCollision } from "../systems/spatial";
+import { filterNearby, checkWorldCollision, resolveWorldCollision } from "../systems/spatial";
 import { CLASS_STARTING_GEAR, generateItemInstance } from "../data/items";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { calculateMaxHP } from "../../src/lib/gameUtils";
@@ -127,25 +127,10 @@ export const registerHandlers = (io: Server, socket: Socket) => {
       const oldPos = [...player.pos] as [number, number, number];
 
       // 2. Anti-Cheat & Smoothing: World Collision Check (with Sliding)
-      let finalPos = [...data.pos] as [number, number, number];
-      const requestedPos = data.pos;
+      let finalPos = resolveWorldCollision(oldPos, data.pos);
       
-      if (checkWorldCollision(requestedPos)) {
-        // Try X only
-        const tryX: [number, number, number] = [requestedPos[0], oldPos[1], oldPos[2]];
-        const tryZ: [number, number, number] = [oldPos[0], oldPos[1], requestedPos[2]];
-        
-        if (!checkWorldCollision(tryX)) {
-          finalPos = tryX;
-        } else if (!checkWorldCollision(tryZ)) {
-          finalPos = tryZ;
-        } else {
-          // Both blocked or corner - snap back quietly
-          // socket.emit("session_start", player); 
-          return;
-        }
-        
-        // If we slid, sync the new "slid" position back to the client
+      // If we slid, sync the new "slid" position back to the client
+      if (finalPos[0] !== data.pos[0] || finalPos[2] !== data.pos[2]) {
         socket.emit("move_sync", { pos: finalPos, rot: data.rot });
       }
 
@@ -310,7 +295,14 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     if (!player || !["dev", "admin"].includes(player.role)) return;
 
     const { id, type, pos, rot, scale } = data;
-    const worldObj = { id, type, pos, rot, scale };
+    let { modelUrl } = data;
+    
+    // Server-side fallback for model paths
+    if (!modelUrl && type === 'tower_base') {
+      modelUrl = '/assets/models/tower_base.glb';
+    }
+
+    const worldObj = { id, type, pos, rot, scale, modelUrl };
 
     try {
       // 1. Update Database
@@ -358,6 +350,15 @@ export const registerHandlers = (io: Server, socket: Socket) => {
       // 5. Broadcast to everyone
       io.emit("world_object_updated", worldObj);
       serverLogger.info("world", `${player.characterName} updated ${type} (${id})`);
+
+      // 6. Send confirmation to the dev
+      socket.emit("chat_message", {
+        id: "sys-" + Date.now(),
+        sender: "WORLD",
+        text: `Successfully placed/updated ${type}`,
+        timestamp: Date.now(),
+        color: "#10b981"
+      });
     } catch (e: any) {
       serverLogger.error("world", "Failed to save world object", e.message);
     }

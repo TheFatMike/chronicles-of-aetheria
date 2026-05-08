@@ -6,7 +6,6 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   worldObjects: {},
 
   setSpawners: (spawnersArray) => {
-    console.log(`STORE: Spawners updated (${spawnersArray.length})`);
     const spawnersObj: Record<string, Spawner> = {};
     spawnersArray.forEach(s => {
       spawnersObj[s.id] = s;
