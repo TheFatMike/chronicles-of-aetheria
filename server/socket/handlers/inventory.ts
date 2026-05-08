@@ -32,6 +32,33 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
           }
         });
 
+        if (target.gold && target.gold > 0) {
+          player.gold = (player.gold || 0) + target.gold;
+          
+          socket.emit("chat_message", {
+            id: "gold-" + Date.now(),
+            sender: "SYSTEM",
+            text: `You found ${target.gold} gold coins!`,
+            timestamp: Date.now(),
+            color: "#fbbf24"
+          });
+
+          // Sync private stats to player
+          socket.emit("player_stats", { 
+            id: player.id, 
+            hp: player.hp, 
+            mp: player.mp, 
+            level: player.level, 
+            exp: player.exp, 
+            maxExp: player.maxExp, 
+            gold: player.gold 
+          });
+
+          db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+            gold: player.gold
+          }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Gold save failed", e.message));
+        }
+
         if (lootedItems.length > 0) {
           player.inventory = newInventory;
           socket.emit("inventory_update", { inventory: newInventory });

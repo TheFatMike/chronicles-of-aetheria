@@ -19,6 +19,8 @@ export class CharacterModel {
       class: data.class || "warrior",
       color: data.color || "#ccc",
       level: data.level || 1,
+      exp: data.exp || 0,
+      maxExp: data.maxExp || (data.level || 1) * 100,
       stats,
       hp: Math.min(data.hp ?? maxHp, maxHp),
       maxHp,
@@ -29,6 +31,7 @@ export class CharacterModel {
       equipment,
       quests: data.quests || {},
       skills: data.skills || [],
+      gold: data.gold || 0,
       role: accountRole,
       pos: data.pos || [0, 0, 0],
       rot: data.rot || [0, 0, 0]

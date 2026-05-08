@@ -1,6 +1,7 @@
 import { Skill } from "../types";
 
 export const ALL_SKILLS: Skill[] = [
+  // --- COMMON ---
   {
     id: "basic_attack",
     name: "Basic Attack",
@@ -12,7 +13,40 @@ export const ALL_SKILLS: Skill[] = [
     damageMultiplier: 1.0,
     range: 3,
     targetType: "target",
+    levelRequired: 1
   },
+
+  // --- WARRIOR ---
+  {
+    id: "shield_slam",
+    name: "Shield Slam",
+    description: "Slam your target with your shield, dealing damage based on strength.",
+    icon: "🛡️",
+    type: "active",
+    cooldown: 6,
+    manaCost: 10,
+    damageMultiplier: 1.5,
+    range: 3,
+    targetType: "target",
+    levelRequired: 1,
+    class: "warrior"
+  },
+  {
+    id: "whirlwind",
+    name: "Whirlwind",
+    description: "Spin rapidly, dealing massive damage to your target.",
+    icon: "🌪️",
+    type: "active",
+    cooldown: 12,
+    manaCost: 30,
+    damageMultiplier: 4.0,
+    range: 4,
+    targetType: "target",
+    levelRequired: 5,
+    class: "warrior"
+  },
+
+  // --- MAGE ---
   {
     id: "fireball",
     name: "Fireball",
@@ -26,7 +60,72 @@ export const ALL_SKILLS: Skill[] = [
     castTime: 1500,
     targetType: "target",
     animation: "cast_fire",
+    levelRequired: 1,
+    class: "mage"
   },
+  {
+    id: "frostbolt",
+    name: "Frostbolt",
+    description: "Shoot a bolt of ice that freezes the air around your target.",
+    icon: "❄️",
+    type: "active",
+    cooldown: 4,
+    manaCost: 20,
+    damageMultiplier: 2.2,
+    range: 18,
+    castTime: 1200,
+    targetType: "target",
+    levelRequired: 3,
+    class: "mage"
+  },
+
+  // --- RANGER ---
+  {
+    id: "arrow_shot",
+    name: "Steady Shot",
+    description: "A focused shot that deals increased damage.",
+    icon: "🏹",
+    type: "active",
+    cooldown: 2,
+    manaCost: 5,
+    damageMultiplier: 1.8,
+    range: 20,
+    targetType: "target",
+    levelRequired: 1,
+    class: "ranger"
+  },
+  {
+    id: "multishot",
+    name: "Multi-Shot",
+    description: "Fire a volley of arrows at your target.",
+    icon: "🎯",
+    type: "active",
+    cooldown: 8,
+    manaCost: 25,
+    damageMultiplier: 3.5,
+    range: 20,
+    targetType: "target",
+    levelRequired: 4,
+    class: "ranger"
+  },
+
+  // --- ROGUE ---
+  {
+    id: "backstab",
+    name: "Backstab",
+    description: "A swift strike from the shadows.",
+    icon: "🔪",
+    type: "active",
+    cooldown: 8,
+    manaCost: 15,
+    damageMultiplier: 3.0,
+    range: 2,
+    targetType: "target",
+    levelRequired: 1,
+    class: "rogue"
+  },
+
+  // --- PRIEST ---
   {
     id: "heal",
     name: "Lesser Heal",
@@ -39,59 +138,25 @@ export const ALL_SKILLS: Skill[] = [
     range: 10,
     castTime: 2000,
     targetType: "target",
+    levelRequired: 1,
+    class: "priest"
   },
   {
-    id: "shield_slam",
-    name: "Shield Slam",
-    description: "Slam your target with your shield, dealing damage based on strength.",
-    icon: "🛡️",
+    id: "smite",
+    name: "Holy Smite",
+    description: "Strike down the target with divine energy.",
+    icon: "☀️",
     type: "active",
-    cooldown: 6,
-    manaCost: 10,
-    damageMultiplier: 1.5,
-    range: 3,
-    targetType: "target",
-  },
-  {
-    id: "arrow_shot",
-    name: "Steady Shot",
-    description: "A focused shot that deals increased damage.",
-    icon: "🏹",
-    type: "active",
-    cooldown: 2,
-    manaCost: 5,
-    damageMultiplier: 1.8,
-    range: 20,
-    targetType: "target",
-  },
-  {
-    id: "backstab",
-    name: "Backstab",
-    description: "A swift strike from the shadows.",
-    icon: "🔪",
-    type: "active",
-    cooldown: 8,
+    cooldown: 4,
     manaCost: 15,
-    damageMultiplier: 3.0,
-    range: 2,
+    damageMultiplier: 1.8,
+    range: 12,
     targetType: "target",
+    levelRequired: 3,
+    class: "priest"
   }
 ];
 
 export const getClassSkills = (className: string): Skill[] => {
-  const common = [ALL_SKILLS[0]]; // Basic Attack
-  switch (className.toLowerCase()) {
-    case 'warrior':
-      return [...common, ALL_SKILLS[3]];
-    case 'mage':
-      return [...common, ALL_SKILLS[1]];
-    case 'ranger':
-      return [...common, ALL_SKILLS[4]];
-    case 'rogue':
-      return [...common, ALL_SKILLS[5]];
-    case 'priest':
-      return [...common, ALL_SKILLS[2]];
-    default:
-      return common;
-  }
+  return ALL_SKILLS.filter(s => !s.class || s.class.toLowerCase() === className.toLowerCase());
 };

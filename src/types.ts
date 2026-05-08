@@ -23,6 +23,8 @@ export interface Skill {
   castTime?: number; // in milliseconds
   targetType: SkillTarget;
   animation?: string;
+  levelRequired?: number;
+  class?: string;
 }
 
 export interface Character {
@@ -30,11 +32,13 @@ export interface Character {
   name: string;
   class: string;
   color: string;
-  level: number;
   hp: number;
   maxHp: number;
   mp: number;
   maxMp: number;
+  level: number;
+  exp: number;
+  maxExp: number;
   role?: string;
   stats: Stats;
   inventory: (InventoryItem | null)[];
@@ -42,6 +46,7 @@ export interface Character {
   equipment?: EquipmentSlots;
   quests: Record<string, Quest>;
   skills: string[]; // IDs of learned skills
+  gold: number;
   pos?: [number, number, number];
   rot?: [number, number, number];
 }
@@ -79,7 +84,7 @@ export interface Quest {
 }
 
 export type ItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-export type ItemType = "weapon" | "head" | "chest" | "legs" | "boots" | "offhand" | "accessory" | "consumable" | "misc" | "armor";
+export type ItemType = "weapon" | "head" | "chest" | "legs" | "boots" | "offhand" | "accessory" | "consumable" | "misc" | "armor" | "material";
 
 export interface EquipmentSlots {
   [key: string]: InventoryItem | null;
@@ -122,6 +127,10 @@ export interface PlayerData {
   mp?: number;
   maxHp?: number;
   maxMp?: number;
+  gold?: number;
+  level?: number;
+  exp?: number;
+  maxExp?: number;
 }
 
 export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'delete' | 'edit';
@@ -180,6 +189,7 @@ export interface GameEntity extends GameTarget {
   currentWaypointIndex?: number;
   aiState?: string;
   homePos?: [number, number, number];
+  expReward?: number;
   targetId?: string | null;
   lastAttackTime?: number;
 }

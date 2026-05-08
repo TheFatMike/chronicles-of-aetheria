@@ -39,7 +39,11 @@ export const createPlayerSlice: StateCreator<GameState, [], [], PlayerSlice> = (
         ...data
       } as any;
     } else {
-      updatedPlayer = { ...state.players[id], ...data };
+      // Filter out undefined values from data to prevent overwriting existing state
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+      );
+      updatedPlayer = { ...state.players[id], ...cleanData };
     }
     
     // Auto-update target if we are targeting this player (cast as target)

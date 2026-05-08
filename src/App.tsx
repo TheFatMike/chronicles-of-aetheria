@@ -32,14 +32,13 @@ import { calculateHPRegen, calculateMPRegen, calculateTotalStats } from "./lib/g
 import { logger } from "./lib/logger";
 import { getAccountRole } from "./lib/permissions";
 import { handleFirestoreError, OperationType } from "./lib/firestoreErrorHandler";
-import { VirtualJoystick } from "./components/UI/VirtualJoystick";
-import { MobileControls } from "./components/UI/MobileControls";
 import { CastBar } from "./components/UI/CastBar";
 
 
 import { useCombat } from "./hooks/useCombat";
 import { ALL_SKILLS } from "./data/skills";
 import { PlayerHUD } from "./components/UI/PlayerHUD";
+import { PartyFrames } from "./components/UI/PartyFrames";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -71,13 +70,10 @@ export default function App() {
 
 
 
-  // Store
-  const {
+    const {
     activeMenu,
     devMode,
     players,
-    isMobile,
-    setMobile,
     activeDialogue,
     setActiveDialogue,
     addQuest,
@@ -88,8 +84,6 @@ export default function App() {
       activeMenu: s.activeMenu,
       devMode: s.devMode,
       players: s.players,
-      isMobile: s.isMobile,
-      setMobile: s.setMobile,
       activeDialogue: s.activeDialogue,
       setActiveDialogue: s.setActiveDialogue,
       addQuest: s.addQuest,
@@ -100,18 +94,6 @@ export default function App() {
   const setActiveMenu = useGameStore(s => s.setActiveMenu);
   const setDevMode = useGameStore(s => s.setDevMode);
 
-  // Mobile Detection
-  useEffect(() => {
-    const checkMobile = () => {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      ) || window.innerWidth <= 1024; // Including tablets
-      setMobile(isMobileDevice);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, [setMobile]);
 
   // Spawner data is now loaded from the server via the `spawners_sync` socket event
   // (emitted on join and on explicit get_spawners requests). No Firestore listener needed.
@@ -287,6 +269,23 @@ export default function App() {
     return () => { socket.off("player_stats", handlePlayerStats); };
   }, [socket]);
 
+  // Listen for Party Updates
+  useEffect(() => {
+    if (!socket) return;
+    const handlePartyUpdate = (data: any) => {
+      useGameStore.getState().setParty(data);
+    };
+    const handlePartyInvite = (data: any) => {
+      useGameStore.getState().setPartyInvite(data);
+    };
+    socket.on("party_update", handlePartyUpdate);
+    socket.on("party_invite_received", handlePartyInvite);
+    return () => {
+      socket.off("party_update", handlePartyUpdate);
+      socket.off("party_invite_received", handlePartyInvite);
+    };
+  }, [socket]);
+
   if (loading || isJoining) return <LoadingScreen message={isJoining ? "MANIFESTING AVATAR..." : "AWAKENING THE REALM..."} />;
 
   // Lost connection overlay (soft bypass for now)
@@ -398,6 +397,7 @@ export default function App() {
 
             <Chat onSendMessage={handleSendMessage} />
             <TargetFrame />
+            <PartyFrames />
             <CastBar />
             <WorldEditor socket={socket} />
             <Hotbar
@@ -414,12 +414,6 @@ export default function App() {
               }}
             />
 
-            {isMobile && (
-              <>
-                <VirtualJoystick />
-                <MobileControls />
-              </>
-            )}
 
             <MenuManager 
               selectedCharacter={selectedCharacter}

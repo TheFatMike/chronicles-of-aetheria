@@ -6,8 +6,6 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   connected: false,
   activeMenu: null,
   devMode: false,
-  isMobile: false,
-  mobileJoystickPos: null,
   isEditorOpen: false,
   isTransforming: false,
   gridSnap: false,
@@ -23,8 +21,6 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setConnected: (connected) => set({ connected }),
   setActiveMenu: (menu) => set({ activeMenu: menu }),
   setDevMode: (devMode) => set({ devMode }),
-  setMobile: (isMobile) => set({ isMobile }),
-  setMobileJoystickPos: (pos) => set({ mobileJoystickPos: pos }),
   
   setEditorOpen: (isOpen) => set({ isEditorOpen: isOpen }),
   setTransforming: (isTransforming) => set({ isTransforming }),

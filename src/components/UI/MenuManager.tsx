@@ -74,6 +74,7 @@ export const MenuManager = ({
       {activeMenu === 'inventory' && (
         <Inventory
           items={selectedCharacter.inventory || []}
+          gold={selectedCharacter.gold || 0}
           onClose={() => setActiveMenu(null)}
           onMoveItem={moveItem}
           onSplitStack={splitStack}

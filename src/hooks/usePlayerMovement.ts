@@ -106,35 +106,6 @@ export const usePlayerMovement = (
 
     const preventDefault = (e: MouseEvent) => e.button === 2 && e.preventDefault();
 
-    // Touch support for rotation
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      // Only handle if touching the right half of the screen
-      const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        const deltaX = touch.clientX - lastTouchX;
-        const deltaY = touch.clientY - lastTouchY;
-        
-        cameraState.current.theta -= deltaX * SENSITIVITY * 2;
-        cameraState.current.phi = Math.max(
-          0.05,
-          Math.min(Math.PI / 2.1, cameraState.current.phi - deltaY * SENSITIVITY * 2)
-        );
-        
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
-    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -144,8 +115,6 @@ export const usePlayerMovement = (
     window.addEventListener("wheel", handleWheel);
     gl.domElement.addEventListener("contextmenu", preventDefault);
     
-    window.addEventListener("touchstart", handleTouchStart, { passive: false });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
@@ -155,9 +124,6 @@ export const usePlayerMovement = (
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("wheel", handleWheel);
       gl.domElement.removeEventListener("contextmenu", preventDefault);
-
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
     };
   }, [gl, SENSITIVITY, MIN_RADIUS, MAX_RADIUS]);
 
@@ -192,15 +158,10 @@ export const usePlayerMovement = (
     const isEditorOpen = useGameStore.getState().isEditorOpen;
 
     const isTyping = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
-    const joyPos = useGameStore.getState().mobileJoystickPos;
-
     let forwardInput = 0;
     let sideInput = 0;
 
-    if (joyPos && !isEditorOpen) {
-      forwardInput = -joyPos.y; // NippleJS Y is up
-      sideInput = joyPos.x;
-    } else if (!isTyping && !isEditorOpen) {
+    if (!isTyping && !isEditorOpen) {
       forwardInput = (keys.current["KeyS"] ? 1 : 0) - (keys.current["KeyW"] ? 1 : 0);
       sideInput = (keys.current["KeyD"] ? 1 : 0) - (keys.current["KeyA"] ? 1 : 0);
     }

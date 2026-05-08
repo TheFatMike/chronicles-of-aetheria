@@ -233,6 +233,28 @@ export const ITEM_REGISTRY: Record<string, ItemTemplate> = {
     icon: "FlaskConical",
     stackable: true,
     maxStack: 20
+  },
+  
+  // MATERIALS / LOOT
+  "slime_goo": {
+    itemId: "slime_goo",
+    name: "Slime Goo",
+    type: "material",
+    rarity: "common",
+    description: "A sticky, translucent substance. Smells like damp moss.",
+    icon: "FlaskConical",
+    stackable: true,
+    maxStack: 99
+  },
+  "wolf_pelt": {
+    itemId: "wolf_pelt",
+    name: "Wolf Pelt",
+    type: "material",
+    rarity: "common",
+    description: "A thick, coarse pelt from a forest wolf.",
+    icon: "Shield",
+    stackable: true,
+    maxStack: 20
   }
 };
 

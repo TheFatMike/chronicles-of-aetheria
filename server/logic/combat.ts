@@ -1,9 +1,10 @@
 import { ALL_SKILLS } from "../../src/data/skills";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../src/lib/gameUtils";
-import { players, entities, lastSkillUse } from "../state";
+import { players, entities, lastSkillUse, parties } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
 import { updateQuestProgress } from "./quest";
+import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 
 export const handleCastSkill = (socket: any, io: any, data: any) => {
   const player = players.get(socket.id);
@@ -11,6 +12,12 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
 
   const skill = ALL_SKILLS.find(s => s.id === data.skillId);
   if (!skill) return;
+
+  // Level Check
+  if (skill.levelRequired && (player.level || 1) < skill.levelRequired) {
+    socket.emit("chat_message", { id: "sys-skill-lvl", sender: "SYSTEM", text: `You need to be level ${skill.levelRequired} to use ${skill.name}!`, timestamp: Date.now(), color: "#ff4444" });
+    return;
+  }
 
   // 0. Life Check
   if (player.hp <= 0) {
@@ -46,7 +53,18 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   currentCooldowns[skill.id] = now;
   lastSkillUse.set(socket.id, currentCooldowns);
 
+  // Public update (HP/MP) for others
   io.emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
+  // Private update (Gold/XP) for self
+  socket.emit("player_stats", { 
+    id: player.id, 
+    hp: player.hp, 
+    mp: player.mp, 
+    level: player.level, 
+    exp: player.exp, 
+    maxExp: player.maxExp, 
+    gold: player.gold 
+  });
 
   // Calculate amount
   const stats = calculateTotalStats(player.stats || {}, player.equipment || {});
@@ -64,6 +82,16 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
     if (target) {
       target.hp = Math.min(target.maxHp || 100, target.hp + amount);
       io.emit("player_stats", { id: target.id, hp: target.hp, mp: target.mp });
+      // If the target is a player, send them their full private stats too
+      io.to(target.id).emit("player_stats", { 
+        id: target.id, 
+        hp: target.hp, 
+        mp: target.mp, 
+        level: target.level, 
+        exp: target.exp, 
+        maxExp: target.maxExp, 
+        gold: target.gold 
+      });
       socket.emit("chat_message", { id: Math.random().toString(), sender: "Combat", text: `You cast ${skill.name} for ${amount} healing!`, timestamp: Date.now(), color: "#22c55e" });
     }
     return;
@@ -96,14 +124,57 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         color: skill.id === 'basic_attack' ? "#9ca3af" : "#ef4444"
       });
 
-      if (target.hp <= 0) {
+      if (target.hp <= 0 && !target.isDead) {
         target.isDead = true;
         target.isMoving = false;
-        const loot = ["gold_coin"];
-        if (target.class === "Slime" && Math.random() < 0.8) loot.push("slime_goo");
+        // Generate loot from template
+        const loot: string[] = [];
+        const templateKey = target.class.toLowerCase();
+        const template = ENTITY_TEMPLATES[templateKey];
+        
+        let goldDrop = 0;
+
+        if (template && template.lootTable) {
+          // Items
+          const items = template.lootTable.items || [];
+          items.forEach((entry: any) => {
+            if (Math.random() <= entry.chance) {
+              loot.push(entry.itemId);
+            }
+          });
+
+          // Gold
+          const goldChance = template.lootTable.goldChance ?? 1.0;
+          if (Math.random() <= goldChance) {
+            const minG = template.lootTable.minGold || 0;
+            const maxG = template.lootTable.maxGold || 0;
+            goldDrop = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+          }
+        } else {
+          // Fallback if no template found
+          goldDrop = Math.floor(Math.random() * 10) + 5 + (target.level || 1) * 2;
+        }
+        
+        target.gold = goldDrop; 
         target.loot = loot;
         
+        serverLogger.info("combat", `Target ${target.name} died. Class: ${target.class}, TemplateKey: ${templateKey}, Found: ${!!template}. Loot: ${loot.join(', ')}, Gold: ${goldDrop}`);
+
         serverLogger.info("combat", `${player.characterName} killed ${target.name}!`);
+
+        // XP & LOOT
+        const expReward = target.expReward || 0;
+        
+        if (player.partyId && parties.has(player.partyId)) {
+          const party = parties.get(player.partyId);
+          const share = Math.floor(expReward / party.members.length);
+          party.members.forEach((mId: string) => {
+            const p = players.get(mId);
+            if (p) giveExperience(io, p, share);
+          });
+        } else {
+          giveExperience(io, player, expReward);
+        }
 
         // QUEST PROGRESS TRACKING
         updateQuestProgress(socket, player, "kill", target.class);
@@ -118,3 +189,34 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
     }
   }
 };
+
+function giveExperience(io: any, player: any, amount: number) {
+  player.exp = (player.exp || 0) + amount;
+  
+  if (player.exp >= (player.maxExp || 100)) {
+    player.level = (player.level || 1) + 1;
+    player.exp -= (player.maxExp || 100);
+    player.maxExp = player.level * 100;
+    player.hp = player.maxHp; // Heal on level up
+    player.mp = player.maxMp;
+    
+    io.to(player.id).emit("chat_message", { 
+      sender: "SYSTEM", 
+      text: `Congratulations! You have reached level ${player.level}!`, 
+      color: "#facc15" 
+    });
+  }
+  
+  io.to(player.id).emit("player_stats", {
+    id: player.id,
+    hp: player.hp,
+    mp: player.mp,
+    maxHp: player.maxHp,
+    maxMp: player.maxMp,
+    level: player.level,
+    exp: player.exp,
+    maxExp: player.maxExp,
+    gold: player.gold
+  });
+  
+}

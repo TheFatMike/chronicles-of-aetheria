@@ -33,15 +33,17 @@ export const PlayerHUD = ({ character, userEmail }: PlayerHUDProps) => {
             )}
           </div>
           <div className="space-y-1 mt-1 min-w-[120px] sm:min-w-[180px]">
-            <div className="h-1.5 sm:h-2 bg-black/40 rounded overflow-hidden">
+            {/* HP Bar */}
+            <div className="h-1.5 sm:h-2 bg-black/40 rounded overflow-hidden relative border border-black/20" title={`Health: ${character.hp}/${character.maxHp}`}>
               <motion.div 
-                className="h-full bg-red-600" 
+                className="h-full bg-linear-to-r from-red-600 to-red-500 shadow-[0_0_10px_rgba(220,38,38,0.3)]" 
                 animate={{ width: `${(character.hp / (character.maxHp || 1)) * 100}%` }} 
               />
             </div>
-            <div className="h-1 sm:h-1.5 bg-black/40 rounded overflow-hidden">
+            {/* MP Bar */}
+            <div className="h-1 sm:h-1.5 bg-black/40 rounded overflow-hidden relative border border-black/20" title={`Mana: ${character.mp}/${character.maxMp}`}>
               <motion.div 
-                className="h-full bg-blue-600" 
+                className="h-full bg-linear-to-r from-blue-600 to-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.3)]" 
                 animate={{ width: `${(character.mp / (character.maxMp || 1)) * 100}%` }} 
               />
             </div>

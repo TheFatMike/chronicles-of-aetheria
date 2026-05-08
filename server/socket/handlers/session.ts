@@ -57,7 +57,11 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         equipment: charData.equipment,
         inventory: charData.inventory || Array(30).fill(null),
         hotbar: charData.hotbar || Array(10).fill(null),
-        quests: charData.quests || {}
+        quests: charData.quests || {},
+        gold: charData.gold || 0,
+        level: charData.level || 1,
+        exp: charData.exp || 0,
+        maxExp: charData.maxExp || 100
       });
     }
 
@@ -101,6 +105,10 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
           equipment: p.equipment,
           class: p.class,
           color: p.color,
+          gold: p.gold || 0,
+          level: p.level || 1,
+          exp: p.exp || 0,
+          maxExp: p.maxExp || 100,
           lastActive: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         

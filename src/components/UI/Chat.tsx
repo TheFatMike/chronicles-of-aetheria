@@ -9,8 +9,7 @@ interface ChatProps {
 
 export const Chat = memo(({ onSendMessage }: ChatProps) => {
   const messages = useGameStore((state) => state.messages);
-  const isMobile = useGameStore((state) => state.isMobile);
-  const [isOpen, setIsOpen] = useState(!isMobile); // Default closed on mobile
+  const [isOpen, setIsOpen] = useState(true); 
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -28,31 +27,27 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
     }
   };
 
-  const containerClass = isMobile 
-    ? `fixed ${isOpen ? "top-0 left-0 w-full h-[40%] pt-4 px-4 pb-2" : "top-[80px] left-2 w-10 h-10"} z-100 transition-all duration-300`
-    : `fixed bottom-8 left-8 z-100 transition-all duration-300 ${isOpen ? "w-80 md:w-96" : "w-12 h-12"}`;
-
   return (
-    <div className={containerClass}>
+    <div className={`fixed bottom-8 left-8 z-100 transition-all duration-300 ${isOpen ? "w-80 md:w-96" : "w-12 h-12"}`}>
       <AnimatePresence>
         {isOpen ? (
           <motion.div
-            initial={{ opacity: 0, y: isMobile ? -50 : 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: isMobile ? -50 : 20, scale: 0.95 }}
-            className={`bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col ${isMobile ? "h-full" : "h-[400px]"} overflow-hidden`}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[400px] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
               <div className="flex items-center gap-2">
-                <MessageSquare size={12} className="text-[#c2a472] sm:size-14" />
-                <span className="text-[9px] sm:text-[10px] font-fantasy uppercase tracking-widest text-[#f4e4bc]">World Chat</span>
+                <MessageSquare size={14} className="text-[#c2a472]" />
+                <span className="text-[10px] font-fantasy uppercase tracking-widest text-[#f4e4bc]">World Chat</span>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
                 className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors text-xs p-1"
               >
-                {isMobile ? <X size={16} /> : "_"}
+                _
               </button>
             </div>
 
@@ -66,8 +61,8 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                   <p className="text-[9px] sm:text-[10px] font-serif italic text-stone-600 uppercase tracking-widest">Silence falls upon the realm...</p>
                 </div>
               ) : (
-                messages.map((msg) => (
-                  <div key={msg.id} className="group">
+                messages.map((msg, idx) => (
+                  <div key={msg.id || `msg-${idx}-${msg.timestamp}`} className="group">
                     <div className="flex items-baseline gap-1.5 sm:gap-2 mb-0.5">
                       {msg.role && msg.role !== 'player' && (
                         <span className={`text-[6px] sm:text-[7px] px-1 rounded font-black tracking-tighter uppercase mr-1 ${
@@ -111,7 +106,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                   disabled={!inputValue.trim()}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a3a2a] hover:text-[#c2a472] disabled:hover:text-[#4a3a2a] transition-colors"
                 >
-                  <Send size={isMobile ? 14 : 16} />
+                  <Send size={16} />
                 </button>
               </div>
             </form>
@@ -121,9 +116,9 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className={`w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-2xl flex items-center justify-center text-[#c2a472] hover:border-[#c2a472] transition-all`}
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-2xl flex items-center justify-center text-[#c2a472] hover:border-[#c2a472] transition-all"
           >
-            <MessageSquare size={isMobile ? 18 : 20} />
+            <MessageSquare size={20} />
           </motion.button>
         )}
       </AnimatePresence>

@@ -42,6 +42,7 @@ export const useSocket = (token: string | null) => {
     });
     
     socketRef.current = socket;
+    (window as any).socket = socket;
 
     // --- Listeners ---
     socket.on("connect", () => {
@@ -67,6 +68,18 @@ export const useSocket = (token: string | null) => {
 
     socket.on("reconnect_failed", () => {
       logger.error("socket", "All reconnection attempts failed");
+    });
+
+    socket.on("player_stats", (data) => {
+      useGameStore.getState().updatePlayer(data.id, { 
+        hp: data.hp, 
+        mp: data.mp,
+        maxHp: data.maxHp,
+        maxMp: data.maxMp,
+        level: data.level,
+        exp: data.exp,
+        maxExp: data.maxExp
+      });
     });
 
     socket.on("players", (allPlayers) => {
@@ -119,6 +132,11 @@ export const useSocket = (token: string | null) => {
       useGameStore.getState().setSpawners(spawnersArray);
     });
     
+    socket.on("world_sync", (objects) => {
+      logger.debug("socket", `World sync received: ${objects.length} objects`);
+      useGameStore.getState().setWorldObjects(objects);
+    });
+
     socket.on("session_start", (confirmedState) => {
       // Use a ref to prevent spamming the log with every state sync
       const lastSessionId = (socket as any)._lastSessionId;
@@ -127,9 +145,6 @@ export const useSocket = (token: string | null) => {
         (socket as any)._lastSessionId = confirmedState.characterId;
       }
       useGameStore.getState().requestTeleport(confirmedState.pos);
-      if (confirmedState.worldObjects) {
-        useGameStore.getState().setWorldObjects(confirmedState.worldObjects);
-      }
     });
 
     socket.on("world_object_updated", (obj) => {

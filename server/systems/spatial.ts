@@ -32,27 +32,34 @@ export function toWorldVector(localX: number, localZ: number, rotY: number): { x
 
 export function checkWorldCollision(newPos: [number, number, number], radius: number = 0.25) {
   for (const obj of worldObjects.values()) {
-    const { pos, rot, hitboxes } = obj;
-    if (!hitboxes) continue;
+    const { pos, rot, hitboxes, type, scale } = obj;
+    
+    // --- SMART SHAPE INFERENCE ---
+    const s = scale || [1, 1, 1];
+    const sx = Array.isArray(s) ? s[0] : (s.x ?? 1);
+    const sy = Array.isArray(s) ? s[1] : (s.y ?? 1);
+    const sz = Array.isArray(s) ? s[2] : (s.z ?? 1);
+    const t = (type || "").toLowerCase();
+
+    // 1. Determine Shape Type
+    let shapeType = 'box';
+    if (t.includes('tree') || t.includes('rock') || t.includes('npc') || t.includes('tent') || t.includes('spawner')) {
+      shapeType = 'circle';
+    }
 
     const local = toLocalSpace(newPos, pos, rot[1] || 0);
+    const hTop = sy;
 
-    for (const hb of hitboxes) {
-      // Height check
-      const hBase = hb.y || 0;
-      const hTop = hBase + (hb.h || 4);
-      if (local.y > hTop - 0.2 || local.y < hBase - 0.5) continue;
-
-      if (hb.type === 'circle') {
-        const hdx = local.x - hb.x;
-        const hdz = local.z - hb.z;
-        const distSq = hdx * hdx + hdz * hdz;
-        const minDist = hb.r + radius;
-        if (distSq < minDist * minDist) return true;
-      } else if (hb.type === 'box') {
-        const hdx = Math.abs(local.x - hb.x);
-        const hdz = Math.abs(local.z - hb.z);
-        if (hdx < (hb.w / 2 + radius) && hdz < (hb.d / 2 + radius)) return true;
+    // 2. Perform Collision Check
+    if (local.y >= -0.5 && local.y <= hTop) {
+      if (shapeType === 'circle') {
+        const radiusSq = Math.pow((sx / 2 + radius), 2);
+        const distSq = local.x * local.x + local.z * local.z;
+        if (distSq < radiusSq) return true;
+      } else {
+        const halfW = sx / 2 + radius;
+        const halfD = sz / 2 + radius;
+        if (Math.abs(local.x) < halfW && Math.abs(local.z) < halfD) return true;
       }
     }
   }
@@ -63,23 +70,30 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
   let resolvedPos: [number, number, number] = [...newPos];
 
   for (const obj of worldObjects.values()) {
-    const { pos, rot, hitboxes } = obj;
-    if (!hitboxes || hitboxes.length === 0) continue;
-
+    const { pos, rot, hitboxes, type, scale } = obj;
     const rotY = rot[1] || 0;
     const local = toLocalSpace(resolvedPos, pos, rotY);
     
-    for (const hb of hitboxes) {
-      // 3D Height Check
-      const hBase = hb.y || 0;
-      const hTop = hBase + (hb.h || 4);
-      if (local.y > hTop - 0.2 || local.y < hBase - 0.5) continue;
+    // --- SMART SHAPE INFERENCE ---
+    const s = scale || [1, 1, 1];
+    const sx = Array.isArray(s) ? s[0] : (s.x ?? 1);
+    const sy = Array.isArray(s) ? s[1] : (s.y ?? 1);
+    const sz = Array.isArray(s) ? s[2] : (s.z ?? 1);
+    const t = (type || "").toLowerCase();
 
-      if (hb.type === 'circle') {
-        const hdx = local.x - hb.x;
-        const hdz = local.z - hb.z;
+    let shapeType = 'box';
+    if (t.includes('tree') || t.includes('rock') || t.includes('npc') || t.includes('tent') || t.includes('spawner')) {
+      shapeType = 'circle';
+    }
+
+    const hTop = sy;
+
+    if (local.y >= -0.5 && local.y <= hTop) {
+      if (shapeType === 'circle') {
+        const hdx = local.x;
+        const hdz = local.z;
         const distSq = hdx * hdx + hdz * hdz;
-        const minDist = hb.r + radius;
+        const minDist = sx / 2 + radius;
         
         if (distSq < minDist * minDist) {
           const dist = Math.sqrt(distSq);
@@ -91,23 +105,21 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
           resolvedPos[0] += push.x;
           resolvedPos[2] += push.z;
         }
-      } else if (hb.type === 'box') {
-        const hdx = local.x - hb.x;
-        const hdz = local.z - hb.z;
-        const halfW = hb.w / 2 + radius;
-        const halfD = hb.d / 2 + radius;
+      } else {
+        const halfW = sx / 2 + radius;
+        const halfD = sz / 2 + radius;
 
-        if (Math.abs(hdx) < halfW && Math.abs(hdz) < halfD) {
-          const overlapX = halfW - Math.abs(hdx);
-          const overlapZ = halfD - Math.abs(hdz);
+        if (Math.abs(local.x) < halfW && Math.abs(local.z) < halfD) {
+          const overlapX = halfW - Math.abs(local.x);
+          const overlapZ = halfD - Math.abs(local.z);
 
           let pushX = 0;
           let pushZ = 0;
 
           if (overlapX < overlapZ) {
-            pushX = hdx > 0 ? overlapX : -overlapX;
+            pushX = local.x > 0 ? overlapX : -overlapX;
           } else {
-            pushZ = hdz > 0 ? overlapZ : -overlapZ;
+            pushZ = local.z > 0 ? overlapZ : -overlapZ;
           }
 
           const push = toWorldVector(pushX, pushZ, rotY);
@@ -117,7 +129,6 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
       }
     }
   }
-
   return resolvedPos;
 }
 

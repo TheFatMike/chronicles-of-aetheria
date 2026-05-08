@@ -32,10 +32,8 @@ const HotbarSlot = React.memo(({
   onClear: () => void;
 }) => {
   const [isOver, setIsOver] = React.useState(false);
-  const isMobile = useGameStore(s => s.isMobile);
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (isMobile) return;
     e.preventDefault();
     setIsOver(true);
   };
@@ -45,7 +43,6 @@ const HotbarSlot = React.memo(({
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    if (isMobile) return;
     e.preventDefault();
     setIsOver(false);
     try {
@@ -66,13 +63,12 @@ const HotbarSlot = React.memo(({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (isMobile || !slot) return;
+    if (!slot) return;
     e.dataTransfer.setData("application/json", JSON.stringify({ ...slot, fromIndex: index, source: "hotbar" }));
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    if (isMobile) return;
     if (e.dataTransfer.dropEffect === "none") {
       onClear();
     }
@@ -106,7 +102,7 @@ const HotbarSlot = React.memo(({
     if (!slot) return null;
     if (slot.type === 'item') {
       return React.createElement((Icons as any)[slot.data.icon] || Icons.HelpCircle, {
-        size: isMobile ? 16 : 20
+        size: 20
       });
     }
     // Skill icon (emoji or string)
@@ -134,7 +130,7 @@ const HotbarSlot = React.memo(({
       onDrop={handleDrop}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      draggable={!isMobile && !!slot}
+      draggable={!!slot}
       onContextMenu={(e) => {
         e.preventDefault();
         onClear();
@@ -142,7 +138,7 @@ const HotbarSlot = React.memo(({
       className="relative"
     >
       <motion.div
-        whileHover={!isMobile && slot ? { y: -4, scale: 1.05 } : { scale: 1.02 }}
+        whileHover={slot ? { y: -4, scale: 1.05 } : { scale: 1.02 }}
         className={`relative group w-10 h-10 sm:w-12 sm:h-12 bg-[#1a140f]/90 border rounded flex items-center justify-center cursor-pointer transition-all duration-200
           ${isOver ? "bg-[#2d221a] border-[#f4e4bc] scale-110 shadow-2xl z-20" : ""}
           ${slot ? rarityClass : "border-[#4a3a2a] hover:border-[#c2a472]"}
@@ -178,12 +174,12 @@ const HotbarSlot = React.memo(({
         ) : (
 
           <div className="text-[#4a3a2a] opacity-30">
-            <Icons.Plus size={isMobile ? 12 : 14} />
+            <Icons.Plus size={14} />
           </div>
         )}
 
         {/* Info on hover */}
-        {!isMobile && slot && (
+        {slot && (
           <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
             <div className="bg-[#1a140f] border border-[#4a3a2a] px-2 py-1 rounded shadow-2xl whitespace-nowrap">
               <p className="text-[10px] font-display font-black text-[#f4e4bc] leading-none">{getName()}</p>
@@ -202,19 +198,38 @@ const HotbarSlot = React.memo(({
 (HotbarSlot as any).displayName = "HotbarSlot";
 
 export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarProps) => {
-  const isMobile = useGameStore(s => s.isMobile);
+  const playerId = useGameStore(s => s.id);
+  const localPlayer = useGameStore(s => s.players[playerId || ""]);
 
   return (
-    <div className={`fixed ${isMobile ? 'bottom-2 sm:bottom-8' : 'bottom-8'} left-1/2 -translate-x-1/2 z-70 flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-[#1a140f]/40 backdrop-blur-sm rounded-lg border border-[#4a3a2a]/20 shadow-2xl overflow-x-auto max-w-[95vw] no-scrollbar`}>
-      {slots.map((slot, i) => (
-        <HotbarSlot 
-          key={i} 
-          index={i} 
-          slot={slot} 
-          onSlot={(data) => onSlotAction(i, data)}
-          onClear={() => onClearSlot(i)}
-        />
-      ))}
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-70 flex flex-col items-center gap-2">
+      {/* Experience Bar above Hotbar */}
+      {localPlayer && (
+        <div className="w-full max-w-[400px] h-1.5 sm:h-2 bg-black/40 rounded-full overflow-hidden border border-[#4a3a2a]/30 shadow-inner group relative" title={`Experience: ${localPlayer.exp || 0}/${localPlayer.maxExp || 100}`}>
+          <motion.div 
+            className="h-full bg-linear-to-r from-amber-500 to-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
+            initial={{ width: 0 }}
+            animate={{ width: `${((localPlayer.exp || 0) / (localPlayer.maxExp || 100)) * 100}%` }} 
+          />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="text-[6px] sm:text-[8px] font-black text-amber-950 uppercase tracking-tighter">
+              {Math.floor(((localPlayer.exp || 0) / (localPlayer.maxExp || 100)) * 100)}% EXP
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-[#1a140f]/40 backdrop-blur-sm rounded-lg border border-[#4a3a2a]/20 shadow-2xl overflow-x-auto max-w-[95vw] no-scrollbar">
+        {slots.map((slot, i) => (
+          <HotbarSlot 
+            key={i} 
+            index={i} 
+            slot={slot} 
+            onSlot={(data) => onSlotAction(i, data)}
+            onClear={() => onClearSlot(i)}
+          />
+        ))}
+      </div>
     </div>
   );
 });

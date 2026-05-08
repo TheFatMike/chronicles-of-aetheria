@@ -16,6 +16,9 @@ export interface PlayerState {
   mp?: number;
   maxHp?: number;
   maxMp?: number;
+  level?: number;
+  exp?: number;
+  maxExp?: number;
 }
 
 export interface Projectile {
@@ -92,8 +95,6 @@ export interface UISlice {
   connected: boolean;
   activeMenu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null;
   devMode: boolean;
-  isMobile: boolean;
-  mobileJoystickPos: { x: number; y: number } | null;
   isEditorOpen: boolean;
   isTransforming: boolean;
   gridSnap: boolean;
@@ -105,8 +106,6 @@ export interface UISlice {
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
   setDevMode: (enabled: boolean) => void;
-  setMobile: (isMobile: boolean) => void;
-  setMobileJoystickPos: (pos: { x: number; y: number } | null) => void;
   setEditorOpen: (isOpen: boolean) => void;
   setTransforming: (val: boolean) => void;
   setGridSnap: (val: boolean) => void;
@@ -125,4 +124,25 @@ export interface QuestSlice {
   trackKill: (entityClass: string) => void;
 }
 
-export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice;
+export interface PartySlice {
+  party: {
+    id: string;
+    leaderId: string;
+    members: string[];
+    memberDetails: {
+      id: string;
+      name: string;
+      hp: number;
+      maxHp: number;
+      mp: number;
+      maxMp: number;
+      class: string;
+      color: string;
+    }[];
+  } | null;
+  partyInvite: { fromId: string; fromName: string } | null;
+  setParty: (party: PartySlice['party']) => void;
+  setPartyInvite: (invite: PartySlice['partyInvite']) => void;
+}
+
+export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice & PartySlice;

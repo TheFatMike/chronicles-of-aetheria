@@ -1,3 +1,4 @@
+import { LOOT_TABLES, LootTable } from "./lootTables";
 
 export interface EntityTemplate {
   id: string;
@@ -17,7 +18,8 @@ export interface EntityTemplate {
   moveSpeed: number;
   respawnTime: number;
   level?: number;
-  lootTable: { itemId: string; chance: number }[];
+  expReward: number;
+  lootTable: LootTable; 
 }
 
 export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
@@ -26,32 +28,28 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     name: 'Marsh Slime',
     class: 'Slime',
     type: 'enemy',
-    baseStats: { strength: 5, dexterity: 5, wisdom: 1, intelligence: 1, stamina: 10 },
-    aggroRadius: 8,
+    baseStats: { strength: 4, dexterity: 3, wisdom: 1, intelligence: 1, stamina: 8 },
+    aggroRadius: 6,
     attackRadius: 1.5,
-    leashRadius: 15,
+    leashRadius: 12,
     moveSpeed: 0.03,
     respawnTime: 15,
-    lootTable: [
-      { itemId: 'gold_coin', chance: 1.0 },
-      { itemId: 'slime_goo', chance: 0.8 }
-    ]
+    expReward: 15,
+    lootTable: LOOT_TABLES.slime
   },
   wolf: {
     id: 'wolf',
     name: 'Forest Wolf',
     class: 'Wolf',
     type: 'enemy',
-    baseStats: { strength: 12, dexterity: 15, wisdom: 5, intelligence: 5, stamina: 12 },
-    aggroRadius: 12,
+    baseStats: { strength: 10, dexterity: 12, wisdom: 5, intelligence: 5, stamina: 15 },
+    aggroRadius: 10,
     attackRadius: 2.0,
-    leashRadius: 20,
-    moveSpeed: 0.07,
+    leashRadius: 18,
+    moveSpeed: 0.06,
     respawnTime: 20,
-    lootTable: [
-      { itemId: 'gold_coin', chance: 1.0 },
-      { itemId: 'wolf_pelt', chance: 0.5 }
-    ]
+    expReward: 45,
+    lootTable: LOOT_TABLES.wolf
   },
   guard: {
     id: 'guard',
@@ -59,12 +57,13 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     class: 'Guard',
     type: 'npc',
     baseStats: { strength: 50, dexterity: 30, wisdom: 20, intelligence: 20, stamina: 100 },
-    aggroRadius: 0, // Friendly
+    aggroRadius: 0,
     attackRadius: 2.0,
     leashRadius: 5,
     moveSpeed: 0.05,
     respawnTime: 60,
-    lootTable: []
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
   },
   instructor_kael: {
     id: 'instructor_kael',
@@ -77,6 +76,7 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    lootTable: []
+    expReward: 0,
+    lootTable: LOOT_TABLES.instructor_kael
   }
 };

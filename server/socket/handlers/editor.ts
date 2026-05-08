@@ -2,7 +2,7 @@ import { Socket, Server } from "socket.io";
 import { players, worldObjects, spawners, entities } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
-import { initializeSpawners, GET_HITBOXES } from "../../systems/persistence";
+import { initializeSpawners } from "../../systems/persistence";
 import { createNPCEntity } from "../../lib/entities";
 
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
@@ -20,8 +20,7 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 
   try {
     await db.collection("world").doc(id).set(worldObj, { merge: true });
-    const hitboxes = GET_HITBOXES(type, scale);
-    worldObjects.set(id, { ...worldObj, hitboxes });
+    worldObjects.set(id, worldObj);
 
     if (type.startsWith("spawner_")) {
       await initializeSpawners();

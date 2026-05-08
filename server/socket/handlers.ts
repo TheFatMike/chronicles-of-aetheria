@@ -7,6 +7,7 @@ import { handleLootEntity, handleEquipItem, handleUnequipItem, handleMoveItem, h
 import { handleSaveWorldObject, handleRemoveWorldObject, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleChatMessage } from "./handlers/chat";
+import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handlers/party";
 import { players, worldObjects, lastSkillUse, lastChatMessage } from "../state";
 import { filterNearby } from "../systems/spatial";
 
@@ -59,4 +60,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
 
   // Chat
   socket.on("chat_message", (text) => handleChatMessage(io, socket, text));
+
+  // Party
+  socket.on("party_invite", (targetId) => handlePartyInvite(io, socket, targetId));
+  socket.on("party_accept", (inviterId) => handlePartyAccept(io, socket, inviterId));
+  socket.on("party_leave", () => handlePartyLeave(io, socket));
 };

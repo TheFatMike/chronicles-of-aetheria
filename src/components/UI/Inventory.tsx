@@ -7,6 +7,7 @@ import { useGameStore } from "../../store/useGameStore";
 
 interface InventoryProps {
   items: (InventoryItem | null)[];
+  gold: number;
   onClose: () => void;
   onMoveItem: (fromIndex: number, toIndex: number) => void;
   onSplitStack: (fromIndex: number, amount: number) => void;
@@ -35,12 +36,11 @@ const getRarityBg = (rarity: ItemRarity | undefined) => {
   }
 };
 
-export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack, onEquip }: InventoryProps) => {
+export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplitStack, onEquip }: InventoryProps) => {
   const [selectedItem, setSelectedItem] = React.useState<InventoryItem | null>(null);
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
   const [splitModalItem, setSplitModalItem] = React.useState<InventoryItem | null>(null);
   const [splitAmount, setSplitAmount] = React.useState<number>(1);
-  const isMobile = useGameStore(s => s.isMobile);
 
   // Normalize items to a 30-slot array if needed
   const slots = React.useMemo(() => {
@@ -53,7 +53,6 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
   }, [items]);
 
   const handleDragStart = (e: React.DragEvent, item: InventoryItem, index: number) => {
-    if (isMobile) return;
     const isSplitting = e.shiftKey;
     e.dataTransfer.setData("application/json", JSON.stringify({ 
       item, 
@@ -65,7 +64,6 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
   };
 
   const handleDrop = (e: React.DragEvent, toIndex: number) => {
-    if (isMobile) return;
     e.preventDefault();
     setDragOverIndex(null);
     try {
@@ -87,7 +85,6 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
-    if (isMobile) return;
     e.preventDefault();
     setDragOverIndex(index);
   };
@@ -120,13 +117,20 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
 
         {/* Main Inventory Grid */}
         <div className="flex-1 relative z-10 flex flex-col min-h-0">
-          <div className="flex items-center gap-3 mb-4 sm:mb-6 border-b border-[#4a3a2a] pb-4">
-            <div className="p-2 bg-[#4a3a2a] rounded-lg hidden sm:block">
-              <Briefcase className="w-6 h-6 text-[#c2a472]" />
+          <div className="flex items-center justify-between mb-4 sm:mb-6 border-b border-[#4a3a2a] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#4a3a2a] rounded-lg hidden sm:block">
+                <Briefcase className="w-6 h-6 text-[#c2a472]" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-display font-black text-[#f4e4bc] tracking-tight uppercase">INVENTORY</h2>
+                <p className="text-[8px] sm:text-[10px] text-[#8b6b4d] font-fantasy uppercase tracking-[0.2em] mt-0.5">Bound Pack</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-display font-black text-[#f4e4bc] tracking-tight uppercase">INVENTORY</h2>
-              <p className="text-[8px] sm:text-[10px] text-[#8b6b4d] font-fantasy uppercase tracking-[0.2em] mt-0.5">Bound Pack</p>
+
+            <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full border border-[#fbbf24]/30 shadow-[0_0_15px_rgba(251,191,36,0.1)]">
+              <Icons.Coins className="w-4 h-4 text-[#fbbf24] animate-pulse" />
+              <span className="text-[#fbbf24] font-mono font-black text-xs sm:text-sm tracking-widest">{gold.toLocaleString()}</span>
             </div>
           </div>
 
@@ -145,13 +149,13 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
                    onDragOver={(e) => handleDragOver(e, i)}
                    onDragLeave={() => setDragOverIndex(null)}
                    onDrop={(e) => handleDrop(e, i)}
-                   draggable={!isMobile && !!item}
+                   draggable={!!item}
                    onClick={() => item && setSelectedItem(item)}
                  >
                    {item && (
-                     <div className={`w-full h-full flex items-center justify-center p-1.5 sm:p-2 rounded-sm ${getRarityBg(item.rarity)}`}>
+                     <div className={`w-full h-full flex items-center justify-center p-2 rounded-sm ${getRarityBg(item.rarity)}`}>
                         {React.createElement((Icons as any)[item.icon] || Icons.HelpCircle, {
-                          size: isMobile ? 18 : 24,
+                          size: 24,
                           className: "drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
                         })}
                         {item.quantity && item.quantity > 1 && (
@@ -168,7 +172,7 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
         </div>
 
         {/* Item Inspect Panel */}
-        <div className={`w-full md:w-80 bg-[#2d221a]/50 border-t md:border-t-0 md:border-l border-[#4a3a2a] md:pl-8 flex flex-col pt-4 md:pt-2 relative z-10 min-h-0 ${isMobile && !selectedItem ? 'hidden' : 'flex'}`}>
+        <div className="w-80 bg-[#2d221a]/50 border-l border-[#4a3a2a] pl-8 flex flex-col pt-2 relative z-10 min-h-0">
           <AnimatePresence mode="wait">
             {selectedItem ? (
               <motion.div
@@ -182,11 +186,6 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
                   <div className={`text-[9px] sm:text-[10px] font-fantasy uppercase tracking-[0.3em] font-black ${getRarityColor(selectedItem.rarity)}`}>
                     {selectedItem.rarity} {selectedItem.type}
                   </div>
-                  {isMobile && (
-                    <button onClick={() => setSelectedItem(null)} className="text-[#8b6b4d] hover:text-white">
-                      <X size={16} />
-                    </button>
-                  )}
                 </div>
                 <h3 className="text-xl sm:text-2xl font-display font-black text-[#f4e4bc] mt-1 mb-2 sm:mb-4 leading-none truncate">
                   {selectedItem.name}
@@ -238,12 +237,10 @@ export const Inventory = React.memo(({ items, onClose, onMoveItem, onSplitStack,
                     </button>
                   )}
 
-                  {!isMobile && (
-                    <div className="p-2 sm:p-3 bg-[#1a140f] border border-[#4a3a2a] rounded flex items-center gap-3 opacity-60">
-                        <Info className="w-3 h-3 sm:w-4 sm:h-4 text-[#8b6b4d]" />
-                        <p className="text-[7px] sm:text-[9px] text-[#8b6b4d] font-fantasy uppercase tracking-tighter leading-tight">Drag to hotbar to slot for use</p>
-                    </div>
-                  )}
+                  <div className="p-3 bg-[#1a140f] border border-[#4a3a2a] rounded flex items-center gap-3 opacity-60">
+                      <Info className="w-4 h-4 text-[#8b6b4d]" />
+                      <p className="text-[9px] text-[#8b6b4d] font-fantasy uppercase tracking-tighter leading-tight">Drag to hotbar to slot for use</p>
+                  </div>
                 </div>
               </motion.div>
             ) : (
