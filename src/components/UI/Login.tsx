@@ -21,6 +21,7 @@ import {
   UserPlus,
   RefreshCw
 } from "lucide-react";
+import { ParticleEffect } from "./Particles";
 import { useGameStore } from "../../store/useGameStore";
 
 interface LoginProps {
@@ -146,6 +147,8 @@ export const Login = memo(({ onLogin }: LoginProps) => {
     <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20"></div>
       <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80"></div>
+      
+      <ParticleEffect />
       
       <div className="flex flex-col items-center gap-8 w-full max-w-4xl relative z-10">
         <motion.div 

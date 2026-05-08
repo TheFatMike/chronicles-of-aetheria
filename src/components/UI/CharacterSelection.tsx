@@ -2,6 +2,7 @@ import React, { useState, memo } from "react";
 import { motion } from "motion/react";
 import { Character } from "../../types";
 import { User, Plus, ChevronRight, Sword, Zap, Target, Trash2, LogOut, Shield, Heart, HelpCircle, ArrowUpDown } from "lucide-react";
+import { ParticleEffect } from "./Particles";
 
 interface CharacterSelectionProps {
   characters: Character[];
@@ -87,6 +88,8 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
     <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10"></div>
       
+      <ParticleEffect />
+      
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -141,6 +144,12 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
                   isHighlighted ? "border-[#c2a472] ring-2 ring-[#c2a472]/20 shadow-[0_0_30px_rgba(194,164,114,0.15)]" : "border-[#4a3a2a] hover:border-[#8b6b4d]"
                 }`}
               >
+                {/* Sheen Effect */}
+                <motion.div
+                  className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-sheen pointer-events-none"
+                  initial={false}
+                />
+
                 <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-transparent to-black/30 pointer-events-none" />
                 
                 <div className="flex justify-between items-start mb-6">

@@ -2,6 +2,7 @@ import React, { useState, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CHARACTER_CLASSES } from "../../constants";
 import * as Icons from "lucide-react";
+import { ParticleEffect } from "./Particles";
 import { ChevronRight, ChevronLeft, User, Shield, Info, Briefcase } from "lucide-react";
 
 interface CharacterCreationProps {
@@ -58,6 +59,23 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10"></div>
+      
+      {/* Dynamic Class Aura */}
+      <AnimatePresence>
+        <motion.div
+          key={selectedClass.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.15 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ 
+            background: `radial-gradient(circle at 30% 50%, ${selectedClass.color} 0%, transparent 70%)` 
+          }}
+        />
+      </AnimatePresence>
+
+      <ParticleEffect />
       
       {/* Back Button */}
       {canCancel && (
