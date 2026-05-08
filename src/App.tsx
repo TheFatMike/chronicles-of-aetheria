@@ -294,7 +294,7 @@ export default function App() {
   const showDisconnected = !!(selectedCharacter && !connected && !loading);
 
   return (
-    <div className="w-full h-screen bg-black overflow-hidden relative">
+    <div className="w-full h-dvh bg-black overflow-hidden relative">
       <DebugOverlay />
       <AnimatePresence mode="wait">
         {showDisconnected ? (

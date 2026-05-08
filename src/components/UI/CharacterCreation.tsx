@@ -65,27 +65,27 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={onCancel}
-          className="fixed top-8 left-8 flex items-center gap-3 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors z-60 group px-4 py-2 border-2 border-transparent hover:border-[#4a3a2a] rounded bg-black/20"
+          className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 sm:gap-3 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors z-60 group px-2 sm:px-4 py-1.5 sm:py-2 border-2 border-[#4a3a2a]/20 hover:border-[#4a3a2a] rounded bg-black/40 backdrop-blur-sm"
         >
-          <ChevronRight size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-fantasy text-xs uppercase tracking-[0.3em]">Back to Selection</span>
+          <ChevronRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform sm:w-5 sm:h-5" />
+          <span className="font-fantasy text-[10px] sm:text-xs uppercase tracking-[0.3em]">Back</span>
         </motion.button>
       )}
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-5xl w-full grid grid-cols-12 gap-8 relative z-10"
+        className="max-w-5xl w-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10 max-h-[90vh] overflow-y-auto lg:overflow-visible custom-scrollbar p-2"
       >
         {/* Left: Preview/Class Display */}
-        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-4 border-[#4a3a2a] rounded p-12 flex flex-col justify-between overflow-hidden relative shadow-2xl">
+        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-12 flex flex-col justify-between overflow-hidden relative shadow-2xl">
           <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-transparent to-black/20 pointer-events-none" />
           
           <div>
-             <div className="flex items-center gap-4 mb-6">
-                <div className="h-[2px] flex-1 bg-linear-to-r from-transparent to-[#8b6b4d]" />
-                <span className="text-[#8b6b4d] uppercase tracking-[0.4em] text-xs font-display font-bold">Divine Ascendance</span>
-                <div className="h-[2px] flex-1 bg-linear-to-l from-transparent to-[#8b6b4d]" />
+             <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="h-px sm:h-0.5 flex-1 bg-linear-to-r from-transparent to-[#8b6b4d]" />
+                <span className="text-[#8b6b4d] uppercase tracking-[0.4em] text-[8px] sm:text-xs font-display font-bold text-center">Divine Ascendance</span>
+                <div className="h-px sm:h-0.5 flex-1 bg-linear-to-l from-transparent to-[#8b6b4d]" />
              </div>
             <AnimatePresence mode="wait">
               <motion.div
@@ -94,21 +94,21 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
               >
-                <h1 className="text-7xl font-display font-black text-[#f4e4bc] mb-6 leading-tight drop-shadow-lg">{selectedClass.name}</h1>
-                <p className="text-[#a88a6d] font-serif italic text-xl leading-relaxed max-w-sm border-l-2 border-[#8b6b4d] pl-6 py-2">
+                <h1 className="text-4xl sm:text-7xl font-display font-black text-[#f4e4bc] mb-4 sm:mb-6 leading-tight drop-shadow-lg">{selectedClass.name}</h1>
+                <p className="text-[#a88a6d] font-serif italic text-sm sm:text-xl leading-relaxed max-w-sm border-l-2 border-[#8b6b4d] pl-4 sm:pl-6 py-1 sm:py-2">
                   {selectedClass.description}
                 </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+          <div className="mt-8 sm:mt-12 grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 relative z-10">
             {Object.entries(selectedClass.stats).map(([stat, val]) => (
-              <div key={stat} className="bg-black/60 border border-[#4a3a2a] p-5 rounded relative group">
-                <span className="text-[#6d5540] text-[10px] uppercase font-fantasy mb-1 block tracking-wider">{stat}</span>
-                <div className="flex items-end gap-3">
-                  <span className="text-3xl font-display font-bold text-[#f4e4bc] leading-none">{val as number}</span>
-                  <div className="flex-1 h-1.5 bg-[#4a3a2a] rounded-full mb-1 overflow-hidden">
+              <div key={stat} className="bg-black/60 border border-[#4a3a2a] p-3 sm:p-5 rounded relative group">
+                <span className="text-[#6d5540] text-[8px] sm:text-[10px] uppercase font-fantasy mb-0.5 sm:mb-1 block tracking-wider">{stat}</span>
+                <div className="flex items-end gap-2 sm:gap-3">
+                  <span className="text-xl sm:text-3xl font-display font-bold text-[#f4e4bc] leading-none">{val as number}</span>
+                  <div className="flex-1 h-1 sm:h-1.5 bg-[#4a3a2a] rounded-full mb-0.5 sm:mb-1 overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${((val as number) / 20) * 100}%` }}
@@ -122,18 +122,18 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
           </div>
 
           {/* Starting Gear Preview */}
-          <div className="mt-8 border-t border-[#4a3a2a] pt-6">
-            <h3 className="text-[#8b6b4d] font-fantasy text-[10px] uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-              <Briefcase size={14} />
+          <div className="mt-6 sm:mt-8 border-t border-[#4a3a2a] pt-4 sm:pt-6">
+            <h3 className="text-[#8b6b4d] font-fantasy text-[8px] sm:text-[10px] uppercase tracking-[0.3em] mb-3 sm:mb-4 flex items-center gap-2">
+              <Briefcase size={12} className="sm:w-3.5 sm:h-3.5" />
               Initial Provisions
             </h3>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               {(selectedClass as any).startingGear?.map((item: any, i: number) => (
                 <div key={i} className="group relative">
-                  <div className="w-12 h-12 bg-black/60 border-2 border-[#4a3a2a] rounded flex items-center justify-center hover:border-[#c2a472] transition-colors cursor-help">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/60 border-2 border-[#4a3a2a] rounded flex items-center justify-center hover:border-[#c2a472] transition-colors cursor-help">
                     {React.createElement((Icons as any)[item.icon] || Icons.HelpCircle, {
-                      size: 20,
-                      className: "text-[#c2a472] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                      size: 16,
+                      className: "text-[#c2a472] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] sm:w-5 sm:h-5"
                     })}
                   </div>
                   {/* Tooltip */}
@@ -147,11 +147,11 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
         </div>
 
         {/* Right: Controls */}
-        <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-4 border-[#4a3a2a] rounded p-10 flex flex-col justify-between shadow-2xl relative">
-          <div className="space-y-12">
+        <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-10 flex flex-col justify-between shadow-2xl relative">
+          <div className="space-y-8 sm:space-y-12">
             <div>
-              <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-8 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
-                <User size={16} />
+              <h3 className="text-[10px] sm:text-sm border-b-2 border-[#4a3a2a] pb-2 sm:pb-3 mb-6 sm:mb-8 flex items-center gap-2 sm:gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+                <User size={14} className="sm:w-4 sm:h-4" />
                 Vessel Identity
               </h3>
               <div className="relative group">

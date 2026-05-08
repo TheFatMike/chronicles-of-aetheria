@@ -26,12 +26,15 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
       <Canvas 
         shadows={{ type: THREE.PCFShadowMap }} 
         camera={{ position: [0, 5, 10], fov: 75 }}
-        dpr={[1, 2]}
+        dpr={Math.min(window.devicePixelRatio, 2)}
         performance={{ min: 0.5 }}
         gl={{ 
           antialias: true, 
           powerPreference: "high-performance",
-          preserveDrawingBuffer: true
+          preserveDrawingBuffer: true,
+          alpha: false,
+          stencil: false,
+          depth: true
         }}
         onPointerMissed={() => {
           // Handled explicitly by World and entities now to avoid conflicts

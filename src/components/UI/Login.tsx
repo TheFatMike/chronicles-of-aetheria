@@ -151,11 +151,11 @@ export const Login = memo(({ onLogin }: LoginProps) => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md p-10 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-[0_0_80px_rgba(0,0,0,0.9)] relative overflow-hidden ring-1 ring-[#e2d1b0]/10"
+          className="w-full max-w-md p-6 sm:p-10 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-[0_0_80px_rgba(0,0,0,0.9)] relative overflow-hidden ring-1 ring-[#e2d1b0]/10"
         >
           {/* Status */}
-          <div className="absolute top-4 right-4 z-20">
-            <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
+            <div className={`px-2 py-0.5 sm:py-1 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
               connected ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
             }`}>
               {connected ? <Wifi size={10} /> : <WifiOff size={10} />}
@@ -164,14 +164,14 @@ export const Login = memo(({ onLogin }: LoginProps) => {
           </div>
 
           <div className="text-center relative z-10">
-            <div className="flex justify-center mb-6">
-               <div className="w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
-               <div className="w-3 h-3 border border-[#8b6b4d] rotate-45 mx-3" />
-               <div className="w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
+            <div className="flex justify-center mb-4 sm:mb-6">
+               <div className="w-8 sm:w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
+               <div className="w-2 sm:w-3 h-2 sm:h-3 border border-[#8b6b4d] rotate-45 mx-2 sm:mx-3" />
+               <div className="w-8 sm:w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
             </div>
 
-            <h1 className="text-4xl font-display font-black text-[#f4e4bc] mb-1 tracking-wider uppercase">Aetheria</h1>
-            <p className="text-[#8b6b4d] font-serif italic text-sm mb-10">Chronicles of the Eternal Realm</p>
+            <h1 className="text-3xl sm:text-4xl font-display font-black text-[#f4e4bc] mb-1 tracking-wider uppercase">Aetheria</h1>
+            <p className="text-[#8b6b4d] font-serif italic text-xs sm:text-sm mb-6 sm:mb-10">Chronicles of the Eternal Realm</p>
             
             <AnimatePresence mode="wait">
               {step === "IDENTIFY" ? (

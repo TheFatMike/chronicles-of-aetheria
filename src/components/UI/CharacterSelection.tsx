@@ -92,19 +92,19 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-4xl w-full flex flex-col relative z-10"
       >
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-display font-black text-[#f4e4bc] mb-4 tracking-widest uppercase">Character Select</h1>
-          <p className="text-[#8b6b4d] font-serif italic text-xl underline underline-offset-8 decoration-[#4a3a2a]">Choose a character to continue your journey</p>
+        <div className="text-center mb-6 sm:mb-12">
+          <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-2 sm:mb-4 tracking-widest uppercase">Character Select</h1>
+          <p className="text-[#8b6b4d] font-serif italic text-sm sm:text-xl underline underline-offset-4 sm:underline-offset-8 decoration-[#4a3a2a]">Choose a character to continue your journey</p>
         </div>
 
         {/* Sort Bar */}
-        <div className="flex justify-center gap-4 mb-8">
-          <span className="text-[10px] font-fantasy text-[#4a3a2a] uppercase tracking-[0.2em] self-center mr-2">Sort By:</span>
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <span className="text-[8px] sm:text-[10px] font-fantasy text-[#4a3a2a] uppercase tracking-[0.2em] self-center mr-1 sm:mr-2">Sort By:</span>
           {(["name", "level", "class"] as const).map((field) => (
             <button
               key={field}
               onClick={() => toggleSort(field)}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all font-fantasy text-[10px] uppercase tracking-widest ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border transition-all font-fantasy text-[8px] sm:text-[10px] uppercase tracking-widest ${
                 sortBy === field 
                   ? "bg-[#c2a472]/10 border-[#c2a472] text-[#f4e4bc]" 
                   : "border-[#4a3a2a] text-[#6d5540] hover:border-[#8b6b4d]"
@@ -127,7 +127,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[50vh] p-4 custom-scrollbar"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 overflow-y-auto max-h-[45vh] sm:max-h-[50vh] p-2 sm:p-4 custom-scrollbar"
         >
           {sortedCharacters.map((char) => {
             const isHighlighted = highlightedId === char.id;
