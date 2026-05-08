@@ -23,8 +23,9 @@ export const SelectionCircle = ({ visible, color = "#fbbf24", scale = 1 }: Selec
       ref={meshRef} 
       rotation={[-Math.PI / 2, 0, 0]} 
       position={[0, 0.05, 0]}
+      raycast={() => null}
     >
-      <ringGeometry args={[0.6 * scale, 0.7 * scale, 32]} />
+      <ringGeometry args={[0.8 * scale, 1.0 * scale, 32]} />
       <meshStandardMaterial 
         color={color} 
         emissive={color} 

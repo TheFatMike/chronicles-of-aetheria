@@ -165,6 +165,34 @@ export const useSocket = (token: string | null) => {
       useGameStore.getState().setWorldObjects(objectsArray);
     });
 
+    // Party Events
+    socket.on("party_invite_received", (invite) => {
+      logger.info("socket", "Party invite received", invite);
+      useGameStore.getState().setPartyInvite(invite);
+    });
+
+    socket.on("party_update", (party) => {
+      logger.debug("socket", "Party update received", party);
+      useGameStore.getState().setParty(party);
+    });
+
+    // Trade Events
+    socket.on("trade_request_received", (request) => {
+      logger.info("socket", "Trade request received", request);
+      useGameStore.getState().setTradeRequest(request);
+    });
+
+    socket.on("trade_start", (trade) => {
+      logger.info("socket", "Trade started", trade);
+      useGameStore.getState().setActiveTrade(trade);
+      useGameStore.getState().setTradeRequest(null);
+    });
+
+    socket.on("trade_cancel", () => {
+      logger.info("socket", "Trade cancelled");
+      useGameStore.getState().setActiveTrade(null);
+    });
+
     return () => {
       socket.disconnect();
     };

@@ -67,7 +67,15 @@ export const usePlayerMovement = (
       if (e.button === 0) cameraState.current.isLeftMouseDown = true;
       if (e.button === 2) {
         cameraState.current.isRightMouseDown = true;
-        gl.domElement.requestPointerLock();
+        // Don't lock pointer if we're over an entity or UI
+        const isHoveringEntity = document.body.classList.contains('npc-hover') || 
+                                 document.body.classList.contains('enemy-hover') || 
+                                 document.body.classList.contains('loot-hover') ||
+                                 document.body.classList.contains('player-hover');
+        
+        if (!isHoveringEntity) {
+          gl.domElement.requestPointerLock();
+        }
       }
     };
     

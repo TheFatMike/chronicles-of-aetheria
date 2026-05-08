@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
+import { useEffect } from "react";
 import { useGameStore } from "../../store/useGameStore";
 
 export const TargetFrame = () => {
@@ -21,9 +22,23 @@ export const TargetFrame = () => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
-        className="fixed top-2 sm:top-6 right-1/2 translate-x-1/2 z-50 flex items-center space-x-4 pointer-events-none"
+        className="fixed top-2 sm:top-6 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-4 pointer-events-none"
       >
-        <div className="bg-black/60 backdrop-blur-md border-2 border-slate-700 p-2 rounded-lg w-48 sm:w-64 shadow-2xl pointer-events-auto relative">
+        <div 
+          onContextMenu={(e) => {
+            if (currentTarget.type === 'player') {
+              e.preventDefault();
+              useGameStore.getState().setContextMenu({
+                x: e.clientX,
+                y: e.clientY,
+                title: currentTarget.name,
+                targetId: currentTarget.id
+              });
+            }
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="bg-black/60 backdrop-blur-md border-2 border-slate-700 p-2 rounded-lg w-48 sm:w-64 shadow-2xl pointer-events-auto relative"
+        >
           {/* Close button */}
           <button 
             onClick={() => setTarget(null)}

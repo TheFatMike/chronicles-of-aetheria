@@ -3,6 +3,7 @@ import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 import { SelectionCircle } from "./SelectionCircle";
 import { useGameStore } from "../../store/useGameStore";
+import { useShallow } from 'zustand/react/shallow';
 import { useEntitySync } from "../../hooks/useEntitySync";
 import { GameTarget } from "../../types";
 
@@ -46,8 +47,10 @@ export const BaseEntity = memo(({
 }: BaseEntityProps) => {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
-  const setTarget = useGameStore((state) => state.setTarget);
-  const currentTargetId = useGameStore((state) => state.currentTarget?.id);
+  const { setTarget, currentTargetId } = useGameStore(useShallow((state) => ({
+    setTarget: state.setTarget,
+    currentTargetId: state.currentTarget?.id
+  })));
   const isTargeted = currentTargetId === id;
 
   // Handle network sync/smoothing
@@ -120,26 +123,22 @@ export const BaseEntity = memo(({
   const handleDoubleClick = (e: any) => {
     e.stopPropagation();
     
-    // Auto-target and interact immediately if within range
     const state = useGameStore.getState();
     const localPlayer = state.players[state.id || ""];
     if (!localPlayer) return;
 
-    const target: GameTarget = { id, name, type, level, color, hp, maxHp, role };
-    setTarget(target);
+    // Target first
+    const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
+    setTarget(targetData);
 
     const dx = localPlayer.pos[0] - position[0];
     const dz = localPlayer.pos[2] - position[2];
     const distance = Math.sqrt(dx * dx + dz * dz);
 
     if (distance <= 5) {
-      if (isDead) {
-        if (onInteract) onInteract();
-      } else if (type === 'npc' && onInteract) {
-        onInteract();
-      } else if (type === 'enemy' && onAttack) {
-        onAttack();
-      }
+      if (isDead && onInteract) onInteract();
+      else if (type === 'npc' && onInteract) onInteract();
+      else if (type === 'enemy' && onAttack) onAttack();
     }
   };
 
@@ -155,10 +154,86 @@ export const BaseEntity = memo(({
     }
   };
 
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const mouseDownTime = useRef<number>(0);
+
+  const handlePointerDown = (e: any) => {
+    if (e.button === 2 || e.button === 0) {
+      e.stopPropagation();
+      mouseDownPos.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+      mouseDownTime.current = Date.now();
+    }
+  };
+
+  const handlePointerUp = (e: any) => {
+    if (!mouseDownPos.current) return;
+
+    const dx = Math.abs(e.nativeEvent.clientX - mouseDownPos.current.x);
+    const dy = Math.abs(e.nativeEvent.clientY - mouseDownPos.current.y);
+    const dt = Date.now() - mouseDownTime.current;
+
+    // Threshold for a "click" vs a "drag"
+    if (dx < 20 && dy < 20 && dt < 500) {
+      e.stopPropagation();
+      
+      const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
+
+      if (e.button === 2 && type === "player") {
+        // Target first if not targeted
+        if (!isTargeted) {
+          setTarget(targetData);
+        }
+        
+        // Open menu
+        useGameStore.getState().setContextMenu({
+          x: e.nativeEvent.clientX,
+          y: e.nativeEvent.clientY,
+          title: name,
+          targetId: id
+        });
+      } else if (e.button === 0) {
+        // 1. If not targeted, target it first
+        if (!isTargeted) {
+          setTarget(targetData);
+        } else {
+          // 2. If already targeted, check distance for interaction/attack
+          const state = useGameStore.getState();
+          const localPlayer = state.players[state.id || ""];
+          if (!localPlayer) return;
+
+          const distDx = localPlayer.pos[0] - position[0];
+          const distDz = localPlayer.pos[2] - position[2];
+          const distance = Math.sqrt(distDx * distDx + distDz * distDz);
+
+          if (distance > 5) {
+            state.addMessage({
+              id: "sys-" + Date.now(),
+              sender: "SYSTEM",
+              text: `You are too far away to interact with ${name}.`,
+              timestamp: Date.now(),
+              color: "#ff4444"
+            });
+          } else {
+            if (isDead && onInteract) onInteract();
+            else if (type === 'npc' || !onAttack) {
+              if (onInteract) onInteract();
+            } else if (onAttack) {
+              onAttack();
+              if (type === 'enemy') state.setAutoAttackTarget(id);
+            }
+          }
+        }
+      }
+    }
+
+    mouseDownPos.current = null;
+  };
+
   return (
-    <group 
-      ref={groupRef} 
-      onClick={handleClick}
+    <group
+      ref={groupRef}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onDoubleClick={handleDoubleClick}
       onPointerOver={(e) => {
         e.stopPropagation();
@@ -168,6 +243,7 @@ export const BaseEntity = memo(({
         } else {
           if (type === 'npc') document.body.classList.add('npc-hover');
           if (type === 'enemy') document.body.classList.add('enemy-hover');
+          if (type === 'player') document.body.classList.add('player-hover');
         }
       }}
       onPointerOut={() => {
@@ -175,11 +251,12 @@ export const BaseEntity = memo(({
         document.body.classList.remove('npc-hover');
         document.body.classList.remove('enemy-hover');
         document.body.classList.remove('loot-hover');
+        document.body.classList.remove('player-hover');
       }}
     >
       {/* Interaction Collider */}
-      <mesh visible={false}>
-        <boxGeometry args={[1, nameOffset, 1]} />
+      <mesh position={[0, nameOffset / 2, 0]}>
+        <boxGeometry args={[1.5, nameOffset, 1.5]} />
         <meshStandardMaterial transparent opacity={0} />
       </mesh>
 

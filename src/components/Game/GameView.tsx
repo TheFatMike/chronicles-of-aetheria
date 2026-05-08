@@ -33,7 +33,9 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
           powerPreference: "high-performance",
           preserveDrawingBuffer: true
         }}
-        onPointerMissed={() => setTarget(null)}
+        onPointerMissed={() => {
+          // Handled explicitly by World and entities now to avoid conflicts
+        }}
       >
         <Suspense fallback={null}>
           <World onAttack={onAttack} onLoot={onLoot} socket={socket} />

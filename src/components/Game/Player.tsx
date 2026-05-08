@@ -65,9 +65,8 @@ export const Player = memo(({ onMove, color, socket, initialPos, initialRot }: P
   }, [onMove, isMoving, isGrounded]);
 
   return (
-    <group ref={meshRef}>
+    <group ref={meshRef} raycast={() => null}>
       <Humanoid color={color} isMoving={isMoving.current} isGrounded={isGrounded.current} isAttacking={isAttacking} />
-
     </group>
   );
 });

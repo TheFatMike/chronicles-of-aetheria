@@ -8,6 +8,8 @@ import { Inventory } from "./Inventory";
 import { SkillBook } from "./SkillBook";
 import { CharacterInfo } from "./CharacterInfo";
 import { Character, InventoryItem, EquipmentSlots } from "../../types";
+import { ContextMenu } from "./ContextMenu";
+import { UserPlus, Handshake, MessageSquare, X } from "lucide-react";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -35,7 +37,9 @@ export const MenuManager = ({
     setActiveQuests,
     addQuest,
     addMessage,
-    players
+    players,
+    contextMenu,
+    setContextMenu
   } = useGameStore();
 
   return (
@@ -93,6 +97,45 @@ export const MenuManager = ({
           character={selectedCharacter}
           onClose={() => setActiveMenu(null)}
           onUnequip={unequipItem}
+        />
+      )}
+
+      {/* Player Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          title={contextMenu.title}
+          options={[
+            {
+              label: "Invite to Party",
+              icon: <UserPlus size={14} />,
+              onClick: () => {
+                if (socket) socket.emit("party_invite", contextMenu.targetId);
+              }
+            },
+            {
+              label: "Trade Request",
+              icon: <Handshake size={14} />,
+              onClick: () => {
+                if (socket) socket.emit("trade_request", contextMenu.targetId);
+              }
+            },
+            {
+              label: "Whisper",
+              icon: <MessageSquare size={14} />,
+              onClick: () => {
+                // Future implementation
+              }
+            },
+            {
+              label: "Cancel",
+              icon: <X size={14} />,
+              onClick: () => {},
+              color: "text-red-400"
+            }
+          ]}
+          onClose={() => setContextMenu(null)}
         />
       )}
     </AnimatePresence>

@@ -237,6 +237,20 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
                     </button>
                   )}
 
+                  {useGameStore.getState().activeTrade && !useGameStore.getState().activeTrade?.p1Locked && !useGameStore.getState().activeTrade?.p2Locked && (
+                    <button
+                      onClick={() => {
+                        const idx = items.findIndex(i => i?.id === selectedItem.id);
+                        if (idx !== -1 && (window as any).socket) {
+                          (window as any).socket.emit("trade_add_item", { tradeId: useGameStore.getState().activeTrade?.id, inventoryIndex: idx });
+                        }
+                      }}
+                      className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-display font-black uppercase tracking-widest rounded transition-colors text-[10px] sm:text-xs shadow-lg shadow-blue-900/20"
+                    >
+                      Add to Trade
+                    </button>
+                  )}
+
                   <div className="p-3 bg-[#1a140f] border border-[#4a3a2a] rounded flex items-center gap-3 opacity-60">
                       <Info className="w-4 h-4 text-[#8b6b4d]" />
                       <p className="text-[9px] text-[#8b6b4d] font-fantasy uppercase tracking-tighter leading-tight">Drag to hotbar to slot for use</p>

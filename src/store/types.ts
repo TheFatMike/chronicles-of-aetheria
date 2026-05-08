@@ -102,6 +102,7 @@ export interface UISlice {
   editorSelectedType: import('../types').WorldObjectType | null;
   selectedWorldObjectId: string | null;
   teleportRequest: [number, number, number] | null;
+  contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -113,6 +114,7 @@ export interface UISlice {
   setEditorSelectedType: (type: import('../types').WorldObjectType | null) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
+  setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;
 }
 
 export interface QuestSlice {
@@ -145,4 +147,25 @@ export interface PartySlice {
   setPartyInvite: (invite: PartySlice['partyInvite']) => void;
 }
 
-export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice & PartySlice;
+export interface TradeSlice {
+  tradeRequest: { fromId: string; fromName: string } | null;
+  activeTrade: {
+    id: string;
+    p1: string;
+    p2: string;
+    p1Name: string;
+    p2Name: string;
+    p1Items: (import('../types').InventoryItem | null)[];
+    p2Items: (import('../types').InventoryItem | null)[];
+    p1Gold: number;
+    p2Gold: number;
+    p1Locked: boolean;
+    p2Locked: boolean;
+    p1Confirmed: boolean;
+    p2Confirmed: boolean;
+  } | null;
+  setTradeRequest: (request: TradeSlice['tradeRequest']) => void;
+  setActiveTrade: (trade: TradeSlice['activeTrade']) => void;
+}
+
+export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice & PartySlice & TradeSlice;

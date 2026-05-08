@@ -13,6 +13,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   editorSelectedType: null,
   selectedWorldObjectId: null,
   teleportRequest: null,
+  contextMenu: null,
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -29,4 +30,5 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setEditorSelectedType: (type) => set({ editorSelectedType: type, selectedWorldObjectId: null }),
   setSelectedWorldObjectId: (id) => set({ selectedWorldObjectId: id }),
   requestTeleport: (pos) => set({ teleportRequest: pos }),
+  setContextMenu: (menu) => set({ contextMenu: menu }),
 });

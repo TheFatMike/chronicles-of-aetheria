@@ -7,6 +7,7 @@ import { createCombatSlice } from './slices/combatSlice';
 import { createUISlice } from './slices/uiSlice';
 import { createQuestSlice } from './slices/questSlice';
 import { createPartySlice } from './slices/partySlice';
+import { createTradeSlice } from './slices/tradeSlice';
 
 export const useGameStore = create<GameState>((...a) => ({
   ...createPlayerSlice(...a),
@@ -16,4 +17,5 @@ export const useGameStore = create<GameState>((...a) => ({
   ...createUISlice(...a),
   ...createQuestSlice(...a),
   ...createPartySlice(...a),
+  ...createTradeSlice(...a),
 }));

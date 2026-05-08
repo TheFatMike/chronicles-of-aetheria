@@ -16,11 +16,19 @@ export const createEntitySlice: StateCreator<GameState, [], [], EntitySlice> = (
     });
 
     const currentTargetId = state.currentTarget?.id;
-    const updatedTarget = currentTargetId ? entitiesObj[currentTargetId] || null : state.currentTarget;
+    // Only update the target from the entity list if it's an entity (NPC/Enemy). 
+    // If it's a player, we leave it alone (it's handled by playerSlice or preserved by merge)
+    let updatedTarget = state.currentTarget;
+    if (currentTargetId && entitiesObj[currentTargetId]) {
+      updatedTarget = { ...state.currentTarget, ...entitiesObj[currentTargetId] } as any;
+    } else if (currentTargetId && state.currentTarget?.type !== 'player') {
+      // If it's not a player and not in the new entities list, it might have been removed
+      updatedTarget = null;
+    }
 
     return { 
       entities: entitiesObj,
-      currentTarget: updatedTarget ? (updatedTarget as any) : null
+      currentTarget: updatedTarget
     };
   }),
 

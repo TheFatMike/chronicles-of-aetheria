@@ -39,6 +39,8 @@ import { useCombat } from "./hooks/useCombat";
 import { ALL_SKILLS } from "./data/skills";
 import { PlayerHUD } from "./components/UI/PlayerHUD";
 import { PartyFrames } from "./components/UI/PartyFrames";
+import { NotificationManager } from "./components/UI/NotificationManager";
+import { TradeWindow } from "./components/UI/TradeWindow";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -398,6 +400,8 @@ export default function App() {
             <Chat onSendMessage={handleSendMessage} />
             <TargetFrame />
             <PartyFrames />
+            <NotificationManager />
+            <TradeWindow />
             <CastBar />
             <WorldEditor socket={socket} />
             <Hotbar

@@ -8,6 +8,7 @@ import { handleSaveWorldObject, handleRemoveWorldObject, handleSpawnerReload } f
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleChatMessage } from "./handlers/chat";
 import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handlers/party";
+import { handleTradeRequest, handleTradeAccept, handleTradeCancel, handleTradeLock, handleTradeConfirm, handleTradeAddItem, handleTradeRemoveItem } from "./handlers/trade";
 import { players, worldObjects, lastSkillUse, lastChatMessage } from "../state";
 import { filterNearby } from "../systems/spatial";
 
@@ -65,4 +66,13 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   socket.on("party_invite", (targetId) => handlePartyInvite(io, socket, targetId));
   socket.on("party_accept", (inviterId) => handlePartyAccept(io, socket, inviterId));
   socket.on("party_leave", () => handlePartyLeave(io, socket));
+
+  // Trade
+  socket.on("trade_request", (targetId) => handleTradeRequest(io, socket, targetId));
+  socket.on("trade_accept", (requesterId) => handleTradeAccept(io, socket, requesterId));
+  socket.on("trade_cancel", (tradeId) => handleTradeCancel(io, socket, tradeId));
+  socket.on("trade_lock", (data) => handleTradeLock(io, socket, data));
+  socket.on("trade_confirm", (tradeId) => handleTradeConfirm(io, socket, tradeId));
+  socket.on("trade_add_item", (data) => handleTradeAddItem(io, socket, data));
+  socket.on("trade_remove_item", (data) => handleTradeRemoveItem(io, socket, data));
 };

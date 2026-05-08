@@ -26,9 +26,25 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
   const gridSnap = useGameStore(state => state.gridSnap);
 
   const onFloorClick = (e: any) => {
-    // Only place on left click (button 0)
+    // Only place/interact on left click (button 0)
     if (e.button !== 0) return;
-    if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') return;
+    
+    // Only clear target if the floor is the FIRST thing we hit (not clicking through to something else)
+    if (e.intersections[0]?.object !== e.eventObject) return;
+
+    // Don't clear target if we're hovering over something else (UI or Entity)
+    const isHoveringOther = document.body.classList.contains('npc-hover') || 
+                           document.body.classList.contains('enemy-hover') || 
+                           document.body.classList.contains('loot-hover') ||
+                           document.body.classList.contains('player-hover');
+    if (isHoveringOther) return;
+
+    // Clear target when clicking ground (if not in editor placement mode)
+    if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') {
+      useGameStore.getState().setTarget(null);
+      return;
+    }
+
     e.stopPropagation();
     
     let { point } = e;
@@ -84,7 +100,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         args={[GAME_CONFIG.WORLD.SIZE, GAME_CONFIG.WORLD.SIZE]} 
         rotation={[-Math.PI / 2, 0, 0]} 
         receiveShadow
-        onPointerDown={onFloorClick}
+        onClick={onFloorClick}
       >
         <meshStandardMaterial color="#14532d" roughness={0.9} metalness={0.05} />
       </Plane>
@@ -94,7 +110,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         rotation={[-Math.PI / 2, 0, 0]} 
         position={[0, 0.02, 0]} 
         receiveShadow
-        onPointerDown={onFloorClick}
+        onClick={onFloorClick}
       >
         <meshStandardMaterial color="#44403c" roughness={1} />
       </Plane>

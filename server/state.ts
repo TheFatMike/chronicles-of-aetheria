@@ -6,3 +6,4 @@ export const logoutTimers = new Map<string, NodeJS.Timeout>();
 export const lastSkillUse = new Map<string, Record<string, number>>(); // socketId -> { skillId: timestamp }
 export const lastChatMessage = new Map<string, number>(); // socketId -> timestamp
 export const parties = new Map<string, any>(); // partyId -> { id, leaderId, members: string[] }
+export const activeTrades = new Map<string, any>(); // tradeId -> { id, p1, p2, p1Items, p2Items, p1Gold, p2Gold, p1Locked, p2Locked }
