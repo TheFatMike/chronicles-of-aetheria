@@ -65,3 +65,13 @@ export function calculatePhysicalDamage(stats: Stats): number {
 export function calculateMagicDamage(stats: Stats): number {
   return (stats.intelligence * 2.5) + (stats.wisdom * 0.5);
 }
+/**
+ * Snaps a coordinate or vector to the grid (0.5 units).
+ */
+export function snapToGrid(value: number): number {
+  return Math.round(value * 2) / 2;
+}
+
+export function snapVectorToGrid(vec: [number, number, number]): [number, number, number] {
+  return [snapToGrid(vec[0]), vec[1], snapToGrid(vec[2])];
+}

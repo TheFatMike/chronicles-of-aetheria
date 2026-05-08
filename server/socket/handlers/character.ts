@@ -1,0 +1,84 @@
+import { Socket } from "socket.io";
+import admin from "firebase-admin";
+import { db } from "../../db";
+import { serverLogger } from "../../logger";
+import { CHARACTER_CLASSES } from "../../../src/constants";
+import { EquipmentSlots } from "../../../src/types";
+import { CLASS_STARTING_GEAR, generateItemInstance } from "../../data/items";
+import { CharacterModel } from "../../../src/models/CharacterModel";
+import { getUserRole } from "../../lib/auth";
+
+export const handleCreateCharacter = async (socket: Socket, data: any, userId: string, email: string) => {
+  try {
+    const userRole = await getUserRole(userId, email);
+
+    const { characterName, class: classId, color } = data;
+    const lowerName = characterName.toLowerCase().trim();
+    const nameRef = db.collection("characterNames").doc(lowerName);
+
+    if (characterName.length < 3 || characterName.length > 16) {
+      return socket.emit("error", { message: "Invalid name length" });
+    }
+
+    const selectedClassData = CHARACTER_CLASSES.find(c => c.id === classId);
+    if (!selectedClassData) {
+      return socket.emit("error", { message: "Invalid class selection" });
+    }
+
+    const result = await db.runTransaction(async (transaction: admin.firestore.Transaction) => {
+      const nameDoc = (await transaction.get(nameRef)) as any as admin.firestore.DocumentSnapshot;
+      if (nameDoc.exists) {
+        throw new Error("This name has already been claimed.");
+      }
+
+      const charCol = db.collection("users").doc(userId).collection("characters");
+      const charDocRef = charCol.doc();
+      
+      const baseStats = selectedClassData.stats;
+      const startingItems = CLASS_STARTING_GEAR[classId] || [];
+      const initialInventory = Array(30).fill(null);
+      let initialEquipment: EquipmentSlots = { head: null, chest: null, legs: null, boots: null, weapon: null, offhand: null, accessory: null };
+      
+      startingItems.forEach((itemId) => {
+        const itemInstance = generateItemInstance(itemId);
+        if (itemInstance) {
+          const emptyIdx = initialInventory.findIndex(s => s === null);
+          if (emptyIdx !== -1) initialInventory[emptyIdx] = itemInstance;
+        }
+      });
+
+      const { maxHp, maxMp } = CharacterModel.calculateDerivedStats(baseStats, initialEquipment);
+
+      const charData = {
+        name: characterName.trim(),
+        class: classId,
+        color: color,
+        level: 1,
+        stats: baseStats,
+        hp: maxHp,
+        mp: maxMp,
+        inventory: initialInventory,
+        hotbar: Array(10).fill(null),
+        equipment: initialEquipment,
+        role: userRole,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(nameRef, { 
+        ownerId: userId,
+        id: lowerName,
+        characterId: charDocRef.id,
+        claimedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      transaction.set(charDocRef, charData);
+
+      return { id: charDocRef.id, ...charData };
+    });
+
+    socket.emit("character_created", result);
+    serverLogger.info("net", `Created character ${characterName} for ${userId}`);
+  } catch (e: any) {
+    serverLogger.error("net", "Character creation failed", e.message);
+    socket.emit("error", { message: e.message });
+  }
+};

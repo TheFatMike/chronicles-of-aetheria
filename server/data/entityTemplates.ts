@@ -16,6 +16,7 @@ export interface EntityTemplate {
   leashRadius: number;
   moveSpeed: number;
   respawnTime: number;
+  level?: number;
   lootTable: { itemId: string; chance: number }[];
 }
 

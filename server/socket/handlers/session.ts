@@ -1,0 +1,121 @@
+import { Server, Socket } from "socket.io";
+import admin from "firebase-admin";
+import { players, entities, worldObjects, spawners, logoutTimers } from "../../state";
+import { db } from "../../db";
+import { serverLogger } from "../../logger";
+import { CharacterModel } from "../../../src/models/CharacterModel";
+import { filterNearby } from "../../systems/spatial";
+import { getUserRole } from "../../lib/auth";
+
+export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
+  try {
+    // 1. Get Account Role
+    const userRole = await getUserRole(userId, email);
+
+    // 2. Check for existing "Blipped" session to take over
+    let existingPlayer = null;
+    for (const p of players.values()) {
+      if (p.userId === userId && p.characterId === playerData.characterId) {
+        existingPlayer = p;
+        break;
+      }
+    }
+
+    if (existingPlayer) {
+      serverLogger.info("net", `Session Takeover for ${existingPlayer.characterName}`);
+      const timer = logoutTimers.get(existingPlayer.id);
+      if (timer) {
+        clearTimeout(timer);
+        logoutTimers.delete(existingPlayer.id);
+      }
+      players.set(socket.id, { ...existingPlayer, id: socket.id });
+      players.delete(existingPlayer.id);
+    } else {
+      // 3. New Session: Get Character Data from DB
+      const charDoc = await db.collection("users").doc(userId).collection("characters").doc(playerData.characterId).get();
+      if (!charDoc.exists) {
+        serverLogger.warn("net", `Join rejected: Character not found for ${userId}`);
+        return;
+      }
+      const charData = CharacterModel.fromFirestore(charDoc.id, charDoc.data(), userRole);
+
+      players.set(socket.id, {
+        id: socket.id,
+        userId: userId,
+        characterId: playerData.characterId,
+        characterName: charData.name,
+        class: charData.class,
+        color: charData.color,
+        role: userRole,
+        pos: charData.pos || playerData.pos || [0, 1, 0],
+        rot: charData.rot || playerData.rot || [0, 0, 0],
+        hp: charData.hp,
+        maxHp: charData.maxHp,
+        mp: charData.mp,
+        maxMp: charData.maxMp,
+        stats: charData.stats,
+        equipment: charData.equipment,
+        inventory: charData.inventory || Array(30).fill(null),
+        hotbar: charData.hotbar || Array(10).fill(null),
+        quests: charData.quests || {}
+      });
+    }
+
+    const currentPlayer = players.get(socket.id);
+    serverLogger.info("net", `Player joined: ${currentPlayer.characterName} (${currentPlayer.role})`);
+
+    // 4. Sync State
+    socket.emit("session_start", currentPlayer);
+    io.emit("players", Array.from(players.values()));
+    
+    const nearbyEntities = filterNearby(Array.from(entities.values()), currentPlayer.pos, 100);
+    socket.emit("entities", nearbyEntities);
+    
+    const nearbyWorldObjects = filterNearby(Array.from(worldObjects.values()), currentPlayer.pos, 150);
+    socket.emit("world_sync", nearbyWorldObjects);
+    
+    socket.emit("spawners_sync", Array.from(spawners.values()));
+  } catch (e: any) {
+    serverLogger.error("net", "Join error", e.message);
+  }
+};
+
+export const handleDisconnect = (io: Server, socket: Socket) => {
+  const player = players.get(socket.id);
+  if (player && player.userId && player.characterId) {
+    serverLogger.info("net", `Player blipped: ${player.characterName}. 10s logout timer started.`);
+    
+    const timer = setTimeout(async () => {
+      logoutTimers.delete(socket.id);
+      if (!players.has(socket.id)) return;
+
+      try {
+        const p = players.get(socket.id);
+        const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
+        await charRef.set({ 
+          pos: p.pos, 
+          rot: p.rot,
+          hp: p.hp,
+          mp: p.mp,
+          stats: p.stats,
+          equipment: p.equipment,
+          class: p.class,
+          color: p.color,
+          lastActive: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        serverLogger.info("net", `Saved & Logged out: ${p.characterName}`);
+      } catch (e: any) {
+        serverLogger.error("firestore", `Save failed for session ${socket.id}`, e.message);
+      }
+      
+      players.delete(socket.id);
+      io.emit("player_leave", socket.id);
+    }, 10000);
+
+    logoutTimers.set(socket.id, timer);
+  } else {
+    players.delete(socket.id);
+    io.emit("player_leave", socket.id);
+  }
+};

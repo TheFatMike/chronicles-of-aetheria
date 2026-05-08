@@ -12,6 +12,12 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   const skill = ALL_SKILLS.find(s => s.id === data.skillId);
   if (!skill) return;
 
+  // 0. Life Check
+  if (player.hp <= 0) {
+    socket.emit("chat_message", { id: "sys-dead", sender: "SYSTEM", text: "You cannot cast skills while dead!", timestamp: Date.now(), color: "#ff4444" });
+    return;
+  }
+
   // 1. Cooldown Check (Server-side)
   const playerCooldowns = lastSkillUse.get(socket.id) || {};
   const lastUse = playerCooldowns[skill.id] || 0;

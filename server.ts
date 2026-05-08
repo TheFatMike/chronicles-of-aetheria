@@ -79,35 +79,11 @@ async function bootstrap() {
   // 6. Graceful Shutdown
   const shutdown = async (signal: string) => {
     serverLogger.info("system", `${signal} received. Performing final global save...`);
-    
-    if (players.size > 0) {
-      const batch = db.batch();
-      for (const p of players.values()) {
-        const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
-        batch.set(charRef, { 
-          pos: p.pos, 
-          rot: p.rot,
-          hp: p.hp,
-          mp: p.mp,
-          stats: p.stats,
-          equipment: p.equipment,
-          class: p.class,
-          color: p.color,
-          lastActive: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      }
-      
-      try {
-        await batch.commit();
-        serverLogger.info("system", `Successfully saved ${players.size} players.`);
-      } catch (e: any) {
-        serverLogger.error("system", `Final save failed: ${e.message}`);
-      }
-    }
-
+    await import("./server/systems/persistence").then(m => m.performShutdownSave());
     serverLogger.info("system", "Shutdown complete.");
     process.exit(0);
   };
+
 
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
