@@ -1,5 +1,6 @@
 import { AnimatePresence } from "motion/react";
 import { useGameStore } from "../../store/useGameStore";
+import { useShallow } from "zustand/react/shallow";
 import { Map } from "./Map";
 import { QuestLog } from "./QuestLog";
 import { DialogueBox } from "./DialogueBox";
@@ -39,16 +40,44 @@ export const MenuManager = ({
     addMessage,
     players,
     contextMenu,
-    setContextMenu
-  } = useGameStore();
+    setContextMenu,
+    isInventoryOpen,
+    setInventoryOpen,
+    isCharacterOpen,
+    setCharacterOpen,
+    isQuestsOpen,
+    setQuestsOpen,
+    isSkillsOpen,
+    setSkillsOpen
+  } = useGameStore(useShallow((s) => ({
+    activeMenu: s.activeMenu,
+    setActiveMenu: s.setActiveMenu,
+    activeDialogue: s.activeDialogue,
+    setActiveDialogue: s.setActiveDialogue,
+    activeQuests: s.activeQuests,
+    setActiveQuests: s.setActiveQuests,
+    addQuest: s.addQuest,
+    addMessage: s.addMessage,
+    players: s.players,
+    contextMenu: s.contextMenu,
+    setContextMenu: s.setContextMenu,
+    isInventoryOpen: s.isInventoryOpen,
+    setInventoryOpen: s.setInventoryOpen,
+    isCharacterOpen: s.isCharacterOpen,
+    setCharacterOpen: s.setCharacterOpen,
+    isQuestsOpen: s.isQuestsOpen,
+    setQuestsOpen: s.setQuestsOpen,
+    isSkillsOpen: s.isSkillsOpen,
+    setSkillsOpen: s.setSkillsOpen
+  })));
 
   return (
-    <AnimatePresence mode="wait">
-      {activeMenu === 'map' && <Map localPlayerId={socket?.id || null} />}
-      {activeMenu === 'quests' && <QuestLog onClose={() => setActiveMenu(null)} />}
+    <AnimatePresence>
+      {activeMenu === 'map' && <Map key="map-window" localPlayerId={socket?.id || null} />}
 
       {activeDialogue && (
         <DialogueBox
+          key="dialogue-box"
           speaker={activeDialogue.speaker}
           text={activeDialogue.text}
           quest={activeDialogue.quest}
@@ -70,39 +99,19 @@ export const MenuManager = ({
       )}
       {activeMenu === 'spawners' && (players[socket?.id || '']?.role === 'dev' || players[socket?.id || '']?.role === 'admin' || players[socket?.id || '']?.role === 'mod') && (
         <SpawnerManager
+          key="spawner-manager"
           onClose={() => setActiveMenu(null)}
           playerPos={players[socket?.id || '']?.pos || [0, 0, 0]}
           socket={socket}
         />
       )}
-      {activeMenu === 'inventory' && (
-        <Inventory
-          items={selectedCharacter.inventory || []}
-          gold={selectedCharacter.gold || 0}
-          onClose={() => setActiveMenu(null)}
-          onMoveItem={moveItem}
-          onSplitStack={splitStack}
-          onEquip={equipItem}
-        />
-      )}
-      {activeMenu === 'skills' && (
-        <SkillBook
-          onClose={() => setActiveMenu(null)}
-          playerClass={selectedCharacter.class}
-          learnedSkills={selectedCharacter.skills || []}
-        />
-      )}
-      {activeMenu === 'menu' && (
-        <CharacterInfo
-          character={selectedCharacter}
-          onClose={() => setActiveMenu(null)}
-          onUnequip={unequipItem}
-        />
-      )}
+      {/* Handled independently below */}
+      {/* Removed {activeMenu === 'menu' && ...} */}
 
       {/* Player Context Menu */}
       {contextMenu && (
         <ContextMenu
+          key="player-context-menu"
           x={contextMenu.x}
           y={contextMenu.y}
           title={contextMenu.title}
@@ -136,6 +145,36 @@ export const MenuManager = ({
             }
           ]}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+      {isInventoryOpen && (
+        <Inventory
+          key="inventory-window"
+          items={selectedCharacter.inventory || []}
+          gold={selectedCharacter.gold || 0}
+          onClose={() => setInventoryOpen(false)}
+          onMoveItem={moveItem}
+          onSplitStack={splitStack}
+          onEquip={equipItem}
+        />
+      )}
+      {isCharacterOpen && (
+        <CharacterInfo
+          key="character-window"
+          character={selectedCharacter}
+          onClose={() => setCharacterOpen(false)}
+          onUnequip={unequipItem}
+        />
+      )}
+      {isQuestsOpen && (
+        <QuestLog key="quests-window" onClose={() => setQuestsOpen(false)} />
+      )}
+      {isSkillsOpen && (
+        <SkillBook
+          key="skills-window"
+          onClose={() => setSkillsOpen(false)}
+          playerClass={selectedCharacter.class}
+          learnedSkills={selectedCharacter.skills || []}
         />
       )}
     </AnimatePresence>

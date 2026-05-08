@@ -8,7 +8,20 @@ interface KeybindingProps {
 }
 
 export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingProps) => {
-  const { setActiveMenu, activeMenu, setTarget, currentTarget } = useGameStore();
+  const { 
+    setActiveMenu, 
+    activeMenu, 
+    setTarget, 
+    currentTarget,
+    isInventoryOpen,
+    setInventoryOpen,
+    isCharacterOpen,
+    setCharacterOpen,
+    isQuestsOpen,
+    setQuestsOpen,
+    isSkillsOpen,
+    setSkillsOpen
+  } = useGameStore();
 
   useEffect(() => {
     if (!enabled) return;
@@ -28,8 +41,12 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
       
       // Escape first
       if (e.key === "Escape") {
-        if (activeMenu) {
+        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen) {
           setActiveMenu(null);
+          setInventoryOpen(false);
+          setCharacterOpen(false);
+          setQuestsOpen(false);
+          setSkillsOpen(false);
         } else if (currentTarget) {
           setTarget(null);
         } else {
@@ -46,22 +63,23 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
         return;
       }
 
-      // Hotkeys (only if no menu is open, or to toggle specific menus)
+      // Hotkeys (using independent toggles for multi-window support)
       switch (key) {
+        case "b":
         case "i":
-          setActiveMenu(activeMenu === 'inventory' ? null : 'inventory');
+          setInventoryOpen(!isInventoryOpen);
           break;
         case "m":
           setActiveMenu(activeMenu === 'map' ? null : 'map');
           break;
         case "c":
-          setActiveMenu(activeMenu === 'menu' ? null : 'menu');
+          setCharacterOpen(!isCharacterOpen);
           break;
-        case "q":
-          setActiveMenu(activeMenu === 'quests' ? null : 'quests');
+        case "j":
+          setQuestsOpen(!isQuestsOpen);
           break;
         case "k":
-          setActiveMenu(activeMenu === 'skills' ? null : 'skills');
+          setSkillsOpen(!isSkillsOpen);
           break;
       }
     };

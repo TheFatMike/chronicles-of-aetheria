@@ -13,6 +13,10 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   editorSelectedType: null,
   selectedWorldObjectId: null,
   teleportRequest: null,
+  isInventoryOpen: false,
+  isCharacterOpen: false,
+  isQuestsOpen: false,
+  isSkillsOpen: false,
   contextMenu: null,
 
   addMessage: (message) => set((state) => ({
@@ -20,7 +24,22 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   })),
 
   setConnected: (connected) => set({ connected }),
-  setActiveMenu: (menu) => set({ activeMenu: menu }),
+  setActiveMenu: (menu) => set((state) => {
+    if (menu === 'map') {
+      return { 
+        activeMenu: menu,
+        isInventoryOpen: false,
+        isCharacterOpen: false,
+        isQuestsOpen: false,
+        isSkillsOpen: false
+      };
+    }
+    return { activeMenu: menu };
+  }),
+  setInventoryOpen: (isOpen) => set({ isInventoryOpen: isOpen }),
+  setCharacterOpen: (isOpen) => set({ isCharacterOpen: isOpen }),
+  setQuestsOpen: (isOpen) => set({ isQuestsOpen: isOpen }),
+  setSkillsOpen: (isOpen) => set({ isSkillsOpen: isOpen }),
   setDevMode: (devMode) => set({ devMode }),
   
   setEditorOpen: (isOpen) => set({ isEditorOpen: isOpen }),

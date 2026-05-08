@@ -170,8 +170,14 @@ export const usePlayerMovement = (
     let sideInput = 0;
 
     if (!isTyping && !isEditorOpen) {
-      forwardInput = (keys.current["KeyS"] ? 1 : 0) - (keys.current["KeyW"] ? 1 : 0);
+      forwardInput = (keys.current["KeyS"] || keys.current["ArrowDown"] ? 1 : 0) - (keys.current["KeyW"] || keys.current["ArrowUp"] ? 1 : 0);
       sideInput = (keys.current["KeyD"] ? 1 : 0) - (keys.current["KeyA"] ? 1 : 0);
+      
+      // Arrow Turning Logic
+      const turnInput = (keys.current["ArrowLeft"] ? 1 : 0) - (keys.current["ArrowRight"] ? 1 : 0);
+      if (turnInput !== 0) {
+        cameraState.current.theta += turnInput * delta * 2.5; // Turn speed
+      }
     }
     
     if (isEditorOpen) {
@@ -185,7 +191,8 @@ export const usePlayerMovement = (
     
     isMoving.current = inputDir.current.lengthSq() > 0.01;
 
-    if (cameraState.current.isRightMouseDown && !isEditorOpen) {
+    // Sync mesh rotation with camera theta if right-clicking OR turning with arrows
+    if (!isEditorOpen && (cameraState.current.isRightMouseDown || keys.current["ArrowLeft"] || keys.current["ArrowRight"])) {
       meshRef.current.rotation.y = cameraState.current.theta;
     }
 

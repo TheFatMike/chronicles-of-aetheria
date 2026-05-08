@@ -86,14 +86,18 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      initial={{ opacity: 0, x: -20, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -20, scale: 0.95 }}
+      className="fixed top-24 left-6 z-50 flex items-center justify-center p-4 pointer-events-none"
     >
-      <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={onClose} />
-      
-      <div className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-xl overflow-hidden shadow-2xl pointer-events-auto w-full max-w-2xl h-[600px] flex flex-row relative z-10 transition-all duration-300">
+      <div className="bg-[#1a140f]/95 backdrop-blur-md border-4 border-[#4a3a2a] rounded-xl overflow-hidden shadow-2xl pointer-events-auto w-[600px] h-[550px] flex flex-row relative transition-all duration-300">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors p-1 z-20"
+        >
+          <X className="w-5 h-5" />
+        </button>
         
         {/* Left Part: Character & Equipment */}
         <div className="flex-1 p-8 border-r border-[#4a3a2a]/30 flex flex-col overflow-y-auto custom-scrollbar">
@@ -138,12 +142,6 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
         <div className="w-72 bg-[#120e0a] p-8 flex flex-col overflow-y-auto custom-scrollbar border-l border-[#4a3a2a]">
           <div className="flex justify-between items-start mb-8">
              <div className="px-3 py-1 bg-[#2d221a] border border-[#4a3a2a] rounded text-[10px] font-mono text-[#f4e4bc]">BASE ATTRIBUTES</div>
-             <button 
-              onClick={onClose}
-              className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
           <div className="space-y-6 flex-1">

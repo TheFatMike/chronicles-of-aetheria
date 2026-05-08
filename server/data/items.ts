@@ -255,6 +255,16 @@ export const ITEM_REGISTRY: Record<string, ItemTemplate> = {
     icon: "Shield",
     stackable: true,
     maxStack: 20
+  },
+  "gold-coin": {
+    itemId: "gold-coin",
+    name: "Gold Coin",
+    type: "misc",
+    rarity: "legendary",
+    description: "The primary currency of Aetheria. Shining and valuable.",
+    icon: "Coins",
+    stackable: true,
+    maxStack: 999999
   }
 };
 

@@ -104,10 +104,18 @@ export interface UISlice {
   editorSelectedType: import('../types').WorldObjectType | null;
   selectedWorldObjectId: string | null;
   teleportRequest: [number, number, number] | null;
+  isInventoryOpen: boolean;
+  isCharacterOpen: boolean;
+  isQuestsOpen: boolean;
+  isSkillsOpen: boolean;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
+  setInventoryOpen: (isOpen: boolean) => void;
+  setCharacterOpen: (isOpen: boolean) => void;
+  setQuestsOpen: (isOpen: boolean) => void;
+  setSkillsOpen: (isOpen: boolean) => void;
   setDevMode: (enabled: boolean) => void;
   setEditorOpen: (isOpen: boolean) => void;
   setTransforming: (val: boolean) => void;

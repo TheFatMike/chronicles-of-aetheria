@@ -41,6 +41,7 @@ import { PlayerHUD } from "./components/UI/PlayerHUD";
 import { PartyFrames } from "./components/UI/PartyFrames";
 import { NotificationManager } from "./components/UI/NotificationManager";
 import { TradeWindow } from "./components/UI/TradeWindow";
+import { NavigationMenu } from "./components/UI/NavigationMenu";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -366,7 +367,7 @@ export default function App() {
             className="w-full h-full relative"
           >
             <AnimatePresence>
-              {activeMenu && (
+              {(activeMenu === 'map' || activeMenu === 'spawners') && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -427,6 +428,8 @@ export default function App() {
               equipItem={equipItem}
               unequipItem={unequipItem}
             />
+
+            <NavigationMenu />
 
             <GameView 
               onMove={sendMove} 

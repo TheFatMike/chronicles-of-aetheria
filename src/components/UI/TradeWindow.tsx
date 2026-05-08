@@ -4,6 +4,7 @@ import { useGameStore } from '../../store/useGameStore';
 import * as Icons from 'lucide-react';
 import { X, Lock, Unlock, Check, Coins, ArrowLeftRight } from 'lucide-react';
 import { InventoryItem, ItemRarity } from '../../types';
+import { formatGold, formatGoldDetailed } from '../../lib/currency';
 
 const getRarityColor = (rarity: ItemRarity | undefined) => {
   if (!rarity) return "border-[#4a3a2a]/20 text-[#c2a472]";
@@ -177,7 +178,12 @@ export const TradeWindow = () => {
               <label className="text-[10px] text-[#8b6b4d] uppercase font-fantasy tracking-widest block mb-1">Their Gold Offer</label>
               <div className="flex items-center gap-2 bg-black/40 p-2 rounded border border-[#4a3a2a] opacity-80">
                 <Coins className="text-yellow-500 w-4 h-4" />
-                <span className="text-[#fbbf24] font-mono font-bold text-sm">{theirData.gold.toLocaleString()}</span>
+                <span 
+                  className="text-[#fbbf24] font-mono font-bold text-sm cursor-help"
+                  title={`${formatGoldDetailed(theirData.gold)} Gold Coins`}
+                >
+                  {formatGold(theirData.gold)}
+                </span>
               </div>
             </div>
           </div>
