@@ -1,9 +1,27 @@
-import { entities, worldObjects } from "../state";
-import { checkWorldCollision } from "./spatial";
+import { entities, worldObjects, dirtyEntities } from "../state";
+import { checkWorldCollision, updateInGrid, entityGrid } from "./spatial";
+
+// Cache for waypoints to avoid O(N) filtering every tick
+const waypointCache = new Map<string, any[]>();
+
+export const clearAICache = () => waypointCache.clear();
+
+const getWaypointsForPath = (pathId: string) => {
+  if (waypointCache.has(pathId)) return waypointCache.get(pathId)!;
+  
+  const waypoints = Array.from(worldObjects.values())
+    .filter(obj => obj.type === 'waypoint' && obj.pathId === pathId)
+    .sort((a, b) => (Number(a.waypointId) || 0) - (Number(b.waypointId) || 0));
+  
+  waypointCache.set(pathId, waypoints);
+  return waypoints;
+};
 
 export const updateEntityAI = (tickTime: number) => {
   for (const entity of entities.values()) {
     const speed = entity.stats.moveSpeed * (tickTime / 1000);
+    const oldPos: [number, number, number] = [...entity.pos] as [number, number, number];
+    const oldAIState = entity.aiState;
     
     const moveWithCollision = (dx: number, dz: number, s: number) => {
       const mag = Math.sqrt(dx*dx + dz*dz);
@@ -27,10 +45,11 @@ export const updateEntityAI = (tickTime: number) => {
       case 'IDLE':
         if (Math.random() < 0.05) {
           entity.rot[1] += (Math.random() - 0.5) * 2;
+          dirtyEntities.add(entity.id);
         }
         break;
       case 'CHASE':
-        // Logic for chasing target (can be expanded later)
+        // Logic for chasing target
         break;
       case 'RETURN':
         const rdx = entity.homePos[0] - entity.pos[0];
@@ -50,17 +69,13 @@ export const updateEntityAI = (tickTime: number) => {
           break;
         }
 
-        // 1. Get all waypoints for this path
-        const waypoints = Array.from(worldObjects.values())
-          .filter(obj => obj.type === 'waypoint' && obj.pathId === entity.pathId)
-          .sort((a, b) => (Number(a.waypointId) || 0) - (Number(b.waypointId) || 0));
+        const waypoints = getWaypointsForPath(entity.pathId);
 
         if (waypoints.length === 0) {
           entity.aiState = 'RETURN';
           break;
         }
 
-        // 2. Target current waypoint
         const targetWP = waypoints[entity.currentWaypointIndex % waypoints.length];
         if (!targetWP) {
           entity.currentWaypointIndex = 0;
@@ -72,17 +87,21 @@ export const updateEntityAI = (tickTime: number) => {
         const wdSq = wdx*wdx + wdz*wdz;
 
         if (wdSq < 0.25) {
-          // Reached waypoint, move to next
           entity.currentWaypointIndex = (entity.currentWaypointIndex + 1) % waypoints.length;
           entity.isMoving = false;
         } else {
           entity.isMoving = true;
-          // Rotate towards target
           entity.rot[1] = Math.atan2(wdx, wdz);
           moveWithCollision(wdx, wdz, speed);
         }
         break;
       }
+    }
+
+    // Update spatial grid and mark as dirty if changed
+    if (entity.pos[0] !== oldPos[0] || entity.pos[2] !== oldPos[2] || entity.aiState !== oldAIState) {
+      updateInGrid(entityGrid, entity.id, oldPos, entity.pos);
+      dirtyEntities.add(entity.id);
     }
   }
 };

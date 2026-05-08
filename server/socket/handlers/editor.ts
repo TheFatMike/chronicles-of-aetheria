@@ -4,6 +4,8 @@ import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { initializeSpawners } from "../../systems/persistence";
 import { createNPCEntity } from "../../lib/entities";
+import { updateInGrid, objectGrid, entityGrid } from "../../systems/spatial";
+import { clearAICache } from "../../systems/ai";
 
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
@@ -20,7 +22,15 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 
   try {
     await db.collection("world").doc(id).set(worldObj, { merge: true });
+    
+    // Update Spatial Grid
+    const oldObj = worldObjects.get(id);
+    updateInGrid(objectGrid, id, oldObj?.pos || null, pos);
+    
     worldObjects.set(id, worldObj);
+    
+    // Invalidate AI cache if this might be a waypoint
+    if (type === 'waypoint') clearAICache();
 
     if (type.startsWith("spawner_")) {
       await initializeSpawners();
@@ -30,6 +40,10 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
     if (type.startsWith("npc_")) {
       const entityId = `npc-${id}`;
       const npcEntity = createNPCEntity(entityId, id, type, pos, rot);
+      
+      const oldNPC = entities.get(entityId);
+      updateInGrid(entityGrid, entityId, oldNPC?.pos || null, pos);
+      
       entities.set(entityId, npcEntity as any);
       io.emit("entity_spawn", npcEntity);
     }
@@ -58,14 +72,27 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
 
   try {
     await db.collection("world").doc(id).delete();
+    
+    // Cleanup Spatial Grid
+    if (existing?.pos) {
+      const key = Math.floor(existing.pos[0] / 50) + "," + Math.floor(existing.pos[2] / 50);
+      objectGrid.get(key)?.delete(id);
+    }
+    
     worldObjects.delete(id);
+    if (existing?.type === 'waypoint') clearAICache();
 
     if (existing?.type.startsWith("spawner_")) {
       await initializeSpawners();
       io.emit("spawners_sync", Array.from(spawners.values()));
     } else if (existing?.type.startsWith("npc_")) {
       const entityId = `npc-${id}`;
-      if (entities.has(entityId)) {
+      const existingNPC = entities.get(entityId);
+      if (existingNPC) {
+        if (existingNPC.pos) {
+          const key = Math.floor(existingNPC.pos[0] / 50) + "," + Math.floor(existingNPC.pos[2] / 50);
+          entityGrid.get(key)?.delete(entityId);
+        }
         entities.delete(entityId);
         io.emit("entity_despawn", entityId);
       }

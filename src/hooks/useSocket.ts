@@ -86,6 +86,11 @@ export const useSocket = (token: string | null) => {
       logger.debug("socket", `Received ${allPlayers.length} players`);
       useGameStore.getState().setPlayers(allPlayers);
     });
+
+    socket.on("player_join", (player) => {
+      logger.info("socket", `Player joined nearby: ${player.characterName}`);
+      useGameStore.getState().updatePlayer(player.id, player);
+    });
     
     socket.on("player_move", (data) => {
       useGameStore.getState().updatePlayer(data.id, { 
@@ -95,10 +100,6 @@ export const useSocket = (token: string | null) => {
         isGrounded: data.isGrounded,
         role: data.role
       });
-    });
-
-    socket.on("player_stats", (data) => {
-      useGameStore.getState().updatePlayer(data.id, { hp: data.hp, mp: data.mp });
     });
 
     socket.on("chat_message", (msg) => {
@@ -124,6 +125,10 @@ export const useSocket = (token: string | null) => {
     });
     socket.on("entities", (ents) => {
       useGameStore.getState().setEntities(ents)
+    });
+
+    socket.on("entities_update", (updates) => {
+      updates.forEach((e: any) => useGameStore.getState().updateEntity(e.id, e));
     });
 
     // Spawner Events — server pushes live in-memory spawner list

@@ -5,6 +5,7 @@ import { AnimatePresence } from 'motion/react';
 import { Save } from 'lucide-react';
 import { EditorPalette } from './EditorPalette';
 import { EditorInspector } from './EditorInspector';
+import { EditorOutliner } from './EditorOutliner';
 import { snapVectorToGrid } from '../../lib/gameUtils';
 
 export const WorldEditor = ({ socket }: { socket: any }) => {
@@ -123,6 +124,8 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
               nextWaypointOrder={nextWaypointOrder}
               setNextWaypointOrder={setNextWaypointOrder}
             />
+
+            <EditorOutliner socket={socket} />
 
             <EditorInspector 
               selectedObject={selectedObject}

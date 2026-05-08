@@ -25,7 +25,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   });
 
   // Movement
-  socket.on("move", (data) => handleMove(socket, data));
+  socket.on("move", (data) => handleMove(socket, data, io));
 
   // Combat
   socket.on("cast_skill", (data) => handleCombatSkill(io, socket, data));
@@ -51,7 +51,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   socket.on("request_world_sync", () => {
     const player = players.get(socket.id);
     if (!player) return;
-    const nearby = filterNearby(Array.from(worldObjects.values()), player.pos, 150);
+    const nearby = filterNearby(Array.from(worldObjects.values()), player.pos, 150, 'object');
     socket.emit("world_sync", nearby);
   });
 

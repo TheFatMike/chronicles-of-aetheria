@@ -1,9 +1,9 @@
-import { Socket } from "socket.io";
+import { Socket, Server } from "socket.io";
 import { players } from "../../state";
 import { serverLogger } from "../../logger";
-import { resolveWorldCollision } from "../../systems/spatial";
+import { resolveWorldCollision, updateInGrid, entityGrid, getNearbyGridKeys } from "../../systems/spatial";
 
-export const handleMove = (socket: Socket, data: any) => {
+export const handleMove = (socket: Socket, data: any, io: Server) => {
   const player = players.get(socket.id);
   if (!player) return;
 
@@ -17,10 +17,9 @@ export const handleMove = (socket: Socket, data: any) => {
     const distSq = dx*dx + dy*dy + dz*dz;
     const speedSq = distSq / (dt * dt);
 
-    // Max speed check (allowing more buffer for lag/jumps)
     if (speedSq > 1600 && dt > 0.1) { 
       serverLogger.warn("anti-cheat", `Speed/Teleport detected for ${player.characterName}. Resetting.`);
-      socket.emit("session_start", player); // Snap them back
+      socket.emit("session_start", player);
       return;
     }
   }
@@ -37,5 +36,22 @@ export const handleMove = (socket: Socket, data: any) => {
   player.isMoving = data.isMoving;
   player.isGrounded = data.isGrounded;
   player.lastMoveTime = now;
-  socket.broadcast.emit("player_move", { id: socket.id, ...data });
+
+  // 1. Update Spatial Grid
+  updateInGrid(entityGrid, socket.id, oldPos, finalPos);
+
+  // 2. Targeted Broadcast (AoI)
+  const nearbyKeys = getNearbyGridKeys(finalPos, 100);
+  const payload = { id: socket.id, ...data, pos: finalPos };
+
+  // Only broadcast to players in nearby grid cells
+  for (const p of players.values()) {
+    if (p.id === socket.id) continue;
+    
+    // Check if player is in one of the nearby keys
+    const pKey = Math.floor(p.pos[0] / 50) + "," + Math.floor(p.pos[2] / 50); // Hardcoded GRID_SIZE for speed here or import
+    if (nearbyKeys.includes(pKey)) {
+      io.to(p.id).emit("player_move", payload);
+    }
+  }
 };

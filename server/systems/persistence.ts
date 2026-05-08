@@ -4,6 +4,7 @@ import { serverLogger } from "../logger";
 import admin from "firebase-admin";
 
 import { createNPCEntity } from "../lib/entities";
+import { updateInGrid, objectGrid, entityGrid } from "./spatial";
 
 export const initializeWorld = async () => {
   try {
@@ -11,6 +12,8 @@ export const initializeWorld = async () => {
     worldObjects.clear();
     entities.clear();
     spawners.clear();
+    objectGrid.clear();
+    entityGrid.clear();
     
     serverLogger.info("system", "Starting world initialization from Firestore...");
     
@@ -22,34 +25,22 @@ export const initializeWorld = async () => {
       const id = doc.id;
       
       // 2. Load from authoritative 'world' collection
-      const hitboxes = data.hitboxes || []; // Keep existing if any, but don't auto-generate
-      const worldObj = { id, ...data, hitboxes };
+      const worldObj = { id, ...data };
       
       worldObjects.set(id, worldObj);
+      updateInGrid(objectGrid, id, null, data.pos);
 
       // 3. Handle Special Types (NPCs & Spawners)
       if (data.type.startsWith("npc_")) {
         const entityId = `npc-${id}`;
         const npcEntity = createNPCEntity(entityId, id, data.type, data.pos, data.rot);
         entities.set(entityId, npcEntity as any);
-      }
-      
-      if (data.type.startsWith("spawner_")) {
-        const s = data.scale;
-        const scaleX = Array.isArray(s) ? s[0] : (s?.x ?? 1);
-        
-        const spawnerData = {
-          id,
-          entityType: data.type.replace("spawner_", ""),
-          pos: data.pos,
-          radius: scaleX * 5,
-          maxEntities: 3,
-          spawnInterval: 10000,
-          ...data
-        };
-        spawners.set(id, spawnerData);
+        updateInGrid(entityGrid, entityId, null, data.pos);
       }
     });
+
+    // 4. Load Spawners
+    await initializeSpawners();
     
     serverLogger.info("system", `LOAD COMPLETE: ${worldObjects.size} objects, ${entities.size} NPCs, ${spawners.size} spawners active.`);
   } catch (e: any) {
@@ -58,43 +49,72 @@ export const initializeWorld = async () => {
 };
 
 export const initializeSpawners = async () => {
-  // Logic is now integrated into initializeWorld for consistency
-  // but we keep the export to satisfy imports
-  return;
+  try {
+    serverLogger.info("system", "Loading spawners from Firestore...");
+    const snapshot = await db.collection("world").where("type", ">=", "spawner_").where("type", "<=", "spawner_\uf8ff").get();
+    
+    snapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
+      const data = doc.data();
+      const id = doc.id;
+      const s = data.scale;
+      const scaleX = Array.isArray(s) ? s[0] : (s?.x ?? 1);
+      
+      const spawnerData = {
+        id,
+        entityType: data.type.replace("spawner_", ""),
+        pos: data.pos,
+        radius: scaleX * 5,
+        maxEntities: 3,
+        spawnInterval: 10000,
+        ...data
+      };
+      spawners.set(id, spawnerData);
+    });
+  } catch (e: any) {
+    serverLogger.error("system", "Failed to load spawners", e.message);
+  }
 };
 
 export const autosavePlayers = async () => {
   if (players.size === 0) return;
   
-  const batch = db.batch();
-  let count = 0;
+  const playerArray = Array.from(players.values());
+  const CHUNK_SIZE = 450; // Keep a buffer below the 500 limit
   
-  for (const p of players.values()) {
-    if (!p.userId || !p.characterId) continue;
-    const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
-    batch.set(charRef, {
-      pos: p.pos,
-      rot: p.rot,
-      hp: p.hp,
-      mp: p.mp,
-      stats: p.stats,
-      equipment: p.equipment,
-      inventory: p.inventory,
-      hotbar: p.hotbar,
-      gold: p.gold || 0,
-      level: p.level || 1,
-      exp: p.exp || 0,
-      maxExp: p.maxExp || 100,
-      lastActive: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    count++;
-  }
-  
-  try {
-    await batch.commit();
-    serverLogger.info("firestore", `Autosave complete. ${count} players backed up.`);
-  } catch (e: any) {
-    serverLogger.error("firestore", "Autosave failed", e.message);
+  for (let i = 0; i < playerArray.length; i += CHUNK_SIZE) {
+    const chunk = playerArray.slice(i, i + CHUNK_SIZE);
+    const batch = db.batch();
+    let count = 0;
+
+    for (const p of chunk) {
+      if (!p.userId || !p.characterId) continue;
+      const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
+      batch.set(charRef, {
+        pos: p.pos,
+        rot: p.rot,
+        hp: p.hp,
+        mp: p.mp,
+        stats: p.stats,
+        equipment: p.equipment,
+        inventory: p.inventory,
+        hotbar: p.hotbar,
+        gold: p.gold || 0,
+        level: p.level || 1,
+        exp: p.exp || 0,
+        maxExp: p.maxExp || 100,
+        lastActive: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      count++;
+    }
+
+    try {
+      if (count > 0) {
+        await batch.commit();
+        serverLogger.info("firestore", `Autosave chunk complete. ${count} players backed up.`);
+      }
+    } catch (e: any) {
+      serverLogger.error("firestore", "Autosave chunk failed", e.message);
+    }
   }
 };
 

@@ -225,8 +225,7 @@ export const usePlayerMovement = (
         if (
           playerMeshesRef.current.includes(hit.object) || 
           (hit.object as any).material?.wireframe ||
-          name.includes("editor_helper") ||
-          name.includes("hb-")
+          name.includes("editor_helper")
         ) continue;
         
         wallHit = true;
@@ -240,7 +239,7 @@ export const usePlayerMovement = (
         const xRay = new THREE.Raycaster(rayOrigin, xDir, 0, 0.4);
         const xHit = xRay.intersectObjects(_state.scene.children, true).some(h => {
           const n = h.object.name || "";
-          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper") && !n.includes("hb-");
+          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
         });
 
         // Try Z only
@@ -248,7 +247,7 @@ export const usePlayerMovement = (
         const zRay = new THREE.Raycaster(rayOrigin, zDir, 0, 0.4);
         const zHit = zRay.intersectObjects(_state.scene.children, true).some(h => {
           const n = h.object.name || "";
-          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper") && !n.includes("hb-");
+          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
         });
 
         if (xHit && zHit) {
@@ -271,7 +270,7 @@ export const usePlayerMovement = (
     const rayDir = new THREE.Vector3(0, -1, 0);
     const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 50);
     
-    // We want to hit the floor and world objects, but not ourselves or hitboxes
+    // We want to hit the floor and world objects, but not ourselves or helpers
     const intersects = raycaster.intersectObjects(_state.scene.children, true);
     
     let groundY = 0;
@@ -284,8 +283,7 @@ export const usePlayerMovement = (
         !intersect.object.visible ||
         playerMeshesRef.current.includes(intersect.object) || 
         (intersect.object as any).material?.wireframe ||
-        name.includes("editor_helper") ||
-        name.includes("hb-")
+        name.includes("editor_helper")
       ) continue;
       
       groundY = intersect.point.y;
@@ -342,8 +340,7 @@ export const usePlayerMovement = (
         if (
           playerMeshesRef.current.includes(hit.object) || 
           (hit.object as any).material?.wireframe ||
-          name.includes("editor_helper") ||
-          name.includes("hb-")
+          name.includes("editor_helper")
         ) continue;
         
         // We hit a wall/roof! Zoom in to hit point (with 0.2m padding)

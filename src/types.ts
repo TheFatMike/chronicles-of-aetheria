@@ -142,7 +142,6 @@ export interface WorldObject {
   rot: [number, number, number];
   scale: number;
   modelUrl?: string;
-  hitboxes?: any[]; // Server-synced collision data
   waypointId?: string; // For pathing
   nextWaypointId?: string; // For linking
   pathId?: string; // For categorizing paths

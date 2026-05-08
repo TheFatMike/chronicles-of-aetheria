@@ -1,5 +1,5 @@
 import React from 'react';
-import { TreePine, Home, MousePointer2, Droplets, Target, Mountain, Flower2, Fence as FenceIcon, Flame, Container, Briefcase, MapPin } from 'lucide-react';
+import { TreePine, Home, MousePointer2, Droplets, Target, Mountain, Flower2, Fence as FenceIcon, Flame, Container, Briefcase, MapPin, Tent } from 'lucide-react';
 
 export const CATEGORIES = [
   { id: 'nature', icon: <TreePine size={16} />, label: 'Nature', items: ['tree', 'rock', 'bush', 'flower'] },
@@ -13,7 +13,7 @@ export const ICON_MAP: Record<string, any> = {
   'tree': <TreePine size={20} />,
   'rock': <Mountain size={20} />,
   'house': <Home size={20} />,
-  'tent': <TentIcon size={20} />,
+  'tent': <Tent size={20} />,
   'tower_base': <Mountain size={20} className="text-slate-400" />,
   'bush': <Flower2 size={20} />,
   'flower': <Flower2 size={20} className="text-pink-500" />,
@@ -32,7 +32,3 @@ export const ICON_MAP: Record<string, any> = {
   'npc_instructor_kael': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-amber-400 rounded-full" /><div className="w-5 h-2 bg-amber-600 rounded-sm -mt-0.5" /></div>,
   'npc_guard_captain': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-blue-400 rounded-full" /><div className="w-5 h-2 bg-blue-600 rounded-sm -mt-0.5" /></div>,
 };
-
-function TentIcon({ size, className }: { size: number, className?: string }) {
-  return <Home size={size} className={className} />; // Fallback since Tent might be missing in some lucide versions
-}

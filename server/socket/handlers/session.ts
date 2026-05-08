@@ -4,7 +4,7 @@ import { players, entities, worldObjects, spawners, logoutTimers } from "../../s
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { CharacterModel } from "../../../src/models/CharacterModel";
-import { filterNearby } from "../../systems/spatial";
+import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../systems/spatial";
 import { getUserRole } from "../../lib/auth";
 
 export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
@@ -63,6 +63,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         exp: charData.exp || 0,
         maxExp: charData.maxExp || 100
       });
+      updateInGrid(entityGrid, socket.id, null, players.get(socket.id).pos);
     }
 
     const currentPlayer = players.get(socket.id);
@@ -70,12 +71,20 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
 
     // 4. Sync State
     socket.emit("session_start", currentPlayer);
-    io.emit("players", Array.from(players.values()));
     
-    const nearbyEntities = filterNearby(Array.from(entities.values()), currentPlayer.pos, 100);
+    // Broadcast join to nearby players instead of everyone
+    const nearbyToNew = filterNearby(Array.from(players.values()), currentPlayer.pos, 150, 'entity');
+    for (const p of nearbyToNew) {
+      if (p.id !== socket.id) io.to(p.id).emit("player_join", currentPlayer);
+    }
+    
+    // Send all nearby players to the new player
+    socket.emit("players", nearbyToNew);
+    
+    const nearbyEntities = filterNearby(Array.from(entities.values()), currentPlayer.pos, 100, 'entity');
     socket.emit("entities", nearbyEntities);
     
-    const nearbyWorldObjects = filterNearby(Array.from(worldObjects.values()), currentPlayer.pos, 150);
+    const nearbyWorldObjects = filterNearby(Array.from(worldObjects.values()), currentPlayer.pos, 150, 'object');
     socket.emit("world_sync", nearbyWorldObjects);
     
     socket.emit("spawners_sync", Array.from(spawners.values()));
@@ -117,8 +126,14 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
         serverLogger.error("firestore", `Save failed for session ${socket.id}`, e.message);
       }
       
+      // Remove from Grid
+      if (player.pos) {
+        const key = getGridKey(player.pos);
+        entityGrid.get(key)?.delete(socket.id);
+      }
+
       players.delete(socket.id);
-      io.emit("player_leave", socket.id);
+      io.emit("player_leave", socket.id); // Leave can remain global for now or targeted
     }, 10000);
 
     logoutTimers.set(socket.id, timer);

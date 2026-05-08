@@ -101,10 +101,22 @@ export const WorldObjectItem = memo(({
       </mesh>
 
       {isSelected && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
-          <ringGeometry args={[1.5, 1.6, 32]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.8} depthWrite={false} />
-        </mesh>
+        <group>
+          {/* Pulsing Floor Ring */}
+          <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
+            <ringGeometry args={[1.5, 1.6, 32]} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.8} depthWrite={false} />
+          </mesh>
+          
+          {/* Vertical Focus Beam */}
+          <mesh position={[0, 10, 0]} name="editor_helper">
+            <cylinderGeometry args={[0.05, 0.05, 20, 8]} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.2} depthWrite={false} />
+          </mesh>
+
+          {/* Glow Point */}
+          <pointLight color="#f59e0b" intensity={2} distance={5} />
+        </group>
       )}
     </group>
   );
