@@ -75,10 +75,10 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-5xl w-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10 max-h-[90vh] overflow-y-auto lg:overflow-visible custom-scrollbar p-2"
+        className="max-w-5xl w-full h-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10 overflow-y-auto custom-scrollbar p-2 sm:p-4 pb-20"
       >
         {/* Left: Preview/Class Display */}
-        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-12 flex flex-col justify-between overflow-hidden relative shadow-2xl">
+        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-12 flex flex-col justify-start overflow-hidden relative shadow-2xl h-fit">
           <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-transparent to-black/20 pointer-events-none" />
           
           <div>
@@ -147,7 +147,7 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
         </div>
 
         {/* Right: Controls */}
-        <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-10 flex flex-col justify-between shadow-2xl relative">
+        <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-10 flex flex-col justify-start shadow-2xl relative h-fit">
           <div className="space-y-8 sm:space-y-12">
             <div>
               <h3 className="text-[10px] sm:text-sm border-b-2 border-[#4a3a2a] pb-2 sm:pb-3 mb-6 sm:mb-8 flex items-center gap-2 sm:gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">

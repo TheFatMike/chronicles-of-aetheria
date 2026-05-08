@@ -90,7 +90,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-4xl w-full flex flex-col relative z-10"
+        className="max-w-4xl w-full h-full flex flex-col relative z-10 overflow-y-auto custom-scrollbar p-4 sm:p-6 pb-24"
       >
         <div className="text-center mb-6 sm:mb-12">
           <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-2 sm:mb-4 tracking-widest uppercase">Character Select</h1>
@@ -127,7 +127,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 overflow-y-auto max-h-[45vh] sm:max-h-[50vh] p-2 sm:p-4 custom-scrollbar"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-2 sm:p-4"
         >
           {sortedCharacters.map((char) => {
             const isHighlighted = highlightedId === char.id;
