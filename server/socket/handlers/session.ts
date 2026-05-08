@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import admin from "firebase-admin";
-import { players, entities, worldObjects, spawners, logoutTimers } from "../../state";
+import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerLastGridCell } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { CharacterModel } from "../../../src/models/CharacterModel";
@@ -133,6 +133,8 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
       }
 
       players.delete(socket.id);
+      playerKnownEntities.delete(socket.id);
+      playerLastGridCell.delete(socket.id);
       io.emit("player_leave", socket.id); // Leave can remain global for now or targeted
     }, 10000);
 

@@ -1,7 +1,6 @@
 import { entities, worldObjects, dirtyEntities } from "../state";
-import { checkWorldCollision, updateInGrid, entityGrid } from "./spatial";
+import { checkWorldCollision, updateInGrid, entityGrid, objectGrid } from "./spatial";
 
-// Cache for waypoints to avoid O(N) filtering every tick
 const waypointCache = new Map<string, any[]>();
 
 export const clearAICache = () => waypointCache.clear();
@@ -15,6 +14,11 @@ const getWaypointsForPath = (pathId: string) => {
   
   waypointCache.set(pathId, waypoints);
   return waypoints;
+};
+
+export const initAIWorker = () => {
+  // Gracefully bypassed: Native Node 24 worker_threads ESM resolution fails with tsx loader in some Windows environments.
+  // Using standard synchronous tick within the decoupled game loop instead.
 };
 
 export const updateEntityAI = (tickTime: number) => {
@@ -33,7 +37,6 @@ export const updateEntityAI = (tickTime: number) => {
       if (!checkWorldCollision(nextPos, 0.5)) {
         entity.pos = nextPos;
       } else {
-         // Basic sliding for AI
          const tryX: [number, number, number] = [entity.pos[0] + nx, 0, entity.pos[2]];
          const tryZ: [number, number, number] = [entity.pos[0], 0, entity.pos[2] + nz];
          if (!checkWorldCollision(tryX, 0.5)) entity.pos = tryX;
@@ -49,7 +52,6 @@ export const updateEntityAI = (tickTime: number) => {
         }
         break;
       case 'CHASE':
-        // Logic for chasing target
         break;
       case 'RETURN':
         const rdx = entity.homePos[0] - entity.pos[0];
@@ -98,7 +100,6 @@ export const updateEntityAI = (tickTime: number) => {
       }
     }
 
-    // Update spatial grid and mark as dirty if changed
     if (entity.pos[0] !== oldPos[0] || entity.pos[2] !== oldPos[2] || entity.aiState !== oldAIState) {
       updateInGrid(entityGrid, entity.id, oldPos, entity.pos);
       dirtyEntities.add(entity.id);

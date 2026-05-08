@@ -85,16 +85,18 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10"></div>
+    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10 pointer-events-none"></div>
       
       <ParticleEffect />
       
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-4xl w-full h-full flex flex-col relative z-10 overflow-y-auto custom-scrollbar p-4 sm:p-6 pb-24"
-      >
+      <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-4xl w-full flex flex-col relative z-10"
+          >
         <div className="text-center mb-6 sm:mb-12">
           <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-2 sm:mb-4 tracking-widest uppercase">Character Select</h1>
           <p className="text-[#8b6b4d] font-serif italic text-sm sm:text-xl underline underline-offset-4 sm:underline-offset-8 decoration-[#4a3a2a]">Choose a character to continue your journey</p>
@@ -245,7 +247,9 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
             Log Out
           </button>
         </div>
-      </motion.div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 });

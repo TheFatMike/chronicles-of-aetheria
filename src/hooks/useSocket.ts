@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import customParser from "socket.io-msgpack-parser";
 import { useGameStore } from "../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { logger } from "../lib/logger";
@@ -36,9 +37,10 @@ export const useSocket = (token: string | null) => {
     const socket = io({
       auth: { token },
       transports: ["websocket", "polling"],
-      reconnectionAttempts: 10, // Increased
-      reconnectionDelay: 2000,   // Increased
-      timeout: 10000
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      timeout: 10000,
+      parser: customParser
     });
     
     socketRef.current = socket;
@@ -125,6 +127,14 @@ export const useSocket = (token: string | null) => {
     });
     socket.on("entities", (ents) => {
       useGameStore.getState().setEntities(ents)
+    });
+
+    socket.on("entities_discover", (ents) => {
+      useGameStore.getState().discoverEntities(ents);
+    });
+
+    socket.on("entities_remove", (ids) => {
+      useGameStore.getState().removeEntities(ids);
     });
 
     socket.on("entities_update", (updates) => {

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { memo } from "react";
+import { ParticleEffect } from "./Particles";
 
 interface LoadingScreenProps {
   message?: string;
@@ -13,6 +14,8 @@ export const LoadingScreen = memo(({ message = "COMMUNING WITH THE ANCIENTS..." 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-[#4a3420]/30 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')] opacity-20" />
       </div>
+
+      <ParticleEffect />
 
       <div className="relative flex flex-col items-center gap-10">
         {/* Magic Circle / Sigil */}

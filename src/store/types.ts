@@ -54,6 +54,8 @@ export interface EntitySlice {
   registerEntity: (entity: GameEntity) => void;
   unregisterEntity: (id: string) => void;
   updateEntity: (id: string, data: Partial<GameEntity>) => void;
+  discoverEntities: (entities: GameEntity[]) => void;
+  removeEntities: (ids: string[]) => void;
 }
 
 export interface WorldSlice {

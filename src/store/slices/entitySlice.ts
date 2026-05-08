@@ -57,6 +57,25 @@ export const createEntitySlice: StateCreator<GameState, [], [], EntitySlice> = (
     return { entities: newEntities, currentTarget: newTarget };
   }),
 
+  discoverEntities: (entitiesArray) => set((state) => {
+    const newEntities = { ...state.entities };
+    entitiesArray.forEach(e => {
+      newEntities[e.id] = {
+        ...e,
+        hp: e.hp ?? 100,
+        maxHp: e.maxHp ?? 100
+      };
+    });
+    return { entities: newEntities };
+  }),
+
+  removeEntities: (ids) => set((state) => {
+    const newEntities = { ...state.entities };
+    ids.forEach(id => delete newEntities[id]);
+    const newTarget = (state.currentTarget && ids.includes(state.currentTarget.id)) ? null : state.currentTarget;
+    return { entities: newEntities, currentTarget: newTarget };
+  }),
+
   updateEntity: (id, data) => set((state) => {
     if (!state.entities[id]) {
       // If entity doesn't exist, treat this as a registration

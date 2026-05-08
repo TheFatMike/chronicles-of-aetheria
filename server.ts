@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import customParser from "socket.io-msgpack-parser";
 import admin from "firebase-admin";
 import { initDb } from "./server/db";
 import { serverLogger, logBuffer } from "./server/logger";
@@ -21,7 +22,10 @@ async function bootstrap() {
   
   const app = express();
   const httpServer = createServer(app);
-  const io = new Server(httpServer, { cors: { origin: "*" } });
+  const io = new Server(httpServer, { 
+    cors: { origin: "*" },
+    parser: customParser
+  });
 
   // 1. Auth Middleware
   io.use(async (socket, next) => {
@@ -94,6 +98,10 @@ async function bootstrap() {
   });
 }
 
-bootstrap().catch(err => {
-  console.error("Fatal startup error", err);
-});
+import { isMainThread } from "worker_threads";
+
+if (isMainThread) {
+  bootstrap().catch(err => {
+    console.error("Fatal startup error", err);
+  });
+}

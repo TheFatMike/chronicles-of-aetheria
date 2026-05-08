@@ -57,8 +57,8 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
   const displayError = localError || error;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10"></div>
+    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10 pointer-events-none"></div>
       
       {/* Dynamic Class Aura */}
       <AnimatePresence>
@@ -90,11 +90,13 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
         </motion.button>
       )}
       
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-5xl w-full h-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10 overflow-y-auto custom-scrollbar p-2 sm:p-4 pb-20"
-      >
+      <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-20 sm:py-24">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-5xl w-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10"
+          >
         {/* Left: Preview/Class Display */}
         <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-12 flex flex-col justify-start overflow-hidden relative shadow-2xl h-fit">
           <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-transparent to-black/20 pointer-events-none" />
@@ -245,7 +247,9 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
             </button>
           </div>
         </div>
-      </motion.div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 });

@@ -9,3 +9,4 @@ export const parties = new Map<string, any>(); // partyId -> { id, leaderId, mem
 export const activeTrades = new Map<string, any>(); // tradeId -> { id, p1, p2, p1Items, p2Items, p1Gold, p2Gold, p1Locked, p2Locked }
 export const dirtyEntities = new Set<string>();
 export const playerLastGridCell = new Map<string, string>(); // socketId -> "x,z"
+export const playerKnownEntities = new Map<string, Set<string>>(); // socketId -> Set<entityId>

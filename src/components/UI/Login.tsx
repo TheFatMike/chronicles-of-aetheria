@@ -144,14 +144,16 @@ export const Login = memo(({ onLogin }: LoginProps) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#1a1410] text-[#e2d1b0] z-50 p-6 overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20"></div>
-      <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80"></div>
+    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80 pointer-events-none"></div>
       
       <ParticleEffect />
       
-      <div className="flex flex-col items-center gap-8 w-full max-w-4xl relative z-10">
-        <motion.div 
+      <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12">
+          <div className="flex flex-col items-center gap-8 w-full max-w-4xl relative z-10">
+            <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md p-6 sm:p-10 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-[0_0_80px_rgba(0,0,0,0.9)] relative overflow-hidden ring-1 ring-[#e2d1b0]/10"
@@ -317,10 +319,12 @@ export const Login = memo(({ onLogin }: LoginProps) => {
             {copied ? <Check size={14} /> : <Share2 size={14} />}
             {copied ? "Scroll Copied" : "Invite Adventurers"}
           </button>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 });
 
 Login.displayName = "Login";

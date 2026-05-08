@@ -9,44 +9,12 @@
   --font-fantasy: "MedievalSharp", cursive;
 }
 
-/* UI Scaling for High Resolution Monitors */
-@media (min-width: 2560px) {
-  :root {
-    font-size: 18px; /* 1440p Scaling */
-  }
-}
-
-@media (min-width: 3840px) {
-  :root {
-    font-size: 24px; /* 4K Scaling */
-  }
-}
-
-@media (max-width: 1440px) {
-  :root {
-    font-size: 15px; /* Laptop Scaling */
-  }
-}
-
-@media (max-width: 1024px) {
-  :root {
-    font-size: 14px; /* Tablet Scaling */
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    font-size: 12px; /* Large Phone Scaling */
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    font-size: 10px; /* Small Phone Scaling */
-  }
-}
-
+/* Fluid UI Scaling: 
+   Perfectly maps to 16px at 1080p (1920x1080).
+   Scales smoothly up and down, avoiding sudden jumps from media queries.
+   Clamps between 10px (mobile safe) and 24px (4K maximum). */
 :root {
+  font-size: clamp(10px, 8px + 0.4166vw, 24px);
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
