@@ -1,7 +1,8 @@
-import { entities, spawners } from "../state";
+import { entities, spawners, dirtyEntities } from "../state";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import crypto from "crypto";
 import { createNPCEntity } from "../lib/entities";
+import { updateInGrid, entityGrid } from "./spatial";
 
 export const updateSpawners = (now: number) => {
   for (const spawner of spawners.values()) {
@@ -28,7 +29,11 @@ export const updateSpawners = (now: number) => {
         currentWaypointIndex: 0
       };
 
+      // Register in systems
       entities.set(id, entityWithSpawner as any);
+      updateInGrid(entityGrid, id, null, pos);
+      dirtyEntities.add(id);
+      
       spawner.lastSpawn = now;
     }
   }

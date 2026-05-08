@@ -58,7 +58,19 @@ export const createEntitySlice: StateCreator<GameState, [], [], EntitySlice> = (
   }),
 
   updateEntity: (id, data) => set((state) => {
-    if (!state.entities[id]) return state;
+    if (!state.entities[id]) {
+      // If entity doesn't exist, treat this as a registration
+      const newEntity = {
+        ...data,
+        hp: data.hp ?? 100,
+        maxHp: data.maxHp ?? 100
+      } as GameEntity;
+      
+      return {
+        entities: { ...state.entities, [id]: newEntity }
+      };
+    }
+    
     const updatedEntity = { ...state.entities[id], ...data };
     const updatedTarget = state.currentTarget?.id === id ? updatedEntity as any : state.currentTarget;
     return {
