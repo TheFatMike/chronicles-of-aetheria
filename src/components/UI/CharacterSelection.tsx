@@ -1,8 +1,9 @@
 import React, { useState, memo } from "react";
 import { motion } from "motion/react";
 import { Character } from "../../types";
-import { User, Plus, ChevronRight, Sword, Zap, Target, Trash2, LogOut, Shield, Heart, HelpCircle, ArrowUpDown } from "lucide-react";
+import { Plus, ChevronRight, Trash2, LogOut, ArrowUpDown } from "lucide-react";
 import { ParticleEffect } from "./Particles";
+import { CharacterPreview } from "./CharacterPreview";
 
 interface CharacterSelectionProps {
   characters: Character[];
@@ -36,16 +37,6 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
     }
   };
 
-  const getClassIcon = (classId: string) => {
-    switch (classId) {
-      case "warrior": return <Sword size={20} />;
-      case "mage": return <Zap size={20} />;
-      case "ranger": return <Target size={20} />;
-      case "priest": return <Heart size={20} />;
-      case "rogue": return <Shield size={20} />;
-      default: return <User size={20} />;
-    }
-  };
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -154,27 +145,25 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
 
                 <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-transparent to-black/30 pointer-events-none" />
                 
-                <div className="flex justify-between items-start mb-6">
-                  <div 
-                    className="w-12 h-12 rounded border-2 border-[#4a3a2a] flex items-center justify-center text-white shadow-lg"
-                    style={{ backgroundColor: char.color }}
-                  >
-                    {getClassIcon(char.class)}
+                <div className="flex justify-between items-start mb-4 h-40 relative">
+                  <div className="absolute inset-0 z-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <CharacterPreview character={char} rotation zoom={1.3} />
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="text-[10px] font-fantasy text-[#8b6b4d] uppercase tracking-widest bg-black/40 px-2 py-1 rounded">Lv. {char.level}</span>
+                  
+                  <div className="flex flex-col items-end gap-2 ml-auto z-10 relative">
+                    <span className="text-[10px] font-fantasy text-[#8b6b4d] uppercase tracking-widest bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/5">Lv. {char.level}</span>
                     
                     {deletingId === char.id ? (
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={(e) => confirmDelete(e, char)}
-                          className="px-2 py-1 text-[8px] bg-red-900/40 text-red-100 border border-red-500/50 rounded uppercase font-fantasy hover:bg-red-600 transition-colors"
+                          className="px-2 py-1 text-[8px] bg-red-900/60 text-red-100 border border-red-500/50 rounded uppercase font-fantasy hover:bg-red-600 transition-colors backdrop-blur-md"
                         >
                           Confirm
                         </button>
                         <button 
                           onClick={cancelDelete}
-                          className="px-2 py-1 text-[8px] bg-stone-800 text-stone-300 border border-stone-600 rounded uppercase font-fantasy hover:bg-stone-700 transition-colors"
+                          className="px-2 py-1 text-[8px] bg-stone-800/60 text-stone-300 border border-stone-600 rounded uppercase font-fantasy hover:bg-stone-700 transition-colors backdrop-blur-md"
                         >
                           No
                         </button>
@@ -182,7 +171,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
                     ) : (
                       <button 
                         onClick={(e) => handleDeleteClick(e, char.id)}
-                        className="p-1.5 text-red-900/40 hover:text-red-500 transition-colors bg-black/20 rounded border border-transparent hover:border-red-500/30"
+                        className="p-1.5 text-red-900/60 hover:text-red-500 transition-colors bg-black/40 backdrop-blur-md rounded border border-white/5 hover:border-red-500/30"
                       >
                         <Trash2 size={12} />
                       </button>

@@ -6,6 +6,7 @@ import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage, cal
 import { useGameStore } from "../../store/useGameStore";
 import { ContextMenu } from "./ContextMenu";
 import { useScaffold } from "./GameScaffold";
+import { CharacterPreview } from "./CharacterPreview";
 
 interface CharacterInfoProps {
   character: Character;
@@ -108,7 +109,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className="fixed top-24 left-8 z-50 pointer-events-none"
     >
-      <div className="bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-[680px] h-[480px] flex flex-col relative border-t-[#c2a472]/20">
+      <div className="bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-[680px] h-[520px] flex flex-col relative border-t-[#c2a472]/20">
         
         {/* Header Overlay */}
         <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-[#c2a472]/10 to-transparent pointer-events-none" />
@@ -124,7 +125,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
         <div className="flex flex-1 overflow-hidden">
           
           {/* Left: Equipment List */}
-          <div className="w-56 p-5 flex flex-col gap-2.5 border-r border-[#4a3a2a]/30">
+          <div className="w-56 p-5 flex flex-col gap-2 border-r border-[#4a3a2a]/30">
             <h3 className="text-[10px] font-fantasy font-black text-[#8b6b4d] uppercase tracking-[0.3em] mb-2 border-b border-[#4a3a2a]/40 pb-2">Loadout</h3>
             {renderSlot("head", "Helmet")}
             {renderSlot("chest", "Body Armor")}
@@ -144,21 +145,19 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
                 </h2>
              </div>
 
-             <div className="relative w-48 h-48 flex items-center justify-center">
+             <div className="relative w-72 h-72 flex items-center justify-center">
                 {/* Visual Aura */}
                 <motion.div 
                   animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                  className="absolute inset-0 border border-dashed border-[#c2a472]/10 rounded-full"
+                  transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+                  className="absolute inset-0 border border-dashed border-[#c2a472]/20 rounded-full scale-110"
                 />
-                <div className="text-[100px] drop-shadow-[0_0_30px_rgba(194,164,114,0.4)] z-10 select-none">
-                  {character.class === "warrior" && "🛡️"}
-                  {character.class === "mage" && "✨"}
-                  {character.class === "ranger" && "🏹"}
-                  {character.class === "rogue" && "🔪"}
-                  {character.class === "priest" && "📜"}
+                
+                <div className="absolute inset-0 z-10">
+                  <CharacterPreview character={character} interactive zoom={1.2} />
                 </div>
-                <div className="absolute bottom-4 w-32 h-6 bg-black/60 rounded-[100%] blur-xl" />
+
+                <div className="absolute bottom-4 w-48 h-8 bg-black/60 rounded-[100%] blur-2xl" />
              </div>
 
              {/* Resources at bottom of center */}
@@ -166,7 +165,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
                 <div className="space-y-1">
                    <div className="flex justify-between items-end px-1">
                       <span className="text-[8px] font-black text-red-500/80 uppercase tracking-widest flex items-center gap-1">
-                        <Heart size={8} /> Vitality
+                        <Heart size={8} /> Health
                       </span>
                       <span className="text-[10px] font-mono text-red-100 font-bold">{character.hp} / {character.maxHp}</span>
                    </div>
@@ -177,7 +176,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
                 <div className="space-y-1">
                    <div className="flex justify-between items-end px-1">
                       <span className="text-[8px] font-black text-blue-500/80 uppercase tracking-widest flex items-center gap-1">
-                        <Zap size={8} /> Essence
+                        <Zap size={8} /> Mana
                       </span>
                       <span className="text-[10px] font-mono text-blue-100 font-bold">{character.mp} / {character.maxMp}</span>
                    </div>
