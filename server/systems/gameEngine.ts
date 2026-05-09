@@ -38,28 +38,35 @@ export const startHeartbeat = (io: Server) => {
 
       // 3. Broadcast (True Delta Syncing)
       if (players.size > 0) {
-        const allEntities = Array.from(entities.values());
-        const dirtyEntityList = allEntities.filter(e => dirtyEntities.has(e.id));
+        // OPTIMIZATION: Only iterate over dirty entity IDs
+        const dirtyEntityList: any[] = [];
+        for (const id of dirtyEntities) {
+          const entity = entities.get(id);
+          if (entity) dirtyEntityList.push(entity);
+        }
 
         for (const player of players.values()) {
           const currentCell = getGridKey(player.pos);
           const lastCell = playerLastGridCell.get(player.id);
           
-          // Re-evaluate nearby entities if the player moved OR if any entity moved
           if (currentCell !== lastCell || dirtyEntityList.length > 0) {
             if (currentCell !== lastCell) {
               playerLastGridCell.set(player.id, currentCell);
             }
             
-            const nearbyEntities = filterNearby(allEntities, player.pos, 80, 'entity');
+            const nearbyEntities = filterNearby(entities, player.pos, 80, 'entity');
             const nearbyIds = new Set(nearbyEntities.map(e => e.id));
             const known = playerKnownEntities.get(player.id) || new Set<string>();
             
-            const newEntities = nearbyEntities.filter(e => !known.has(e.id));
+            // OPTIMIZATION: Drip-feed discovery (max 5 per tick) to prevent client FPS drops
+            const newEntities = nearbyEntities.filter(e => !known.has(e.id)).slice(0, 5);
             const leftEntities = Array.from(known).filter(id => !nearbyIds.has(id));
             
             if (newEntities.length > 0 || leftEntities.length > 0) {
-              playerKnownEntities.set(player.id, nearbyIds);
+              const updatedKnown = new Set(known);
+              newEntities.forEach(e => updatedKnown.add(e.id));
+              leftEntities.forEach(id => updatedKnown.delete(id));
+              playerKnownEntities.set(player.id, updatedKnown);
             }
 
             if (newEntities.length > 0) {
@@ -69,10 +76,9 @@ export const startHeartbeat = (io: Server) => {
               io.to(player.id).emit("entities_remove", leftEntities);
             }
 
-            // Send dirty updates only for entities that were ALREADY known (not just discovered)
             if (dirtyEntityList.length > 0) {
               const newlyDiscoveredIds = new Set(newEntities.map(e => e.id));
-              const updatePayload = dirtyEntityList.filter(e => nearbyIds.has(e.id) && !newlyDiscoveredIds.has(e.id));
+              const updatePayload = dirtyEntityList.filter(e => known.has(e.id) && !newlyDiscoveredIds.has(e.id));
               if (updatePayload.length > 0) {
                 io.to(player.id).emit("entities_update", updatePayload);
               }
@@ -93,8 +99,7 @@ export const startHeartbeat = (io: Server) => {
             player.hp = Math.min(player.maxHp, player.hp + hpRegen);
             player.mp = Math.min(player.maxMp, player.mp + mpRegen);
             
-            // Targeted broadcast for stats
-            const nearbyPlayers = filterNearby(Array.from(players.values()), player.pos, 100, 'entity');
+            const nearbyPlayers = filterNearby(players, player.pos, 100, 'entity');
             for (const nearby of nearbyPlayers) {
               io.to(nearby.id).emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
             }

@@ -181,7 +181,7 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
 }
 
 export function filterNearby<T extends { id: string, pos: [number, number, number] }>(
-  items: T[],
+  items: Map<string, T> | T[],
   playerPos: [number, number, number],
   radius: number = 75,
   type: 'entity' | 'object' = 'entity'
@@ -191,14 +191,14 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
   const grid = type === 'entity' ? entityGrid : objectGrid;
   
   const result: T[] = [];
-  const itemMap = new Map(items.map(i => [i.id, i]));
+  const isMap = items instanceof Map;
 
   for (const key of nearbyKeys) {
     const ids = grid.get(key);
     if (!ids) continue;
 
     for (const id of ids) {
-      const item = itemMap.get(id);
+      const item = isMap ? items.get(id) : (items as T[]).find(i => i.id === id);
       if (item) {
         const dx = item.pos[0] - playerPos[0];
         const dz = item.pos[2] - playerPos[2];

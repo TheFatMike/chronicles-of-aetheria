@@ -21,12 +21,9 @@ export const CharacterPreview = ({
   return (
     <div className="w-full h-full">
       <Canvas
-        shadows
+        shadows={{ type: THREE.PCFShadowMap }}
         camera={{ position: [0, 1.2, 3], fov: 40 / zoom }}
         gl={{ antialias: true, alpha: true }}
-        onCreated={({ gl }) => {
-          gl.shadowMap.type = THREE.PCFShadowMap;
-        }}
       >
         <Suspense fallback={null}>
           <ambientLight intensity={1.5} />

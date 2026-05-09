@@ -55,6 +55,10 @@ export const usePlayerMovement = (
   const moveVec = useRef(new THREE.Vector3());
   const targetCamPos = useRef(new THREE.Vector3());
 
+  // THROTTLED COLLIDABLES CACHE
+  const collidablesRef = useRef<THREE.Object3D[]>([]);
+  const lastCollidablesUpdate = useRef<number>(0);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
@@ -220,20 +224,36 @@ export const usePlayerMovement = (
       velocity.current.y -= GRAVITY * clampedDelta;
     }
 
-      // --- 3D WALL COLLISION (HORIZONTAL RAYCASTING) ---
+    // --- 3D WALL COLLISION (HORIZONTAL RAYCASTING) ---
     const horizontalVel = new THREE.Vector3(velocity.current.x, 0, velocity.current.z);
+    
+    const updateCollidables = () => {
+      const now = performance.now();
+      if (now - lastCollidablesUpdate.current < 500) return collidablesRef.current;
+      
+      const collidables: THREE.Object3D[] = [];
+      const sceneChildren = _state.scene.children;
+      for (let i = 0; i < sceneChildren.length; i++) {
+        const child = sceneChildren[i];
+        if (
+          child.name === "terrain_mesh" || 
+          (child as any).isWorldObject ||
+          (child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry")
+        ) {
+          collidables.push(child);
+        }
+      }
+      collidablesRef.current = collidables;
+      lastCollidablesUpdate.current = now;
+      return collidables;
+    };
+
     if (horizontalVel.lengthSq() > 0.001) {
       const dir = horizontalVel.clone().normalize();
-      
       const rayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.8, meshRef.current.position.z);
       const wallRay = new THREE.Raycaster(rayOrigin, dir, 0, 0.4);
       
-      const collidables = _state.scene.children.filter(child => 
-        child.name === "terrain_mesh" || 
-        (child as any).isWorldObject ||
-        child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry"
-      );
-
+      const collidables = updateCollidables();
       const wallIntersects = wallRay.intersectObjects(collidables, true);
       
       let wallHit = false;
@@ -251,18 +271,16 @@ export const usePlayerMovement = (
 
       if (wallHit) {
         // --- SLIDING LOGIC ---
-        // Try X only
         const xDir = new THREE.Vector3(velocity.current.x > 0 ? 1 : -1, 0, 0);
         const xRay = new THREE.Raycaster(rayOrigin, xDir, 0, 0.4);
-        const xHit = xRay.intersectObjects(_state.scene.children, true).some(h => {
+        const xHit = xRay.intersectObjects(collidables, true).some(h => {
           const n = h.object.name || "";
           return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
         });
 
-        // Try Z only
         const zDir = new THREE.Vector3(0, 0, velocity.current.z > 0 ? 1 : -1);
         const zRay = new THREE.Raycaster(rayOrigin, zDir, 0, 0.4);
-        const zHit = zRay.intersectObjects(_state.scene.children, true).some(h => {
+        const zHit = zRay.intersectObjects(collidables, true).some(h => {
           const n = h.object.name || "";
           return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
         });
@@ -282,26 +300,36 @@ export const usePlayerMovement = (
     meshRef.current.position.y += velocity.current.y * clampedDelta;
     meshRef.current.position.z += velocity.current.z * clampedDelta;
 
-    // --- 3D GROUND DETECTION (RAYCASTING) ---
-    const groundRayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.5, meshRef.current.position.z);
-    const rayDir = new THREE.Vector3(0, -1, 0);
-    const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 50);
-    
-    // OPTIMIZATION: Only raycast against floor and world objects, not the whole scene
-    const collidables = _state.scene.children.filter(child => 
-      child.name === "terrain_mesh" || 
-      child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry" ||
-      (child as any).isWorldObject // We should add this flag
-    );
-
-    const intersects = raycaster.intersectObjects(collidables, true);
-    
+    // --- 3D GROUND DETECTION (OPTIMIZED HEIGHT LOOKUP) ---
+    const groundCollidables = updateCollidables();
     let groundY = 0;
     let hitSomething = false;
 
+    // 1. Check Terrain Height directly (Fast O(1) lookup)
+    const terrainData = useGameStore.getState().terrainData;
+    const resolution = 4; // Must match Terrain.tsx
+    
+    // Simple nearest neighbor lookup
+    const tx = Math.round(meshRef.current.position.x / resolution) * resolution;
+    const tz = Math.round(meshRef.current.position.z / resolution) * resolution;
+    const key = `${tx}_${tz}`;
+    const terrainPoint = terrainData[key];
+    
+    // Always consider terrain as a solid floor, default to 0 if unmodified
+    groundY = terrainPoint ? terrainPoint.y : 0;
+    hitSomething = true;
+
+    // 2. Check for other objects (Small raycast)
+    const groundRayOrigin = new THREE.Vector3(meshRef.current.position.x, Math.max(meshRef.current.position.y, groundY) + 0.5, meshRef.current.position.z);
+    const rayDir = new THREE.Vector3(0, -1, 0);
+    const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 2); // Short ray
+    
+    // Only raycast against world objects, NOT the terrain mesh
+    const objectCollidables = groundCollidables.filter(c => c.name !== "terrain_mesh");
+    const intersects = raycaster.intersectObjects(objectCollidables, true);
+    
     for (const intersect of intersects) {
       const name = intersect.object.name || "";
-      // IMPROVEMENT: Ignore invisible meshes (like collision hulls) and player/helpers
       if (
         !intersect.object.visible ||
         playerMeshesRef.current.includes(intersect.object) || 
@@ -310,8 +338,11 @@ export const usePlayerMovement = (
         isNaN(intersect.point.y)
       ) continue;
       
-      groundY = intersect.point.y;
-      hitSomething = true;
+      // If object is higher than terrain, use it
+      if (intersect.point.y > groundY) {
+        groundY = intersect.point.y;
+        hitSomething = true;
+      }
       break;
     }
 
@@ -325,9 +356,13 @@ export const usePlayerMovement = (
       isGrounded.current = false;
     }
 
-    // Void Safety: If player falls out of the map, teleport to start
-    if (meshRef.current.position.y < -50) {
-      meshRef.current.position.set(0, 5, 0);
+    // Void Safety: If player falls out of the map, teleport directly back up to the surface
+    if (meshRef.current.position.y < -20) {
+      meshRef.current.position.set(
+        meshRef.current.position.x, 
+        groundY + 2, 
+        meshRef.current.position.z
+      );
       velocity.current.set(0, 0, 0);
     }
 

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -9,7 +9,7 @@ interface HumanoidProps {
   isAttacking?: boolean;
 }
 
-export const Humanoid = ({ color, isMoving = false, isGrounded = true, isAttacking = false }: HumanoidProps) => {
+export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAttacking = false }: HumanoidProps) => {
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
@@ -118,4 +118,6 @@ export const Humanoid = ({ color, isMoving = false, isGrounded = true, isAttacki
       </group>
     </group>
   );
-};
+});
+
+Humanoid.displayName = "Humanoid";

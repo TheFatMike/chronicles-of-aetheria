@@ -1,4 +1,4 @@
-import { entities, spawners, dirtyEntities } from "../state";
+import { entities, spawners, dirtyEntities, spawnerEntityCounts } from "../state";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import crypto from "crypto";
 import { createNPCEntity } from "../lib/entities";
@@ -6,14 +6,17 @@ import { updateInGrid, entityGrid } from "./spatial";
 
 export const updateSpawners = (now: number) => {
   for (const spawner of spawners.values()) {
-    const activeEntities = Array.from(entities.values()).filter(e => e.spawnerId === spawner.id);
-    if (activeEntities.length < spawner.maxEntities && now - (spawner.lastSpawn || 0) > spawner.spawnInterval) {
+    const count = spawnerEntityCounts.get(spawner.id) || 0;
+    const interval = spawner.spawnInterval || (spawner.respawnTime * 1000) || 10000;
+    
+    if (count < spawner.maxEntities && now - (spawner.lastSpawn || 0) > interval) {
       const id = crypto.randomUUID();
       const template = ENTITY_TEMPLATES[spawner.entityType];
       if (!template) continue;
 
-      const rx = (Math.random() - 0.5) * spawner.radius * 2;
-      const rz = (Math.random() - 0.5) * spawner.radius * 2;
+      const radius = spawner.radius || spawner.spawnRadius || 5;
+      const rx = (Math.random() - 0.5) * radius * 2;
+      const rz = (Math.random() - 0.5) * radius * 2;
       
       const pos: [number, number, number] = [spawner.pos[0] + rx, 0, spawner.pos[2] + rz];
       const rot: [number, number, number] = [0, Math.random() * Math.PI * 2, 0];
@@ -31,6 +34,7 @@ export const updateSpawners = (now: number) => {
 
       // Register in systems
       entities.set(id, entityWithSpawner as any);
+      spawnerEntityCounts.set(spawner.id, count + 1);
       updateInGrid(entityGrid, id, null, pos);
       dirtyEntities.add(id);
       

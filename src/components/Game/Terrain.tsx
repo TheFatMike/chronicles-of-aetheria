@@ -30,6 +30,10 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
     return colors;
   }, [segments]);
 
+  // Batch updates and debounce normal computation
+  const pendingUpdates = useRef<boolean>(false);
+  const lastNormalCompute = useRef<number>(0);
+
   useEffect(() => {
     const updateGeometry = (data: Record<string, { y: number, type: string }>) => {
       if (!meshRef.current) return;
@@ -37,10 +41,14 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
       const colorAttr = meshRef.current.geometry.attributes.color;
       let hasChanges = false;
 
-      Object.entries(data).forEach(([key, val]) => {
-        // Only update if data is different from what we already applied
+      // Use a more efficient loop for large datasets
+      const keys = Object.keys(data);
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const val = data[key];
+        
         const prev = appliedData.current[key];
-        if (prev?.y === val.y && prev?.type === val.type) return;
+        if (prev?.y === val.y && prev?.type === val.type) continue;
         
         appliedData.current[key] = { ...val };
         hasChanges = true;
@@ -55,7 +63,6 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
         
         if (idx >= 0 && idx < posAttr.count) {
           if (val.y !== undefined && !isNaN(val.y)) {
-             // In PlaneGeometry rotated by -PI/2, the "height" is the Z attribute of the geometry 
              posAttr.setZ(idx, val.y);
           }
           if (val.type !== undefined) {
@@ -68,12 +75,30 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
             colorAttr.setXYZ(idx, color.r, color.g, color.b);
           }
         }
-      });
+      }
 
       if (hasChanges) {
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
-        meshRef.current.geometry.computeVertexNormals();
+        
+        // Debounce normal computation (max once per 100ms)
+        const now = performance.now();
+        if (now - lastNormalCompute.current > 100) {
+          meshRef.current.geometry.computeVertexNormals();
+          lastNormalCompute.current = now;
+        } else {
+          // Schedule a delayed normal computation if one isn't already pending
+          if (!pendingUpdates.current) {
+            pendingUpdates.current = true;
+            setTimeout(() => {
+              if (meshRef.current) {
+                meshRef.current.geometry.computeVertexNormals();
+                lastNormalCompute.current = performance.now();
+              }
+              pendingUpdates.current = false;
+            }, 100);
+          }
+        }
       }
     };
 

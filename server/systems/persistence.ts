@@ -43,6 +43,16 @@ export const initializeWorld = async () => {
     await initializeSpawners();
     await initializeTerrain();
     
+    // 5. Initialize Spawner Counts
+    const { spawnerEntityCounts } = await import("../state");
+    spawnerEntityCounts.clear();
+    entities.forEach(e => {
+      if (e.spawnerId) {
+        const current = spawnerEntityCounts.get(e.spawnerId) || 0;
+        spawnerEntityCounts.set(e.spawnerId, current + 1);
+      }
+    });
+    
     serverLogger.info("system", `LOAD COMPLETE: ${worldObjects.size} objects, ${entities.size} NPCs, ${spawners.size} spawners, ${terrainData.size} terrain tiles active.`);
   } catch (e: any) {
     serverLogger.error("system", "CRITICAL: World initialization failed", e.message);

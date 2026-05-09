@@ -25,7 +25,7 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
     <>
       <Canvas 
         shadows={{ type: THREE.PCFShadowMap }} 
-        camera={{ position: [0, 5, 10], fov: 75 }}
+        camera={{ position: [0, 5, 10], fov: 75, far: 100 }}
         dpr={Math.min(window.devicePixelRatio, 2)}
         performance={{ min: 0.5 }}
         gl={{ 
