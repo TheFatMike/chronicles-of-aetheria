@@ -1,24 +1,22 @@
-import React, { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { UserPlus, Handshake, MessageSquare, X, ShieldAlert } from 'lucide-react';
-
-export interface ContextMenuOption {
-  label: string;
-  icon?: React.ReactNode;
-  onClick: () => void;
-  color?: string;
-  disabled?: boolean;
-}
+import React, { memo, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { DESIGN_RES } from "./GameScaffold";
 
 interface ContextMenuProps {
   x: number;
   y: number;
-  title?: string;
-  options: ContextMenuOption[];
+  title: string;
+  options: {
+    label: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+    variant?: 'default' | 'danger';
+    disabled?: boolean;
+  }[];
   onClose: () => void;
 }
 
-export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, title, options, onClose }) => {
+export const ContextMenu = memo(({ x, y, title, options, onClose }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,74 +25,74 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, title, options, 
         onClose();
       }
     };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  // Adjust position to stay on screen
+  // Adjust position if menu goes off screen (using logical coordinates)
   const menuWidth = 180;
-  const menuHeight = options.length * 40 + (title ? 40 : 0);
+  const menuHeight = options.length * 40 + 60;
   
   let finalX = x;
   let finalY = y;
 
-  if (x + menuWidth > window.innerWidth) finalX = x - menuWidth;
-  if (y + menuHeight > window.innerHeight) finalY = y - menuHeight;
+  if (x + menuWidth > DESIGN_RES.width) finalX = x - menuWidth;
+  if (y + menuHeight > DESIGN_RES.height) finalY = y - menuHeight;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-1000 pointer-events-none">
-        <motion.div
-          ref={menuRef}
-          initial={{ opacity: 0, scale: 0.95, y: -5 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -5 }}
-          style={{ top: finalY, left: finalX }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute w-[180px] bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl overflow-hidden pointer-events-auto"
-        >
-          {title && (
-            <div className="px-3 py-2 border-b border-[#4a3a2a] bg-black/40">
-              <span className="text-[10px] font-fantasy uppercase tracking-widest text-[#c2a472]">{title}</span>
-            </div>
-          )}
-          
-          <div className="py-1">
-            {options.map((option, idx) => (
-              <button
-                key={idx}
-                disabled={option.disabled}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  option.onClick();
-                  onClose();
-                }}
-                className={`w-full px-3 py-2 flex items-center gap-3 transition-colors text-left
-                  ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c2a472]/10'}
-                `}
-              >
-                <span className={`${option.color || 'text-[#f4e4bc]'}`}>
+    <div 
+      className="fixed inset-0 z-100 pointer-events-none"
+    >
+      <motion.div
+        ref={menuRef}
+        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+        className="absolute pointer-events-auto bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden w-[180px]"
+        style={{
+          left: finalX,
+          top: finalY,
+        }}
+      >
+        {/* Header */}
+        <div className="px-4 py-2 bg-[#2d221a] border-b border-[#4a3a2a]">
+          <span className="text-[10px] font-fantasy font-black uppercase tracking-[0.2em] text-[#c2a472] truncate block">
+            {title}
+          </span>
+        </div>
+
+        {/* Options */}
+        <div className="py-1">
+          {options.map((option, idx) => (
+            <button
+              key={idx}
+              disabled={option.disabled}
+              onClick={() => {
+                if (option.disabled) return;
+                option.onClick();
+                onClose();
+              }}
+              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-all group hover:pl-6
+                ${option.disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+                ${!option.disabled && option.variant === 'danger' 
+                  ? 'hover:bg-red-950/40 text-red-400/80 hover:text-red-400' 
+                  : !option.disabled ? 'hover:bg-[#c2a472]/10 text-[#8b6b4d] hover:text-[#f4e4bc]' : 'text-stone-600'}
+              `}
+            >
+              {option.icon && (
+                <span className="opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all">
                   {option.icon}
                 </span>
-                <span className={`text-xs font-serif ${option.color || 'text-[#f4e4bc]'}`}>
-                  {option.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+              )}
+              <span className="text-xs font-bold uppercase tracking-widest truncate">
+                {option.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </div>
   );
-};
+});
+
+ContextMenu.displayName = "ContextMenu";

@@ -11,7 +11,7 @@ export const PlayerHUD = ({ character, userEmail }: PlayerHUDProps) => {
   const role = getAccountRole(userEmail);
 
   return (
-    <div className="fixed top-2 left-2 sm:top-6 sm:left-6 z-60 bg-[#1a140f]/90 backdrop-blur-md p-2 sm:p-4 rounded-xl border-2 border-[#4a3a2a] text-[#c2a472] shadow-[0_0_30px_rgba(0,0,0,0.5)] select-none max-w-[200px] sm:max-w-none">
+    <div className="fixed top-2 left-2 lg:top-6 lg:left-6 z-60 bg-[#1a140f]/90 backdrop-blur-md p-2 lg:p-4 rounded-xl border-2 border-[#4a3a2a] text-[#c2a472] shadow-[0_0_30px_rgba(0,0,0,0.5)] select-none w-full max-w-48 lg:max-w-none lg:w-auto">
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] rounded border-2 border-[#4a3a2a] flex items-center justify-center font-black text-[#f4e4bc] text-xs sm:text-base shrink-0">
           {character.class?.[0]?.toUpperCase() || "?"}

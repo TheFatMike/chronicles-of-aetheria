@@ -85,13 +85,13 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
   };
 
   return (
-    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10 pointer-events-none"></div>
       
       <ParticleEffect />
       
       <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12 lg:py-20">
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}

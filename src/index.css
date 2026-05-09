@@ -9,12 +9,11 @@
   --font-fantasy: "MedievalSharp", cursive;
 }
 
-/* Fluid UI Scaling: 
-   Perfectly maps to 16px at 1080p (1920x1080).
-   Scales smoothly up and down, avoiding sudden jumps from media queries.
-   Clamps between 10px (mobile safe) and 24px (4K maximum). */
+/* Fixed UI Scaling: 
+   The GameScaffold handles resolution independence via CSS transforms.
+   We use a fixed base font size for predictable layout. */
 :root {
-  font-size: clamp(10px, 8px + 0.4166vw, 24px);
+  font-size: 16px;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;

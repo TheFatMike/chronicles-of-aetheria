@@ -4,6 +4,7 @@ import { InventoryItem, ItemRarity } from "../../types";
 import * as Icons from "lucide-react";
 import { Briefcase, X, Info, Scissors, Sword, Shield } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
+import { useScaffold } from "./GameScaffold";
 import { formatGold, formatGoldDetailed } from "../../lib/currency";
 import { ContextMenu } from "./ContextMenu";
 
@@ -44,6 +45,13 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
   const [splitAmount, setSplitAmount] = useState<number>(1);
   const [hoveredItem, setHoveredItem] = useState<{item: InventoryItem, x: number, y: number} | null>(null);
   const [contextMenu, setContextMenu] = useState<{x: number, y: number, item: InventoryItem, index: number} | null>(null);
+  const { toLogical } = useScaffold();
+
+  const handleItemHover = (item: InventoryItem, e: React.MouseEvent) => {
+    if (contextMenu) return;
+    const logical = toLogical(e.clientX, e.clientY);
+    setHoveredItem({ item, x: logical.x, y: logical.y });
+  };
 
   const slots = React.useMemo(() => {
     if (items.length === 30) return items;
@@ -71,23 +79,26 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
   };
 
   const handleItemClick = (item: InventoryItem, index: number) => {
-    if (onEquip && ["weapon", "head", "chest", "legs", "boots", "offhand", "accessory", "armor"].includes(item.type)) {
+    if (onEquip && ["weapon", "head", "chest", "legs", "boots", "offhand", "accessory", "armor", "consumable"].includes(item.type)) {
       onEquip(index);
+      setHoveredItem(null);
     }
   };
 
   const handleContextMenu = (e: React.MouseEvent, item: InventoryItem, index: number) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, item, index });
+    const logical = toLogical(e.clientX, e.clientY);
+    setContextMenu({ x: logical.x, y: logical.y, item, index });
+    setHoveredItem(null);
   };
 
   return (
-    <div className="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 z-60 pointer-events-none">
+    <div className="fixed inset-x-0 bottom-24 lg:inset-auto lg:bottom-24 lg:right-6 z-60 flex justify-center lg:block pointer-events-none px-4">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="bg-[#1a140f]/95 backdrop-blur-xl p-4 rounded-xl border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-80 sm:w-96 flex flex-col"
+        className="bg-[#1a140f]/95 backdrop-blur-xl p-3 sm:p-4 rounded-xl border-2 sm:border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-sm flex flex-col"
       >
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none rounded-lg" />
         
@@ -124,9 +135,9 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
               draggable={!!item}
               onClick={() => item && handleItemClick(item, i)}
               onContextMenu={(e) => item && handleContextMenu(e, item, i)}
-              onMouseEnter={(e) => item && setHoveredItem({ item, x: e.clientX, y: e.clientY })}
+              onMouseEnter={(e) => item && handleItemHover(item, e)}
               onMouseLeave={() => setHoveredItem(null)}
-              onMouseMove={(e) => item && setHoveredItem({ item, x: e.clientX, y: e.clientY })}
+              onMouseMove={(e) => item && handleItemHover(item, e)}
             >
               {item && (
                 <div className={`w-full h-full flex items-center justify-center p-1.5 rounded-sm ${getRarityBg(item.rarity)}`}>
@@ -155,12 +166,12 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
             exit={{ opacity: 0, scale: 0.95 }}
             style={{ 
               position: 'fixed',
-              top: hoveredItem.y - 10,
-              left: hoveredItem.x - 280, // Offset to the left
+              top: Math.min(1080 - 300, hoveredItem.y - 10),
+              left: hoveredItem.x > 1920 / 2 ? hoveredItem.x - 280 : hoveredItem.x + 20,
               pointerEvents: 'none',
               zIndex: 100
             }}
-            className="w-64 bg-[#1a1410]/98 backdrop-blur-md border-2 border-[#4a3a2a] p-3 rounded shadow-2xl"
+            className="w-64 bg-[#1a1410]/98 backdrop-blur-md border-2 border-[#4a3a2a] p-3 rounded shadow-2xl hidden sm:block"
           >
             <div className={`text-[8px] font-fantasy uppercase tracking-widest mb-1 ${getRarityColor(hoveredItem.item.rarity)}`}>
               {hoveredItem.item.rarity} {hoveredItem.item.type}
@@ -186,7 +197,7 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
         )}
       </AnimatePresence>
 
-      {/* Context Menu */}
+      {/* Context Menu - Moved outside the relative motion.div */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -197,7 +208,10 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
             ...( ["weapon", "head", "chest", "legs", "boots", "offhand", "accessory", "armor", "consumable"].includes(contextMenu.item.type) ? [{
               label: contextMenu.item.type === "consumable" ? "Use Item" : "Equip Item",
               icon: <Sword size={14} />,
-              onClick: () => onEquip && onEquip(contextMenu.index)
+              onClick: () => {
+                onEquip && onEquip(contextMenu.index);
+                setHoveredItem(null);
+              }
             }] : []),
             {
               label: "Split Stack",
@@ -227,7 +241,7 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
               onClick: () => {
                 // Future drop logic
               },
-              color: "text-red-400"
+              variant: "danger"
             }
           ]}
         />

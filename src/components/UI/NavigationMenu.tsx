@@ -38,7 +38,7 @@ export const NavigationMenu = () => {
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3 py-1.5 bg-[#1a140f]/90 backdrop-blur-md rounded-lg border-2 border-[#4a3a2a] shadow-2xl">
+    <div className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-[#1a140f]/90 backdrop-blur-md rounded-lg border-2 border-[#4a3a2a] shadow-2xl">
       {menuItems.map((item) => (
         <button
           key={item.id}

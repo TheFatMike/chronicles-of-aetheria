@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Map as MapIcon, Users, Navigation, X, ZoomIn, ZoomOut, Compass } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
+import { DESIGN_RES } from "./GameScaffold";
 
 interface MapProps {
   localPlayerId: string | null;
@@ -14,12 +15,12 @@ export const Map = memo(({ localPlayerId, worldSize = 400 }: MapProps) => {
   const playerCount = useGameStore((state) => Object.keys(state.players).length);
   const setActiveMenu = useGameStore(s => s.setActiveMenu);
   
-  // Immersive full-screen size
-  const [mapSize, setMapSize] = useState(Math.min(window.innerWidth * 0.8, window.innerHeight * 0.8, 800));
+  // Immersive full-screen size (using logical coordinates)
+  const [mapSize, setMapSize] = useState(Math.min(DESIGN_RES.width * 0.8, DESIGN_RES.height * 0.8, 800));
 
   useEffect(() => {
     const handleResize = () => {
-      setMapSize(Math.min(window.innerWidth * 0.8, window.innerHeight * 0.8, 800));
+      setMapSize(Math.min(DESIGN_RES.width * 0.8, DESIGN_RES.height * 0.8, 800));
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

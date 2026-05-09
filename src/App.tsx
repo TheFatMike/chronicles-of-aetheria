@@ -42,6 +42,7 @@ import { PartyFrames } from "./components/UI/PartyFrames";
 import { NotificationManager } from "./components/UI/NotificationManager";
 import { TradeWindow } from "./components/UI/TradeWindow";
 import { NavigationMenu } from "./components/UI/NavigationMenu";
+import { GameScaffold } from "./components/UI/GameScaffold";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -295,157 +296,174 @@ export default function App() {
   const showDisconnected = !!(selectedCharacter && !connected && !loading);
 
   return (
-    <div className="w-full h-dvh bg-black overflow-hidden relative">
-      <DebugOverlay />
-      <AnimatePresence mode="wait">
-        {showDisconnected ? (
-          <motion.div
-            key="disconnected"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-full h-full"
-          >
-            <LoadingScreen message="LOST CONNECTION... WEAVING RECONNECION THREADS" />
-          </motion.div>
-        ) : !user ? (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-full h-full"
-          >
-            <Login onLogin={setUser} />
-          </motion.div>
-        ) : isCreating ? (
-          <motion.div
-            key="creation"
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full h-full"
-          >
-            <CharacterCreation
-              onComplete={async (data) => {
-                const char = await createCharacter(data);
-                if (char) {
-                  setSelectedCharacter(char);
-                  setIsCreating(false);
-                }
-              }}
-              onCancel={() => setIsCreating(false)}
-              error={creationError}
-              isLoading={creationLoading}
-              onClearError={() => setCreationError(null)}
-              canCancel={characters.length > 0}
-            />
-          </motion.div>
-        ) : !selectedCharacter ? (
-          <motion.div
-            key="selection"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full h-full"
-          >
-            <CharacterSelection
-              characters={characters}
-              onSelect={setSelectedCharacter}
-              onNew={() => setIsCreating(true)}
-              onDelete={(char) => deleteCharacter(char)}
-              onLogout={() => auth.signOut()}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="game"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="w-full h-full relative"
-          >
-            <AnimatePresence>
-              {(activeMenu === 'map' || activeMenu === 'spawners') && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setActiveMenu(null)}
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
-                  className="fixed inset-0 backdrop-blur-sm z-40"
+    <div className="w-full h-dvh overflow-hidden relative">
+      {/* Pre-game Background Layer (Full Screen, no bars) */}
+      {!selectedCharacter && (
+        <div id="pre-game-bg-container" className="absolute inset-0 bg-[#1a1410] z-[-10] overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10" />
+          <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-40" />
+        </div>
+      )}
+
+      {/* World Layer - Full Viewport */}
+      {selectedCharacter && connected && !isJoining && (
+        <div className="absolute inset-0 z-0">
+          <GameView 
+            onMove={sendMove} 
+            onAttack={basicAttack} 
+            onLoot={(id) => socket?.emit("loot_entity", { targetId: id })}
+            playerColor={selectedCharacter.color} 
+            socketId={socket?.id || null} 
+            socket={socket}
+            initialPos={selectedCharacter.pos}
+            initialRot={selectedCharacter.rot}
+          />
+        </div>
+      )}
+
+      <GameScaffold>
+        <DebugOverlay />
+        <AnimatePresence mode="wait">
+          {showDisconnected ? (
+            <motion.div
+              key="disconnected"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full h-full"
+            >
+              <LoadingScreen message="LOST CONNECTION... WEAVING RECONNECION THREADS" />
+            </motion.div>
+          ) : !user ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full h-full pointer-events-auto"
+            >
+              <Login onLogin={setUser} />
+            </motion.div>
+          ) : isCreating ? (
+            <motion.div
+              key="creation"
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full h-full pointer-events-auto"
+            >
+              <CharacterCreation
+                onComplete={async (data) => {
+                  const char = await createCharacter(data);
+                  if (char) {
+                    setSelectedCharacter(char);
+                    setIsCreating(false);
+                  }
+                }}
+                onCancel={() => setIsCreating(false)}
+                error={creationError}
+                isLoading={creationLoading}
+                onClearError={() => setCreationError(null)}
+                canCancel={characters.length > 0}
+              />
+            </motion.div>
+          ) : !selectedCharacter ? (
+            <motion.div
+              key="selection"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full h-full pointer-events-auto"
+            >
+              <CharacterSelection
+                characters={characters}
+                onSelect={setSelectedCharacter}
+                onNew={() => setIsCreating(true)}
+                onDelete={(char) => deleteCharacter(char)}
+                onLogout={() => auth.signOut()}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="game"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              className="w-full h-full relative pointer-events-none"
+            >
+              <AnimatePresence>
+                {(activeMenu === 'map' || activeMenu === 'spawners') && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setActiveMenu(null)}
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+                    className="fixed inset-0 backdrop-blur-sm z-40 pointer-events-auto"
+                  />
+                )}
+              </AnimatePresence>
+  
+              <AnimatePresence>
+                {showEscapeMenu && (
+                  <div className="pointer-events-auto">
+                    <GameMenu
+                      onClose={() => setShowEscapeMenu(false)}
+                      onSelectCharacter={() => { setSelectedCharacter(null); setShowEscapeMenu(false); }}
+                      onLogout={() => auth.signOut()}
+                    />
+                  </div>
+                )}
+              </AnimatePresence>
+  
+              <div className="pointer-events-auto">
+                <PlayerHUD character={selectedCharacter} userEmail={user?.email} />
+    
+                {devMode && (
+                  <div className="fixed top-6 right-6 z-40 bg-red-900/80 backdrop-blur-md p-3 rounded-xl border-2 border-red-500 text-white text-[10px] font-mono shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    DEV SESSION ACTIVE
+                  </div>
+                )}
+    
+                <Chat onSendMessage={handleSendMessage} />
+                <TargetFrame />
+                <PartyFrames />
+                <NotificationManager />
+                <TradeWindow />
+                <CastBar />
+                <WorldEditor socket={socket} />
+                <Hotbar
+                  slots={selectedCharacter.hotbar || Array(10).fill(null)}
+                  onSlotAction={(index, data) => {
+                    const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                    newHotbar[index] = data;
+                    updateHotbar(newHotbar);
+                  }}
+                  onClearSlot={(index) => {
+                    const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                    newHotbar[index] = null;
+                    updateHotbar(newHotbar);
+                  }}
                 />
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {showEscapeMenu && (
-                <GameMenu
-                  onClose={() => setShowEscapeMenu(false)}
-                  onSelectCharacter={() => { setSelectedCharacter(null); setShowEscapeMenu(false); }}
-                  onLogout={() => auth.signOut()}
+    
+    
+                <MenuManager 
+                  selectedCharacter={selectedCharacter}
+                  socket={socket}
+                  moveItem={moveItem}
+                  splitStack={splitStack}
+                  equipItem={equipItem}
+                  unequipItem={unequipItem}
                 />
-              )}
-            </AnimatePresence>
-
-            <PlayerHUD character={selectedCharacter} userEmail={user?.email} />
-
-            {devMode && (
-              <div className="fixed top-6 right-6 z-40 bg-red-900/80 backdrop-blur-md p-3 rounded-xl border-2 border-red-500 text-white text-[10px] font-mono shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-                DEV SESSION ACTIVE
+    
+                <NavigationMenu />
               </div>
-            )}
-
-            <Chat onSendMessage={handleSendMessage} />
-            <TargetFrame />
-            <PartyFrames />
-            <NotificationManager />
-            <TradeWindow />
-            <CastBar />
-            <WorldEditor socket={socket} />
-            <Hotbar
-              slots={selectedCharacter.hotbar || Array(10).fill(null)}
-              onSlotAction={(index, data) => {
-                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
-                newHotbar[index] = data;
-                updateHotbar(newHotbar);
-              }}
-              onClearSlot={(index) => {
-                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
-                newHotbar[index] = null;
-                updateHotbar(newHotbar);
-              }}
-            />
-
-
-            <MenuManager 
-              selectedCharacter={selectedCharacter}
-              socket={socket}
-              moveItem={moveItem}
-              splitStack={splitStack}
-              equipItem={equipItem}
-              unequipItem={unequipItem}
-            />
-
-            <NavigationMenu />
-
-            <GameView 
-              onMove={sendMove} 
-              onAttack={basicAttack} 
-              onLoot={(id) => socket?.emit("loot_entity", { targetId: id })}
-              playerColor={selectedCharacter.color} 
-              socketId={socket?.id || null} 
-              socket={socket}
-              initialPos={selectedCharacter.pos}
-              initialRot={selectedCharacter.rot}
-            />
-
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </GameScaffold>
     </div>
   );
 }
-

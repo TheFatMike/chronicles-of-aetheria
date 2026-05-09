@@ -144,14 +144,14 @@ export const Login = memo(({ onLogin }: LoginProps) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20 pointer-events-none"></div>
       <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80 pointer-events-none"></div>
       
       <ParticleEffect />
       
       <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12 lg:py-20">
           <div className="flex flex-col items-center gap-8 w-full max-w-4xl relative z-10">
             <motion.div 
           initial={{ opacity: 0, y: 20 }}

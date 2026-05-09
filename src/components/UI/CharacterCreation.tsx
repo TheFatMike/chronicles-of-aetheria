@@ -1,4 +1,5 @@
-import React, { useState, memo } from "react";
+import React, { useState, memo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { CHARACTER_CLASSES } from "../../constants";
 import * as Icons from "lucide-react";
@@ -57,23 +58,26 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
   const displayError = localError || error;
 
   return (
-    <div className="fixed inset-0 bg-[#1a1410] text-[#e2d1b0] z-50 overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10 pointer-events-none"></div>
       
-      {/* Dynamic Class Aura */}
-      <AnimatePresence>
-        <motion.div
-          key={selectedClass.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.15 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-          className="absolute inset-0 pointer-events-none"
-          style={{ 
-            background: `radial-gradient(circle at 30% 50%, ${selectedClass.color} 0%, transparent 70%)` 
-          }}
-        />
-      </AnimatePresence>
+      {/* Dynamic Class Aura - Portaled to full screen background */}
+      {createPortal(
+        <AnimatePresence>
+          <motion.div
+            key={selectedClass.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.2 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{ 
+              background: `radial-gradient(circle at 50% 50%, ${selectedClass.color} 0%, transparent 80%)` 
+            }}
+          />
+        </AnimatePresence>,
+        document.getElementById('pre-game-bg-container') || document.body
+      )}
 
       <ParticleEffect />
       
@@ -91,14 +95,14 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
       )}
       
       <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-20 sm:py-24">
+        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-8 lg:py-12">
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-5xl w-full grid grid-cols-12 gap-4 sm:gap-8 relative z-10"
+            className="max-w-5xl w-full grid grid-cols-12 gap-4 lg:gap-6 relative z-10"
           >
         {/* Left: Preview/Class Display */}
-        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-12 flex flex-col justify-start overflow-hidden relative shadow-2xl h-fit">
+        <div className="col-span-12 lg:col-span-7 bg-[#2d221a] border-2 lg:border-4 border-[#4a3a2a] rounded p-6 lg:p-12 flex flex-col justify-start overflow-hidden relative shadow-2xl h-fit">
           <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-transparent to-black/20 pointer-events-none" />
           
           <div>
@@ -203,7 +207,7 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
             </div>
 
             <div>
-              <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-8 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+              <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-6 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
                 <Shield size={16} />
                 Ascension Path
               </h3>
@@ -212,7 +216,7 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
                   <button
                     key={c.id}
                     onClick={() => setSelectedClassIdx(i)}
-                    className={`w-full p-5 flex justify-between items-center border-2 transition-all group ${
+                    className={`w-full p-4 flex justify-between items-center border-2 transition-all group ${
                       selectedClassIdx === i 
                         ? "border-[#c2a472] bg-[#c2a472] text-[#1a1410]" 
                         : "border-[#4a3a2a] bg-black/20 text-[#6d5540] hover:border-[#6d5540]"
@@ -225,8 +229,8 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
               </div>
             </div>
           </div>
-
-          <div className="mt-12">
+ 
+          <div className="mt-8">
             <button
               onClick={handleComplete}
               disabled={characterName.length < 3 || !!localError || isLoading}

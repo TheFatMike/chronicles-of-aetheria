@@ -12,8 +12,9 @@ export const QuestLog = memo(({ onClose }: { onClose: () => void }) => {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="fixed top-24 right-6 z-60 bg-[#1a140f]/95 backdrop-blur-xl border-2 border-[#4a3a2a] p-6 rounded-2xl shadow-2xl w-80 max-h-[70vh] overflow-hidden flex flex-col"
+      className="fixed inset-x-0 top-24 lg:inset-auto lg:top-24 lg:right-6 z-60 flex justify-center lg:block pointer-events-none px-4"
     >
+      <motion.div className="bg-[#1a140f]/95 backdrop-blur-xl border-2 border-[#4a3a2a] p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-88 max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col pointer-events-auto">
       <div className="flex items-center justify-between mb-6 border-b border-[#4a3a2a] pb-4">
         <div className="flex items-center gap-3">
           <Book className="text-[#c2a472]" size={20} />
@@ -85,6 +86,7 @@ export const QuestLog = memo(({ onClose }: { onClose: () => void }) => {
           {questList.length} Active {questList.length === 1 ? 'Quest' : 'Quests'}
         </p>
       </div>
+    </motion.div>
     </motion.div>
   );
 });

@@ -33,7 +33,7 @@ export const CastBar = () => {
   if (!castState?.active) return null;
 
   return (
-    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-64 pointer-events-none z-50">
+    <div className="fixed bottom-48 lg:bottom-56 left-1/2 -translate-x-1/2 w-64 pointer-events-none z-50">
       <div className="bg-slate-900/80 backdrop-blur-sm border-2 border-slate-700 rounded-lg p-1 shadow-2xl">
         <div className="flex justify-between items-center px-1 mb-1">
           <span className="text-[10px] text-white font-bold uppercase tracking-wider">

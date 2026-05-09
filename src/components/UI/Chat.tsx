@@ -28,14 +28,14 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
   };
 
   return (
-    <div className={`fixed bottom-8 left-8 z-100 transition-all duration-300 ${isOpen ? "w-80 md:w-96" : "w-12 h-12"}`}>
+    <div className={`fixed bottom-8 left-4 lg:left-8 z-100 transition-all duration-300 ${isOpen ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96" : "w-12 h-12"}`}>
       <AnimatePresence>
         {isOpen ? (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[400px] overflow-hidden"
+            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[300px] lg:h-[400px] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
