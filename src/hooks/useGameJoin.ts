@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { User } from "firebase/auth";
 import { Character } from "../types";
 import { Socket } from "socket.io-client";
+import { useGameStore } from "../store/useGameStore";
 import { logger } from "../lib/logger";
 import { getAccountRole } from "../lib/permissions";
 
@@ -36,6 +37,7 @@ export const useGameJoin = ({
     if (!alreadyJoined) {
       logger.info("play", `Joining world as ${selectedCharacter.name} (${selectedCharacter.id}) | Socket: ${socketId}`);
       setIsJoining(true);
+      useGameStore.getState().setWorldLoading(true);
       lastJoinedRef.current = { charId: selectedCharacter.id, socketId };
       
       sendJoin({
@@ -52,7 +54,10 @@ export const useGameJoin = ({
       });
 
       requestWorldSync();
-      setTimeout(() => setIsJoining(false), 1500);
+      setTimeout(() => {
+        setIsJoining(false);
+        useGameStore.getState().setWorldLoading(false);
+      }, 1500);
     }
   }, [user, selectedCharacter, connected, socket?.id, sendJoin, requestWorldSync, setIsJoining]);
 };

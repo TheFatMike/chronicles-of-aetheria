@@ -72,6 +72,7 @@ export const WorldObjectItem = memo(({
       position={obj.pos} 
       rotation={obj.rot} 
       ref={groupRef}
+      {...({ isWorldObject: true } as any)}
     >
       {/* Model Group - Scaled */}
       <group scale={obj.scale}>

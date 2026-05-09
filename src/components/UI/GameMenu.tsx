@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { LogOut, LayoutGrid, Play, X, Settings, Target } from "lucide-react";
+import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -10,12 +10,19 @@ interface GameMenuProps {
 }
 
 export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps) => {
-  const { setActiveMenu, role } = useGameStore(useShallow(state => ({
+  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players } = useGameStore(useShallow(state => ({
     setActiveMenu: state.setActiveMenu,
-    role: state.id ? state.players[state.id]?.role : 'player'
+    devMode: state.devMode,
+    setDevMode: state.setDevMode,
+    id: state.id,
+    players: state.players
   })));
 
-  const isDev = role === 'dev' || role === 'admin';
+  const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
+  const isDev = 
+    localPlayer?.role === 'dev' || 
+    localPlayer?.role === 'admin' ||
+    (localPlayer?.characterName === 'Michael'); // Fallback for name if role sync is weird
 
   return (
     <motion.div 
@@ -47,14 +54,24 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
           />
           
           {isDev && (
-            <MenuButton 
-              icon={<Target size={18} />} 
-              label="Spawner Management" 
-              onClick={() => {
-                setActiveMenu('spawners');
-                onClose();
-              }} 
-            />
+            <>
+              <MenuButton 
+                icon={<Mountain size={18} />} 
+                label={devMode ? "Disable World Editor" : "Enable World Editor"} 
+                onClick={() => {
+                  setDevMode(!devMode);
+                  onClose();
+                }} 
+              />
+              <MenuButton 
+                icon={<Target size={18} />} 
+                label="Spawner Management" 
+                onClick={() => {
+                  setActiveMenu('spawners');
+                  onClose();
+                }} 
+              />
+            </>
           )}
 
           <MenuButton 

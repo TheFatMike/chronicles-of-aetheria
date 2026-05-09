@@ -9,13 +9,17 @@ import { createQuestSlice } from './slices/questSlice';
 import { createPartySlice } from './slices/partySlice';
 import { createTradeSlice } from './slices/tradeSlice';
 
-export const useGameStore = create<GameState>((...a) => ({
-  ...createPlayerSlice(...a),
-  ...createEntitySlice(...a),
-  ...createWorldSlice(...a),
-  ...createCombatSlice(...a),
-  ...createUISlice(...a),
-  ...createQuestSlice(...a),
-  ...createPartySlice(...a),
-  ...createTradeSlice(...a),
-}));
+import { subscribeWithSelector } from 'zustand/middleware';
+
+export const useGameStore = create<GameState>()(
+  subscribeWithSelector((...a) => ({
+    ...createPlayerSlice(...a),
+    ...createEntitySlice(...a),
+    ...createWorldSlice(...a),
+    ...createCombatSlice(...a),
+    ...createUISlice(...a),
+    ...createQuestSlice(...a),
+    ...createPartySlice(...a),
+    ...createTradeSlice(...a),
+  }))
+);

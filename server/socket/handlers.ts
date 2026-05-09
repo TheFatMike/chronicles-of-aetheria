@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import { handleUpdateTerrain, handleRequestTerrainSync } from "./handlers/terrain";
 import { handleJoin, handleDisconnect } from "./handlers/session";
 import { handleMove } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
@@ -54,6 +55,10 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     const nearby = filterNearby(Array.from(worldObjects.values()), player.pos, 150, 'object');
     socket.emit("world_sync", nearby);
   });
+
+  // Terrain
+  socket.on("update_terrain", (data) => handleUpdateTerrain(io, socket, data));
+  socket.on("request_terrain_sync", () => handleRequestTerrainSync(socket));
 
   // Quests
   socket.on("accept_quest", (data) => handleAcceptQuest(socket, data));

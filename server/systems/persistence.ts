@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { players, worldObjects, spawners, entities } from "../state";
+import { players, worldObjects, spawners, entities, terrainData } from "../state";
 import { serverLogger } from "../logger";
 import admin from "firebase-admin";
 
@@ -39,12 +39,30 @@ export const initializeWorld = async () => {
       }
     });
 
-    // 4. Load Spawners
+    // 4. Load Spawners & Terrain
     await initializeSpawners();
+    await initializeTerrain();
     
-    serverLogger.info("system", `LOAD COMPLETE: ${worldObjects.size} objects, ${entities.size} NPCs, ${spawners.size} spawners active.`);
+    serverLogger.info("system", `LOAD COMPLETE: ${worldObjects.size} objects, ${entities.size} NPCs, ${spawners.size} spawners, ${terrainData.size} terrain tiles active.`);
   } catch (e: any) {
     serverLogger.error("system", "CRITICAL: World initialization failed", e.message);
+  }
+};
+
+export const initializeTerrain = async () => {
+  try {
+    serverLogger.info("system", "Loading terrain data from Firestore...");
+    const snapshot = await db.collection("terrain").get();
+    
+    snapshot.forEach((doc: any) => {
+      const data = doc.data();
+      if (!isNaN(data.y)) {
+        terrainData.set(doc.id, { y: data.y, type: data.type || 'grass' });
+      }
+    });
+    serverLogger.info("system", `Loaded ${terrainData.size} terrain modifications.`);
+  } catch (e: any) {
+    serverLogger.error("system", "Failed to load terrain", e.message);
   }
 };
 
@@ -63,9 +81,9 @@ export const initializeSpawners = async () => {
         id,
         entityType: data.type.replace("spawner_", ""),
         pos: data.pos,
-        radius: scaleX * 5,
+        spawnRadius: scaleX * 5,
         maxEntities: 3,
-        spawnInterval: 10000,
+        respawnTime: 10, // seconds
         ...data
       };
       spawners.set(id, spawnerData);

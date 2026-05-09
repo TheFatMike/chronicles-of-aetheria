@@ -17,6 +17,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   isCharacterOpen: false,
   isQuestsOpen: false,
   isSkillsOpen: false,
+  isWorldLoading: false,
   contextMenu: null,
 
   addMessage: (message) => set((state) => ({
@@ -40,6 +41,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setCharacterOpen: (isOpen) => set({ isCharacterOpen: isOpen }),
   setQuestsOpen: (isOpen) => set({ isQuestsOpen: isOpen }),
   setSkillsOpen: (isOpen) => set({ isSkillsOpen: isOpen }),
+  setWorldLoading: (isLoading) => set({ isWorldLoading: isLoading }),
   setDevMode: (devMode) => set({ devMode }),
   
   setEditorOpen: (isOpen) => set({ isEditorOpen: isOpen }),

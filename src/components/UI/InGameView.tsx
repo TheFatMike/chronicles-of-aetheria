@@ -100,7 +100,7 @@ export const InGameView = ({
         <NotificationManager />
         <TradeWindow />
         <CastBar />
-        <WorldEditor socket={socket} />
+        <WorldEditor socket={socket} userEmail={userEmail} />
         
         <Hotbar
           slots={selectedCharacter.hotbar || Array(10).fill(null)}

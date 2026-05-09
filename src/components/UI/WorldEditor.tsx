@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { WorldObject } from '../../types';
 import { AnimatePresence } from 'motion/react';
 import { Save } from 'lucide-react';
@@ -8,7 +9,7 @@ import { EditorInspector } from './EditorInspector';
 import { EditorOutliner } from './EditorOutliner';
 import { snapVectorToGrid } from '../../lib/gameUtils';
 
-export const WorldEditor = ({ socket }: { socket: any }) => {
+export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: string | null }) => {
   const { 
     devMode, 
     worldObjects, 
@@ -17,14 +18,29 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
     selectedWorldObjectId,
     setSelectedWorldObjectId,
     players,
-    id: currentPlayerId,
+    currentPlayerId,
     isEditorOpen,
     setEditorOpen,
     gridSnap,
     setGridSnap,
     editorTransformMode,
     setEditorTransformMode
-  } = useGameStore();
+  } = useGameStore(useShallow(s => ({
+    devMode: s.devMode,
+    worldObjects: s.worldObjects,
+    editorSelectedType: s.editorSelectedType,
+    setEditorSelectedType: s.setEditorSelectedType,
+    selectedWorldObjectId: s.selectedWorldObjectId,
+    setSelectedWorldObjectId: s.setSelectedWorldObjectId,
+    players: s.players,
+    currentPlayerId: s.id,
+    isEditorOpen: s.isEditorOpen,
+    setEditorOpen: s.setEditorOpen,
+    gridSnap: s.gridSnap,
+    setGridSnap: s.setGridSnap,
+    editorTransformMode: s.editorTransformMode,
+    setEditorTransformMode: s.setEditorTransformMode
+  })));
 
   const [activeCategory, setActiveCategory] = useState('nature');
   
@@ -33,7 +49,13 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
   const [nextWaypointOrder, setNextWaypointOrder] = useState(1);
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
-  const hasAccess = localPlayer?.role === 'dev' || localPlayer?.role === 'admin' || localPlayer?.role === 'mod';
+  
+  // Robust access check: Check character role OR account role mapping
+  const hasAccess = 
+    localPlayer?.role === 'dev' || 
+    localPlayer?.role === 'admin' || 
+    localPlayer?.role === 'mod' ||
+    (userEmail && (userEmail.toLowerCase() === "michaeljhoward94@gmail.com"));
 
   const selectedObject = selectedWorldObjectId ? worldObjects[selectedWorldObjectId] : null;
 
@@ -94,7 +116,7 @@ export const WorldEditor = ({ socket }: { socket: any }) => {
   if (!devMode || !hasAccess) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
+    <div className="fixed bottom-24 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
       <button 
         onClick={() => setEditorOpen(!isEditorOpen)}
         className={`pointer-events-auto px-6 h-12 rounded-xl flex items-center gap-3 transition-all shadow-2xl border-2 font-black uppercase tracking-widest text-xs ${

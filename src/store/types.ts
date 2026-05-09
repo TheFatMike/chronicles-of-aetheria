@@ -61,8 +61,11 @@ export interface EntitySlice {
 export interface WorldSlice {
   spawners: Record<string, Spawner>;
   worldObjects: Record<string, WorldObject>;
+  terrainData: Record<string, { y: number; type: string }>;
   setSpawners: (spawners: Spawner[]) => void;
   setWorldObjects: (objects: WorldObject[]) => void;
+  setTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
+  updateTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
   addWorldObject: (obj: WorldObject) => void;
   updateWorldObject: (id: string, data: Partial<WorldObject>) => void;
   removeWorldObject: (id: string) => void;
@@ -108,6 +111,7 @@ export interface UISlice {
   isCharacterOpen: boolean;
   isQuestsOpen: boolean;
   isSkillsOpen: boolean;
+  isWorldLoading: boolean;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
@@ -116,6 +120,7 @@ export interface UISlice {
   setCharacterOpen: (isOpen: boolean) => void;
   setQuestsOpen: (isOpen: boolean) => void;
   setSkillsOpen: (isOpen: boolean) => void;
+  setWorldLoading: (isLoading: boolean) => void;
   setDevMode: (enabled: boolean) => void;
   setEditorOpen: (isOpen: boolean) => void;
   setTransforming: (val: boolean) => void;

@@ -10,3 +10,4 @@ export const activeTrades = new Map<string, any>(); // tradeId -> { id, p1, p2, 
 export const dirtyEntities = new Set<string>();
 export const playerLastGridCell = new Map<string, string>(); // socketId -> "x,z"
 export const playerKnownEntities = new Map<string, Set<string>>(); // socketId -> Set<entityId>
+export const terrainData = new Map<string, { y: number, type: string }>(); // "x,z" -> { y, type }

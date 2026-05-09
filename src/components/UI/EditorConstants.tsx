@@ -7,6 +7,7 @@ export const CATEGORIES = [
   { id: 'npcs', icon: <MousePointer2 size={16} />, label: 'NPCs', items: ['npc_instructor_kael', 'npc_guard_captain'] },
   { id: 'props', icon: <Droplets size={16} />, label: 'Props', items: ['campfire', 'chest', 'dummy', 'well'] },
   { id: 'systems', icon: <Target size={16} />, label: 'Systems', items: ['spawner_slime', 'spawner_wolf', 'spawner_guard', 'spawner_instructor_kael', 'waypoint'] },
+  { id: 'terrain', icon: <Mountain size={16} />, label: 'Terrain', items: ['terrain_raise', 'terrain_lower', 'terrain_flatten', 'terrain_paint_grass', 'terrain_paint_dirt', 'terrain_paint_stone', 'terrain_paint_sand'] },
 ];
 
 export const ICON_MAP: Record<string, any> = {
@@ -31,4 +32,11 @@ export const ICON_MAP: Record<string, any> = {
   'spawner_instructor_kael': <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-black font-black">!</div>,
   'npc_instructor_kael': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-amber-400 rounded-full" /><div className="w-5 h-2 bg-amber-600 rounded-sm -mt-0.5" /></div>,
   'npc_guard_captain': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-blue-400 rounded-full" /><div className="w-5 h-2 bg-blue-600 rounded-sm -mt-0.5" /></div>,
+  'terrain_raise': <div className="text-xs font-black text-emerald-500">↑</div>,
+  'terrain_lower': <div className="text-xs font-black text-rose-500">↓</div>,
+  'terrain_flatten': <div className="text-xs font-black text-blue-500">_</div>,
+  'terrain_paint_grass': <div className="w-4 h-4 bg-green-600 rounded-sm" />,
+  'terrain_paint_dirt': <div className="w-4 h-4 bg-amber-900 rounded-sm" />,
+  'terrain_paint_stone': <div className="w-4 h-4 bg-gray-600 rounded-sm" />,
+  'terrain_paint_sand': <div className="w-4 h-4 bg-yellow-200 rounded-sm" />,
 };

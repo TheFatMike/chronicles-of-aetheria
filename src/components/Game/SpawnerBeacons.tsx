@@ -56,7 +56,7 @@ const SpawnerBeacon = memo(({ spawner, liveCount }: SpawnerBeaconProps) => {
   });
 
   const [x, y, z] = spawner.pos;
-  const radius = spawner.spawnRadius;
+  const radius = spawner.spawnRadius || 5;
 
   return (
     <group position={[x, 0, z]}>

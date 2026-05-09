@@ -63,7 +63,8 @@ export const usePlayerMovement = (
     const handleKeyUp = (e: KeyboardEvent) => (keys.current[e.code] = false);
     
     const handleMouseDown = (e: MouseEvent) => {
-      if (useGameStore.getState().isEditorOpen) return;
+      const state = useGameStore.getState();
+      if (state.isEditorOpen || state.isWorldLoading) return;
       if (e.button === 0) cameraState.current.isLeftMouseDown = true;
       if (e.button === 2) {
         cameraState.current.isRightMouseDown = true;
@@ -95,7 +96,8 @@ export const usePlayerMovement = (
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (useGameStore.getState().isEditorOpen) return;
+      const state = useGameStore.getState();
+      if (state.isEditorOpen || state.isWorldLoading) return;
       if (cameraState.current.isLeftMouseDown || cameraState.current.isRightMouseDown) {
         cameraState.current.theta -= e.movementX * SENSITIVITY;
         cameraState.current.phi = Math.max(
@@ -166,10 +168,11 @@ export const usePlayerMovement = (
     const isEditorOpen = useGameStore.getState().isEditorOpen;
 
     const isTyping = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
+    const isWorldLoading = useGameStore.getState().isWorldLoading;
     let forwardInput = 0;
     let sideInput = 0;
 
-    if (!isTyping && !isEditorOpen) {
+    if (!isTyping && !isEditorOpen && !isWorldLoading) {
       forwardInput = (keys.current["KeyS"] || keys.current["ArrowDown"] ? 1 : 0) - (keys.current["KeyW"] || keys.current["ArrowUp"] ? 1 : 0);
       sideInput = (keys.current["KeyD"] ? 1 : 0) - (keys.current["KeyA"] ? 1 : 0);
       
@@ -180,7 +183,7 @@ export const usePlayerMovement = (
       }
     }
     
-    if (isEditorOpen) {
+    if (isEditorOpen || isWorldLoading) {
       forwardInput = 0;
       sideInput = 0;
       velocity.current.set(0, velocity.current.y, 0); // Stop horizontal movement immediately
@@ -209,7 +212,7 @@ export const usePlayerMovement = (
     velocity.current.x -= velocity.current.x * FRICTION * clampedDelta;
     velocity.current.z -= velocity.current.z * FRICTION * clampedDelta;
 
-    if (isGrounded.current && !isTyping && !isEditorOpen && keys.current["Space"]) {
+    if (isGrounded.current && !isTyping && !isEditorOpen && !isWorldLoading && keys.current["Space"]) {
       velocity.current.y = JUMP_FORCE;
       isGrounded.current = false;
     }
@@ -224,7 +227,14 @@ export const usePlayerMovement = (
       
       const rayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.8, meshRef.current.position.z);
       const wallRay = new THREE.Raycaster(rayOrigin, dir, 0, 0.4);
-      const wallIntersects = wallRay.intersectObjects(_state.scene.children, true);
+      
+      const collidables = _state.scene.children.filter(child => 
+        child.name === "terrain_mesh" || 
+        (child as any).isWorldObject ||
+        child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry"
+      );
+
+      const wallIntersects = wallRay.intersectObjects(collidables, true);
       
       let wallHit = false;
       for (const hit of wallIntersects) {
@@ -277,8 +287,14 @@ export const usePlayerMovement = (
     const rayDir = new THREE.Vector3(0, -1, 0);
     const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 50);
     
-    // We want to hit the floor and world objects, but not ourselves or helpers
-    const intersects = raycaster.intersectObjects(_state.scene.children, true);
+    // OPTIMIZATION: Only raycast against floor and world objects, not the whole scene
+    const collidables = _state.scene.children.filter(child => 
+      child.name === "terrain_mesh" || 
+      child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry" ||
+      (child as any).isWorldObject // We should add this flag
+    );
+
+    const intersects = raycaster.intersectObjects(collidables, true);
     
     let groundY = 0;
     let hitSomething = false;
@@ -290,7 +306,8 @@ export const usePlayerMovement = (
         !intersect.object.visible ||
         playerMeshesRef.current.includes(intersect.object) || 
         (intersect.object as any).material?.wireframe ||
-        name.includes("editor_helper")
+        name.includes("editor_helper") ||
+        isNaN(intersect.point.y)
       ) continue;
       
       groundY = intersect.point.y;
@@ -298,7 +315,7 @@ export const usePlayerMovement = (
       break;
     }
 
-    if (meshRef.current.position.y <= groundY + 0.01) {
+    if (hitSomething && meshRef.current.position.y <= groundY + 0.01) {
       if (velocity.current.y <= 0) {
         meshRef.current.position.y = groundY;
         velocity.current.y = 0;

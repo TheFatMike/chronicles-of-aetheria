@@ -156,6 +156,14 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Initial Data Fetch
+  useEffect(() => {
+    if (user && !loading && !charsLoading && characters.length === 0 && !selectedCharacter && !isCreating && !initialFetchAttempted.current) {
+      initialFetchAttempted.current = true;
+      fetchCharacters();
+    }
+  }, [user, loading, charsLoading, fetchCharacters, characters.length, selectedCharacter, isCreating]);
+
   // Game State & Connection Hooks
   useGameSync({ socket, selectedCharacter, setSelectedCharacter, connected });
   useGameJoin({ user, selectedCharacter, connected, socket, sendJoin, requestWorldSync, setIsJoining });

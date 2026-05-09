@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { List, Search, Target, Trash2, MapPin, TreePine, Home, MousePointer2, Ghost } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const TYPE_ICONS: Record<string, any> = {
   tree: <TreePine size={12} />,
@@ -14,7 +15,7 @@ const TYPE_ICONS: Record<string, any> = {
 };
 
 export const EditorOutliner = ({ socket }: { socket: any }) => {
-  const worldObjects = useGameStore(state => Object.values(state.worldObjects));
+  const worldObjects = useGameStore(useShallow(state => Object.values(state.worldObjects)));
   const selectedId = useGameStore(state => state.selectedWorldObjectId);
   const setSelectedId = useGameStore(state => state.setSelectedWorldObjectId);
   const [search, setSearch] = useState('');

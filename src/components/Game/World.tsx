@@ -10,6 +10,8 @@ import { OBJECT_TEMPLATES } from "../../data/world/templates";
 import { SpawnerBeacons } from "./SpawnerBeacons";
 import { EntityRenderer } from "./EntityRenderer";
 import { EditorCamera } from "./EditorCamera";
+import { Terrain } from "./Terrain";
+
 interface WorldProps {
   onAttack?: () => void;
   onLoot?: (id: string) => void;
@@ -46,9 +48,45 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
     }
 
     e.stopPropagation();
-    
     let { point } = e;
     
+    // Terrain Sculpting Logic
+    if (editorSelectedType.startsWith('terrain_')) {
+      const brushSize = e.shiftKey ? 12 : 6;
+      const strength = 0.5;
+      const resolution = 4; // MUST match Terrain.tsx resolution
+      const points = [];
+      
+      const centerX = Math.round(point.x / resolution) * resolution;
+      const centerZ = Math.round(point.z / resolution) * resolution;
+
+      for (let x = centerX - brushSize; x <= centerX + brushSize; x += resolution) {
+        for (let z = centerZ - brushSize; z <= centerZ + brushSize; z += resolution) {
+          const dist = Math.sqrt((x - centerX)**2 + (z - centerZ)**2);
+          if (dist <= brushSize) {
+            const falloff = 1 - (dist / brushSize);
+            const update: any = { x, z };
+            
+            if (editorSelectedType === 'terrain_raise') update.deltaY = strength * falloff;
+            if (editorSelectedType === 'terrain_lower') update.deltaY = -strength * falloff;
+            if (editorSelectedType === 'terrain_flatten') update.y = 0;
+            
+            if (editorSelectedType === 'terrain_paint_grass') update.type = 'grass';
+            if (editorSelectedType === 'terrain_paint_dirt') update.type = 'dirt';
+            if (editorSelectedType === 'terrain_paint_stone') update.type = 'stone';
+            if (editorSelectedType === 'terrain_paint_sand') update.type = 'sand';
+
+            points.push(update);
+          }
+        }
+      }
+
+      if (socket && points.length > 0) {
+        socket.emit("update_terrain", { points });
+      }
+      return;
+    }
+
     // Apply grid snap to placement
     if (gridSnap) {
       point = new THREE.Vector3(
@@ -58,24 +96,18 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       );
     }
 
-    // Dispatch custom event for specialized placement (like waypoints with auto-increment)
+    // Dispatch custom event for specialized placement
     const placeEvent = new CustomEvent('editor_place_object', { 
       detail: { point, type: editorSelectedType } 
     });
     window.dispatchEvent(placeEvent);
 
     if (socket && editorSelectedType !== 'waypoint') {
-      // Standard placement for everything else
-      const jitter = e.shiftKey ? 0.2 : 0;
-      const rx = (Math.random() - 0.5) * jitter;
-      const rz = (Math.random() - 0.5) * jitter;
-
       const template = OBJECT_TEMPLATES[editorSelectedType];
-
       socket.emit("save_world_object", {
         id: crypto.randomUUID(),
         type: editorSelectedType,
-        pos: [point.x + rx, 0, point.z + rz],
+        pos: [point.x, point.y, point.z], // Use precise Y for placement on hills
         rot: [0, Math.random() * Math.PI * 2, 0],
         scale: (template?.scale || 1) * (0.9 + Math.random() * 0.2),
         modelUrl: template?.modelUrl
@@ -93,17 +125,15 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         intensity={1.5} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-100}
+        shadow-camera-right={100}
+        shadow-camera-top={100}
+        shadow-camera-bottom={-100}
+        shadow-camera-far={200}
       />
       <pointLight position={[-10, 5, -10]} intensity={1} color="#fcd34d" />
       
-      <Plane 
-        args={[GAME_CONFIG.WORLD.SIZE, GAME_CONFIG.WORLD.SIZE]} 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        receiveShadow
-        onClick={onFloorClick}
-      >
-        <meshStandardMaterial color="#14532d" roughness={0.9} metalness={0.05} />
-      </Plane>
+      <Terrain socket={socket} onClick={onFloorClick} />
       
       <Plane 
         args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} 
@@ -115,16 +145,12 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         <meshStandardMaterial color="#44403c" roughness={1} />
       </Plane>
       
-      {/* Entities */}
       <EntityRenderer entities={entities} onAttack={onAttack} onLoot={onLoot} />
 
-
-      {/* Other Players */}
       {players.map(pid => pid !== currentPlayerId && (
         <OtherPlayer key={pid} id={pid} />
       ))}
 
-      {/* Portal */}
       <group position={[0, 0, -30]}>
         <mesh position={[0, 2, 0]} castShadow>
           <octahedronGeometry args={[2]} />

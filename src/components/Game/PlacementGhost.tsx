@@ -15,7 +15,10 @@ export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSe
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
     // Find the floor (usually a PlaneGeometry)
-    const floor = intersects.find(i => i.object.type === 'Mesh' && (i.object as any).geometry?.type === 'PlaneGeometry');
+    const floor = intersects.find(i => 
+      i.object.type === 'Mesh' && 
+      ((i.object as any).geometry?.type === 'PlaneGeometry' || i.object.name === 'terrain_mesh')
+    );
     
     if (floor) {
       let p = floor.point;
