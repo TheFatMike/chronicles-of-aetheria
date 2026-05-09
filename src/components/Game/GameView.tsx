@@ -5,7 +5,7 @@ import { World } from "./World";
 import { Player } from "./Player";
 import { Projectiles } from "./Projectiles";
 import { useGameStore } from "../../store/useGameStore";
-import { Loader } from "@react-three/drei";
+import { GameLoader } from "../UI/GameLoader";
 
 interface GameViewProps {
   onMove: (pos: [number, number, number], rot: [number, number, number]) => void;
@@ -47,7 +47,7 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
           <Projectiles />
         </Suspense>
       </Canvas>
-      <Loader />
+      <GameLoader />
     </>
   );
 });

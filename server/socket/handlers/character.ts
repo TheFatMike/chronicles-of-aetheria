@@ -26,12 +26,19 @@ export const handleCreateCharacter = async (socket: Socket, data: any, userId: s
     }
 
     const result = await db.runTransaction(async (transaction: admin.firestore.Transaction) => {
+      // Name collision check
       const nameDoc = (await transaction.get(nameRef)) as any as admin.firestore.DocumentSnapshot;
       if (nameDoc.exists) {
         throw new Error("This name has already been claimed.");
       }
 
+      // Character limit check (Max 6)
       const charCol = db.collection("users").doc(userId).collection("characters");
+      const userChars = await transaction.get(charCol);
+      if (userChars.size >= 6) {
+        throw new Error("You have reached the maximum character limit (6).");
+      }
+
       const charDocRef = charCol.doc();
       
       const baseStats = selectedClassData.stats;

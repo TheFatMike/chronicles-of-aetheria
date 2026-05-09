@@ -4,9 +4,19 @@ import { ParticleEffect } from "./Particles";
 
 interface LoadingScreenProps {
   message?: string;
+  progress?: number;
+  detail?: string;
 }
 
-export const LoadingScreen = memo(({ message = "COMMUNING WITH THE ANCIENTS..." }: LoadingScreenProps) => {
+export const LoadingScreen = memo(({ 
+  message = "COMMUNING WITH THE ANCIENTS...",
+  progress,
+  detail
+}: LoadingScreenProps) => {
+  // Use provided progress or fallback to the looping animation if progress is undefined
+  const isIndeterminate = progress === undefined;
+  const displayProgress = progress ?? 0;
+
   return (
     <div className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-[#0d0907] overflow-hidden">
       {/* Background Ambience - Magical Mist/Void */}
@@ -63,22 +73,44 @@ export const LoadingScreen = memo(({ message = "COMMUNING WITH THE ANCIENTS..." 
             >
               {message}
             </motion.p>
-            <div className="flex items-center gap-2">
-              <span className="text-[#8b6b4d] font-fantasy text-[10px] tracking-widest uppercase">Weaving the World-Thread</span>
-            </div>
+            {detail && (
+              <motion.span 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-[#8b6b4d] font-fantasy text-[10px] tracking-widest uppercase"
+              >
+                {detail}
+              </motion.span>
+            )}
+            {!detail && (
+              <div className="flex items-center gap-2">
+                <span className="text-[#8b6b4d] font-fantasy text-[10px] tracking-widest uppercase">Weaving the World-Thread</span>
+              </div>
+            )}
           </div>
 
-          <div className="w-full h-1.5 bg-[#1a140f] rounded-full overflow-hidden border border-[#4a3a2a]">
-            <motion.div 
-              initial={{ width: "0%" }}
-              animate={{ width: ["0%", "20%", "50%", "75%", "100%"] }}
-              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-              className="h-full bg-linear-to-r from-[#5d432c] via-[#c2a472] to-[#f4e4bc] shadow-[0_0_12px_rgba(194,164,114,0.6)]"
-            />
+          <div className="w-full h-1.5 bg-[#1a140f] rounded-full overflow-hidden border border-[#4a3a2a] relative">
+            {isIndeterminate ? (
+              <motion.div 
+                initial={{ width: "0%" }}
+                animate={{ width: ["0%", "20%", "50%", "75%", "100%"] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="h-full bg-linear-to-r from-[#5d432c] via-[#c2a472] to-[#f4e4bc] shadow-[0_0_12px_rgba(194,164,114,0.6)]"
+              />
+            ) : (
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${displayProgress}%` }}
+                transition={{ type: "spring", stiffness: 50, damping: 20 }}
+                className="h-full bg-linear-to-r from-[#5d432c] via-[#c2a472] to-[#f4e4bc] shadow-[0_0_12px_rgba(194,164,114,0.6)]"
+              />
+            )}
           </div>
 
           <div className="flex justify-between w-full px-2">
-            <span className="text-[#4a3a2a] font-serif text-[8px] uppercase tracking-wider">Realm Genesis</span>
+            <span className="text-[#4a3a2a] font-serif text-[8px] uppercase tracking-wider">
+              {isIndeterminate ? "Realm Genesis" : `Constructing Reality (${Math.round(displayProgress)}%)`}
+            </span>
             <span className="text-[#4a3a2a] font-serif text-[8px] uppercase tracking-wider">Arcane v.IX</span>
           </div>
         </div>

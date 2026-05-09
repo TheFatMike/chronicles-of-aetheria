@@ -4,6 +4,7 @@ import { Character } from "../../types";
 import { Plus, ChevronRight, Trash2, LogOut, ArrowUpDown } from "lucide-react";
 import { ParticleEffect } from "./Particles";
 import { CharacterPreview } from "./CharacterPreview";
+import { CharacterCard } from "./CharacterCard";
 
 interface CharacterSelectionProps {
   characters: Character[];
@@ -76,34 +77,56 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-10 pointer-events-none"></div>
+    <div className="w-full h-full relative overflow-hidden flex flex-col">
+      {/* Background Ambience - localized to provide some depth even within scaffold */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-[#4a3420]/10 via-transparent to-transparent pointer-events-none" />
       
       <ParticleEffect />
-      
-      <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12 lg:py-20">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-4xl w-full flex flex-col relative z-10"
-          >
-        <div className="text-center mb-6 sm:mb-12">
-          <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-2 sm:mb-4 tracking-widest uppercase">Character Select</h1>
-          <p className="text-[#8b6b4d] font-serif italic text-sm sm:text-xl underline underline-offset-4 sm:underline-offset-8 decoration-[#4a3a2a]">Choose a character to continue your journey</p>
-        </div>
 
-        {/* Sort Bar */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+      {/* Top Left Logout Button */}
+      <motion.button 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={onLogout}
+        className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 px-4 py-2 border border-[#4a3a2a]/40 text-[#8b6b4d] hover:border-red-500 hover:text-red-500 transition-all font-fantasy text-[10px] uppercase tracking-widest bg-black/40 backdrop-blur-sm rounded z-50 group shadow-lg"
+      >
+        <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
+        Log Out
+      </motion.button>
+      
+      <div className="relative z-10 w-full h-full flex flex-col items-center max-w-5xl mx-auto px-4 py-6 sm:py-10 overflow-hidden">
+        {/* Header Section (Fixed) */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-6 shrink-0"
+        >
+          <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-1 sm:mb-2 tracking-widest uppercase drop-shadow-[0_0_15px_rgba(194,164,114,0.3)]">
+            Character Select
+          </h1>
+          <p className="text-[#8b6b4d] font-serif italic text-sm sm:text-lg opacity-80">
+            Choose a character to continue your journey
+          </p>
+          
+          <div className="h-px w-32 bg-linear-to-r from-transparent via-[#4a3a2a] to-transparent mx-auto mt-4" />
+        </motion.div>
+
+        {/* Sort Bar (Fixed) */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 shrink-0"
+        >
           <span className="text-[8px] sm:text-[10px] font-fantasy text-[#4a3a2a] uppercase tracking-[0.2em] self-center mr-1 sm:mr-2">Sort By:</span>
           {(["name", "level", "class"] as const).map((field) => (
             <button
               key={field}
               onClick={() => toggleSort(field)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border transition-all font-fantasy text-[8px] sm:text-[10px] uppercase tracking-widest ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded border transition-all font-fantasy text-[8px] sm:text-[10px] uppercase tracking-widest ${
                 sortBy === field 
-                  ? "bg-[#c2a472]/10 border-[#c2a472] text-[#f4e4bc]" 
-                  : "border-[#4a3a2a] text-[#6d5540] hover:border-[#8b6b4d]"
+                  ? "bg-[#c2a472]/10 border-[#c2a472] text-[#f4e4bc] shadow-[0_0_10px_rgba(194,164,114,0.1)]" 
+                  : "border-[#4a3a2a] text-[#6d5540] hover:border-[#8b6b4d] bg-black/20"
               }`}
             >
               {field}
@@ -117,127 +140,87 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
               )}
             </button>
           ))}
-        </div>
+        </motion.div>
 
         <motion.div 
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-2 sm:p-4"
+          className="flex-1 w-full overflow-y-auto custom-scrollbar px-2 sm:px-4 pt-8"
         >
-          {sortedCharacters.map((char) => {
-            const isHighlighted = highlightedId === char.id;
-            return (
-              <motion.div
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+            {sortedCharacters.map((char) => (
+              <CharacterCard
                 key={char.id}
-                variants={item}
+                char={char}
+                isHighlighted={highlightedId === char.id}
+                isDeleting={deletingId === char.id}
+                onSelect={setHighlightedId}
+                onDeleteClick={handleDeleteClick}
+                onConfirmDelete={confirmDelete}
+                onCancelDelete={cancelDelete}
+                itemVariants={item}
+              />
+            ))}
+
+            {/* New Character Button / Limit reached state */}
+            {characters.length < 6 ? (
+              <motion.button
                 whileHover={{ y: -5 }}
-                onClick={() => setHighlightedId(char.id)}
-                className={`bg-[#2d221a] border-2 rounded p-6 text-left group transition-all relative overflow-hidden shadow-2xl cursor-pointer ${
-                  isHighlighted ? "border-[#c2a472] ring-2 ring-[#c2a472]/20 shadow-[0_0_30px_rgba(194,164,114,0.15)]" : "border-[#4a3a2a] hover:border-[#8b6b4d]"
-                }`}
+                onClick={onNew}
+                className="border-2 border-dashed border-[#4a3a2a] rounded p-6 flex flex-col items-center justify-center text-[#8b6b4d] hover:border-[#c2a472] hover:text-[#c2a472] transition-all bg-black/20 group h-full min-h-[200px]"
               >
-                {/* Sheen Effect */}
-                <motion.div
-                  className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-sheen pointer-events-none"
-                  initial={false}
-                />
-
-                <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-transparent to-black/30 pointer-events-none" />
-                
-                <div className="flex justify-between items-start mb-4 h-40 relative">
-                  <div className="absolute inset-0 z-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <CharacterPreview character={char} rotation zoom={1.3} />
-                  </div>
-                  
-                  <div className="flex flex-col items-end gap-2 ml-auto z-10 relative">
-                    <span className="text-[10px] font-fantasy text-[#8b6b4d] uppercase tracking-widest bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/5">Lv. {char.level}</span>
-                    
-                    {deletingId === char.id ? (
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={(e) => confirmDelete(e, char)}
-                          className="px-2 py-1 text-[8px] bg-red-900/60 text-red-100 border border-red-500/50 rounded uppercase font-fantasy hover:bg-red-600 transition-colors backdrop-blur-md"
-                        >
-                          Confirm
-                        </button>
-                        <button 
-                          onClick={cancelDelete}
-                          className="px-2 py-1 text-[8px] bg-stone-800/60 text-stone-300 border border-stone-600 rounded uppercase font-fantasy hover:bg-stone-700 transition-colors backdrop-blur-md"
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={(e) => handleDeleteClick(e, char.id)}
-                        className="p-1.5 text-red-900/60 hover:text-red-500 transition-colors bg-black/40 backdrop-blur-md rounded border border-white/5 hover:border-red-500/30"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
+                <div className="w-10 h-10 rounded-full border-2 border-dashed border-[#4a3a2a] flex items-center justify-center mb-4 group-hover:border-[#c2a472] transition-colors">
+                  <Plus size={20} />
                 </div>
-
-                <h2 className="text-2xl font-display font-bold text-[#f4e4bc] mb-1 group-hover:text-white transition-colors flex items-center gap-2">
-                  {char.name}
-                  {char.role && char.role !== 'player' && (
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded border uppercase font-bold tracking-widest ${
-                      char.role === 'dev' ? "bg-red-500/20 border-red-500 text-red-400" :
-                      char.role === 'admin' ? "bg-orange-500/20 border-orange-500 text-orange-400" :
-                      "bg-blue-500/20 border-blue-500 text-blue-400"
-                    }`}>
-                      {char.role}
-                    </span>
-                  )}
-                </h2>
-                <p className="text-[#8b6b4d] font-fantasy text-xs uppercase tracking-[0.2em] mb-4">{char.class}</p>
-
-                <div className="flex items-center justify-end pt-4 border-t border-[#4a3a2a]">
-                  <ChevronRight size={16} className={`${isHighlighted ? "text-[#c2a472] translate-x-1" : "text-[#4a3a2a]"} transition-all`} />
+                <span className="text-xs font-fantasy font-bold uppercase tracking-[0.3em] text-center">Embody New Hero</span>
+              </motion.button>
+            ) : (
+              <div className="border-2 border-dashed border-[#2d221a] rounded p-6 flex flex-col items-center justify-center text-[#4a3a2a] bg-black/10 opacity-60 h-full min-h-[200px]">
+                <div className="w-10 h-10 rounded-full border-2 border-dashed border-[#2d221a] flex items-center justify-center mb-4">
+                  <span className="text-xl">🚫</span>
                 </div>
-              </motion.div>
-            );
-          })}
-
-          {/* New Character Button */}
-          <motion.button
-            whileHover={{ y: -5 }}
-            onClick={onNew}
-            className="border-2 border-dashed border-[#4a3a2a] rounded p-6 flex flex-col items-center justify-center text-[#8b6b4d] hover:border-[#c2a472] hover:text-[#c2a472] transition-all bg-black/10 group h-full min-h-[160px]"
-          >
-            <div className="w-12 h-12 rounded-full border-2 border-dashed border-[#4a3a2a] flex items-center justify-center mb-4 group-hover:border-[#c2a472] transition-colors">
-              <Plus size={24} />
-            </div>
-            <span className="text-sm font-fantasy font-bold uppercase tracking-[0.3em]">Embody New Hero</span>
-          </motion.button>
+                <span className="text-xs font-fantasy font-bold uppercase tracking-[0.2em] text-center mb-1">Max Roster Reached</span>
+                <span className="text-[10px] font-serif italic text-[#4a3a2a] text-center">(Limit: 6 Heroes)</span>
+              </div>
+            )}
+          </div>
         </motion.div>
         
-        <div className="mt-12 flex flex-col items-center gap-6">
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={!highlightedId}
-            onClick={handleEnterWorld}
-            className={`px-12 py-4 text-lg font-fantasy uppercase tracking-[0.4em] transition-all shadow-2xl rounded ${
-              highlightedId 
-                ? "bg-[#c2a472] text-[#1a1410] hover:bg-[#d4b98a] border-y-2 border-[#f4e4bc]/40" 
-                : "bg-black/20 text-[#4a3a2a] border-2 border-[#4a3a2a] cursor-not-allowed opacity-50"
-            }`}
-          >
-            Enter World
-          </motion.button>
-
-          <button 
-            onClick={onLogout}
-            className="flex items-center gap-2 px-6 py-2 border-2 border-[#4a3a2a] text-[#8b6b4d] hover:border-red-500 hover:text-red-500 transition-all font-fantasy text-xs uppercase tracking-widest bg-black/20 rounded"
-          >
-            <LogOut size={14} />
-            Log Out
-          </button>
-        </div>
-          </motion.div>
-        </div>
+        {/* Footer Actions (Fixed) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-6 shrink-0 flex flex-col items-center gap-4 w-full"
+        >
+          <div className="h-px w-full bg-linear-to-r from-transparent via-[#4a3a2a] to-transparent mb-1" />
+          
+          <div className="flex flex-col items-center gap-4">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={!highlightedId}
+              onClick={handleEnterWorld}
+              className={`px-20 py-4 text-xl font-fantasy uppercase tracking-[0.4em] transition-all shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded relative overflow-hidden group ${
+                highlightedId 
+                  ? "bg-[#c2a472] text-[#1a1410] hover:bg-[#d4b98a] border-y-2 border-[#f4e4bc]/40" 
+                  : "bg-black/40 text-[#4a3a2a] border border-[#4a3a2a] cursor-not-allowed opacity-50"
+              }`}
+            >
+              {highlightedId && (
+                <motion.div 
+                  className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-sheen pointer-events-none"
+                />
+              )}
+              Enter World
+            </motion.button>
+          </div>
+          
+          <div className="text-[#4a3a2a] font-serif text-[8px] sm:text-[10px] uppercase tracking-widest opacity-60">
+            Chronicles of Aetheria &copy; 2026
+          </div>
+        </motion.div>
       </div>
     </div>
   );
