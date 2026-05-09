@@ -211,6 +211,9 @@ export default function App() {
         level: confirmedState.level,
         quests: confirmedState.quests
       } : null);
+      
+      // Explicitly sync quests to the global store on join
+      useGameStore.getState().setActiveQuests(confirmedState.quests || {});
     };
     socket.on("session_start", handleSessionStart);
     return () => { socket.off("session_start", handleSessionStart); };

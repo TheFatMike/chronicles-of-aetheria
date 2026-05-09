@@ -57,7 +57,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
 
   // Quests
   socket.on("accept_quest", (data) => handleAcceptQuest(socket, data));
-  socket.on("turn_in_quest", (data) => handleTurnInQuest(socket, data));
+  socket.on("turn_in_quest", (data) => handleTurnInQuest(io, socket, data));
 
   // Chat
   socket.on("chat_message", (text) => handleChatMessage(io, socket, text));

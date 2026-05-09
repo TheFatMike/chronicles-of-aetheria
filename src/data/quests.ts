@@ -53,7 +53,7 @@ export const SAMPLE_QUESTS: Record<string, Quest> = {
   "starter_equip": {
     id: "starter_equip",
     title: "Armed and Dangerous",
-    description: "An adventurer is only as good as their steel. Open thy inventory and equip thy starting gear.",
+    description: "An adventurer is only as good as their equipment. Open your inventory and equip your starting gear.",
     giverName: "Instructor Kael",
     giverId: "instructor_kael",
     level: 1,

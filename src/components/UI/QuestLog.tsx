@@ -49,7 +49,9 @@ export const QuestLog = memo(({ onClose }: { onClose: () => void }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-1">
                         <span className={`text-[10px] font-bold ${obj.completed ? 'text-green-500/80 line-through' : 'text-[#e2d1b0]'}`}>
-                          {obj.type === 'kill' ? `Slay ${obj.targetName}` : `Talk to ${obj.targetName}`}
+                          {obj.type === 'kill' ? `Slay ${obj.targetName}` : 
+                           obj.type === 'equip' ? `Equip ${obj.targetName}` :
+                           `Talk to ${obj.targetName}`}
                         </span>
                         <span className="text-[9px] font-mono text-[#8b6b4d]">
                           {obj.currentCount}/{obj.count}

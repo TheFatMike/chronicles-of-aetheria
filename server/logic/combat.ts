@@ -190,7 +190,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   }
 };
 
-function giveExperience(io: any, player: any, amount: number) {
+export function giveExperience(io: any, player: any, amount: number) {
   player.exp = (player.exp || 0) + amount;
   
   if (player.exp >= (player.maxExp || 100)) {
