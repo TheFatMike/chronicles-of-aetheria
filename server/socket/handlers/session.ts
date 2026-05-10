@@ -7,6 +7,7 @@ import { CharacterModel } from "../../../src/models/CharacterModel";
 import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../systems/spatial";
 import { getUserRole } from "../../lib/auth";
 import { handleRequestTerrainSync } from "./terrain";
+import { removePlayerRedis } from "../../redis";
 
 export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
   try {
@@ -139,7 +140,11 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
       players.delete(socket.id);
       playerKnownEntities.delete(socket.id);
       playerLastGridCell.delete(socket.id);
-      io.emit("player_leave", socket.id); // Leave can remain global for now or targeted
+      
+      // Redis Cleanup: Remove from spatial index and clear hash
+      removePlayerRedis(socket.id);
+
+      io.emit("player_leave", socket.id); 
     }, 10000);
 
     logoutTimers.set(socket.id, timer);

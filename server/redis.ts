@@ -21,6 +21,21 @@ export const redisSub = new Redis(redisUrl, {
   }
 });
 
+// Graceful Shutdown Handler
+const shutdown = async () => {
+  serverLogger.info("redis", "Closing Redis connections...");
+  try {
+    await Promise.all([
+      redis.quit(),
+      redisSub.quit()
+    ]);
+  } catch (e) {}
+  process.exit(0);
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
 redis.on("connect", () => {
   serverLogger.info("redis", "Connected to Redis successfully.");
 });
@@ -62,5 +77,20 @@ export const getNearbyPlayersRedis = async (x: number, z: number, radius: number
     return await redis.georadius("world:player_positions", x, z, radius, "m");
   } catch (err: any) {
     return [];
+  }
+};
+
+/**
+ * Removes a player from all Redis indices.
+ * Crucial for keeping the free-tier dataset small.
+ */
+export const removePlayerRedis = async (playerId: string) => {
+  try {
+    const pipeline = redis.pipeline();
+    pipeline.zrem("world:player_positions", playerId);
+    pipeline.del(`player:${playerId}`);
+    await pipeline.exec();
+  } catch (err) {
+    serverLogger.error("redis", `Error removing player from Redis: ${err}`);
   }
 };
