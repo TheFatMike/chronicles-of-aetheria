@@ -53,10 +53,18 @@ export class PhysicsEngine {
     velocity.y -= GRAVITY * delta;
     if (velocity.y < -50) velocity.y = -50;
 
-    // 3. Move Position
-    pos.x += velocity.x * delta;
-    pos.y += velocity.y * delta;
-    pos.z += velocity.z * delta;
+    // 3. Move Position with Collision Check
+    const nextX = pos.x + velocity.x * delta;
+    const nextZ = pos.z + velocity.z * delta;
+    const nextY = pos.y + velocity.y * delta;
+
+    // We keep the old position in case we need to revert
+    const oldX = pos.x;
+    const oldZ = pos.z;
+
+    pos.x = nextX;
+    pos.z = nextZ;
+    pos.y = nextY;
 
     // 4. Ground Detection
     let groundHeight = -100;
@@ -76,6 +84,13 @@ export class PhysicsEngine {
     const intersects = this.raycaster.intersectObjects(collidables, true);
     for (const hit of intersects) {
       if (!hit.object.visible || playerMeshes.includes(hit.object)) continue;
+      
+      // MAX_STEP_HEIGHT: Only snap if the surface is not too high above our current feet
+      const MAX_STEP_HEIGHT = 0.5;
+      const heightDiff = hit.point.y - pos.y;
+      
+      if (heightDiff > MAX_STEP_HEIGHT) continue;
+
       if (hit.point.y > groundHeight) {
         groundHeight = hit.point.y;
       }

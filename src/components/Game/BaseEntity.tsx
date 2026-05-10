@@ -231,6 +231,7 @@ export const BaseEntity = memo(({
   return (
     <group
       ref={groupRef}
+      userData={{ isCollidable: type !== 'player' }} // Players don't block each other for better movement feel
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onDoubleClick={handleDoubleClick}

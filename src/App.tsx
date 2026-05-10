@@ -61,22 +61,10 @@ export default function App() {
   const {
     activeMenu,
     devMode,
-    players,
-    activeDialogue,
-    setActiveDialogue,
-    addQuest,
-    setActiveQuests,
-    addMessage
   } = useGameStore(
     useShallow((s) => ({
       activeMenu: s.activeMenu,
       devMode: s.devMode,
-      players: s.players,
-      activeDialogue: s.activeDialogue,
-      setActiveDialogue: s.setActiveDialogue,
-      addQuest: s.addQuest,
-      setActiveQuests: s.setActiveQuests,
-      addMessage: s.addMessage
     }))
   );
   const setActiveMenu = useGameStore(s => s.setActiveMenu);

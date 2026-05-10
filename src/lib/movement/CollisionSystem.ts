@@ -17,12 +17,12 @@ export class CollisionSystem {
   ): boolean {
     if (dir.lengthSq() < 0.001) return false;
 
-    // Zero-GC setup
-    this.tempOrigin.set(pos.x, pos.y + 1.2, pos.z);
+    // Chest height for wall detection
+    this.tempOrigin.set(pos.x, pos.y + 1.0, pos.z);
     this.tempDir.copy(dir).normalize();
     
     this.raycaster.set(this.tempOrigin, this.tempDir);
-    this.raycaster.far = rayLength;
+    this.raycaster.far = rayLength; // 0.6 is safer for pillars
     
     const intersects = this.raycaster.intersectObjects(collidables, true);
 
@@ -47,44 +47,65 @@ export class CollisionSystem {
     collidables: THREE.Object3D[],
     playerMeshes: THREE.Object3D[]
   ): void {
-    this.tempOrigin.set(pos.x, pos.y + 0.8, pos.z);
-    
-    // Check X
-    this.tempDir.set(velocity.x > 0 ? 1 : -1, 0, 0);
-    if (this.checkSpecificRay(this.tempOrigin, this.tempDir, collidables, playerMeshes)) {
-      velocity.x = 0;
-    }
+    if (velocity.lengthSq() < 0.001) return;
 
-    // Check Z
-    this.tempDir.set(0, 0, velocity.z > 0 ? 1 : -1);
-    if (this.checkSpecificRay(this.tempOrigin, this.tempDir, collidables, playerMeshes)) {
-      velocity.z = 0;
+    // 1. Predictive Check: Where are we going?
+    const checkHeights = [0.4, 1.2];
+    const collisionMargin = 0.5; // Distance to keep away from walls
+
+    for (const h of checkHeights) {
+      this.tempOrigin.set(pos.x, pos.y + h, pos.z);
+      
+      // Predict X Collision
+      if (Math.abs(velocity.x) > 0) {
+        this.tempDir.set(velocity.x > 0 ? 1 : -1, 0, 0);
+        const hit = this.getHit(this.tempOrigin, this.tempDir, collidables, playerMeshes, collisionMargin);
+        if (hit) {
+          // Push back slightly from the hit point to prevent jitter
+          pos.x = hit.point.x - (this.tempDir.x * collisionMargin);
+          velocity.x = 0;
+        }
+      }
+
+      // Predict Z Collision
+      if (Math.abs(velocity.z) > 0) {
+        this.tempDir.set(0, 0, velocity.z > 0 ? 1 : -1);
+        const hit = this.getHit(this.tempOrigin, this.tempDir, collidables, playerMeshes, collisionMargin);
+        if (hit) {
+          pos.z = hit.point.z - (this.tempDir.z * collisionMargin);
+          velocity.z = 0;
+        }
+      }
     }
   }
 
-  private checkSpecificRay(origin: THREE.Vector3, dir: THREE.Vector3, collidables: THREE.Object3D[], playerMeshes: THREE.Object3D[]): boolean {
+  private getHit(origin: THREE.Vector3, dir: THREE.Vector3, collidables: THREE.Object3D[], playerMeshes: THREE.Object3D[], range: number) {
     this.raycaster.set(origin, dir);
-    this.raycaster.far = 0.4;
+    this.raycaster.far = range;
     
     const intersects = this.raycaster.intersectObjects(collidables, true);
     for (const hit of intersects) {
       if (this.isIgnored(hit.object, playerMeshes)) continue;
+      
+      // If we hit a floor/slope, only block if it's steep
       if (hit.face) {
         this.normalMatrix.getNormalMatrix(hit.object.matrixWorld);
         this.tempNormal.copy(hit.face.normal).applyMatrix3(this.normalMatrix).normalize();
-        if (this.tempNormal.y > 0.5) continue;
+        if (this.tempNormal.y > 0.6) continue; // It's a floor/slope we can walk on
       }
-      return true;
+      
+      return hit;
     }
-    return false;
+    return null;
   }
 
   private isIgnored(obj: THREE.Object3D, playerMeshes: THREE.Object3D[]): boolean {
     if (playerMeshes.includes(obj)) return true;
     const name = obj.name || "";
-    if ((obj as any).material?.wireframe) return true;
     if (name.includes("editor_helper")) return true;
-    if (name === "floor_plane" || name === "starting_plaza") return true;
+    if (name === "starting_plaza" || name === "terrain_mesh") return true;
+    // Don't collide with triggers or transparent ghost placement items
+    if (obj.userData?.isTrigger) return true;
     return false;
   }
 }

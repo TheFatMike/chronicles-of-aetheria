@@ -45,8 +45,11 @@ const ModelInner = ({ url, castShadow, receiveShadow, isGhost }: any) => {
           mats.forEach((m: any) => {
             m.transparent = true;
             m.opacity = 0.5;
-            m.depthWrite = false; // Prevent ghost parts from occluding each other weirdly
+            m.depthWrite = false; 
           });
+        } else if (!isGhost) {
+          // Enable collision for real models (not ghosts)
+          node.userData.isCollidable = true;
         }
       }
     });

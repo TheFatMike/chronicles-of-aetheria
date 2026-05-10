@@ -212,6 +212,14 @@ export const usePlayerMovement = (
       );
 
       isGrounded.current = groundingObj.current;
+      
+      // 3.1 Horizontal Collision Resolution (Wall Sliding)
+      systems.collision.resolveSliding(
+        physicsPosition.current,
+        velocity.current,
+        filteredCollidablesRef.current,
+        playerMeshesRef.current
+      );
 
       if (systems.input.isJumpPressed() && isGrounded.current) {
         velocity.current.y = GAME_CONFIG.MOVEMENT.JUMP_FORCE;
