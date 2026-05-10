@@ -18,68 +18,117 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
     const distSq = dx*dx + dz*dz;
 
     if (distSq < 25) { 
-      if (target.loot && target.loot.length > 0) {
-        const lootedItems: string[] = [];
-        const newInventory = [...player.inventory];
-        
-        target.loot.forEach((itemId: string) => {
-          const emptyIdx = newInventory.findIndex(s => s === null);
-          if (emptyIdx !== -1) {
-            const itemInstance = generateItemInstance(itemId);
-            if (itemInstance) {
-              newInventory[emptyIdx] = itemInstance;
-              lootedItems.push(itemInstance.name);
-            }
-          }
-        });
-
-        if (target.gold && target.gold > 0) {
-          player.gold = (player.gold || 0) + target.gold;
-          
-          socket.emit("chat_message", {
-            id: "gold-" + Date.now(),
-            sender: "SYSTEM",
-            text: `You found ${target.gold} gold coins!`,
-            timestamp: Date.now(),
-            color: "#fbbf24"
-          });
-
-          // Sync private stats to player
-          socket.emit("player_stats", { 
-            id: player.id, 
-            hp: player.hp, 
-            mp: player.mp, 
-            level: player.level, 
-            exp: player.exp, 
-            maxExp: player.maxExp, 
-            gold: player.gold 
-          });
-
-          db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-            gold: player.gold
-          }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Gold save failed", e.message));
-        }
-
-        if (lootedItems.length > 0) {
-          player.inventory = newInventory;
-          socket.emit("inventory_update", { inventory: newInventory });
-          
-          db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-            inventory: newInventory
-          }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Loot save failed", e.message));
-
-          socket.emit("chat_message", {
-            id: "sys-" + Date.now(),
-            sender: "SYSTEM",
-            text: `You looted: ${lootedItems.join(", ")}`,
-            timestamp: Date.now(),
-            color: "#ffd700"
-          });
-        }
+      // If the target doesn't have instantiated loot yet, generate it
+      if (!target.lootInstances) {
+        target.lootInstances = (target.loot || []).map((id: string) => generateItemInstance(id)).filter(Boolean);
       }
-      entities.delete(target.id);
-      io.emit("entity_despawn", target.id);
+
+      socket.emit("loot_opened", {
+        targetId: target.id,
+        items: target.lootInstances,
+        gold: target.gold || 0
+      });
     }
+  }
+};
+
+export const handleTakeLootItem = (socket: Socket, data: any) => {
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  const target = entities.get(data.targetId);
+  if (!target || !target.isDead || !target.lootInstances) return;
+
+  const item = target.lootInstances[data.lootIndex];
+  if (!item) return;
+
+  // Check Inventory Space
+  const emptyIdx = player.inventory.findIndex(s => s === null);
+  if (emptyIdx === -1) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "Your inventory is full!", color: "#ff4444" });
+    return;
+  }
+
+  // Move item
+  const newInventory = [...player.inventory];
+  newInventory[emptyIdx] = item;
+  player.inventory = newInventory;
+
+  // Remove from loot
+  target.lootInstances.splice(data.lootIndex, 1);
+
+  // Sync
+  socket.emit("inventory_update", { inventory: newInventory });
+  socket.emit("loot_update", {
+    targetId: target.id,
+    items: target.lootInstances,
+    gold: target.gold || 0
+  });
+
+  // Save to DB
+  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+    inventory: newInventory
+  }, { merge: true });
+
+  // If empty, despawn
+  if (target.lootInstances.length === 0 && (target.gold || 0) <= 0) {
+    entities.delete(target.id);
+    socket.broadcast.emit("entity_despawn", target.id);
+    socket.emit("entity_despawn", target.id);
+  }
+};
+
+export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  const target = entities.get(data.targetId);
+  if (!target || !target.isDead) return;
+
+  // 1. Take Gold
+  if (target.gold && target.gold > 0) {
+    player.gold = (player.gold || 0) + target.gold;
+    target.gold = 0;
+    socket.emit("player_stats", { id: player.id, gold: player.gold });
+  }
+
+  // 2. Take Items
+  if (!target.lootInstances) {
+    target.lootInstances = (target.loot || []).map((id: string) => generateItemInstance(id)).filter(Boolean);
+  }
+
+  const newInventory = [...player.inventory];
+  const remainingLoot = [];
+
+  for (const item of target.lootInstances) {
+    const emptyIdx = newInventory.findIndex(s => s === null);
+    if (emptyIdx !== -1) {
+      newInventory[emptyIdx] = item;
+    } else {
+      remainingLoot.push(item);
+    }
+  }
+
+  player.inventory = newInventory;
+  target.lootInstances = remainingLoot;
+
+  // Sync & Save
+  socket.emit("inventory_update", { inventory: newInventory });
+  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+    inventory: newInventory,
+    gold: player.gold
+  }, { merge: true });
+
+  if (target.lootInstances.length === 0) {
+    entities.delete(target.id);
+    io.emit("entity_despawn", target.id);
+  } else {
+    socket.emit("loot_update", {
+      targetId: target.id,
+      items: target.lootInstances,
+      gold: target.gold || 0
+    });
+    socket.emit("chat_message", { sender: "SYSTEM", text: "Inventory full, some items left behind.", color: "#ffaa00" });
   }
 };
 

@@ -69,6 +69,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       logger.info("socket", `World sync received: ${objects.length} objects`);
       useGameStore.getState().setWorldObjects(objects);
     };
+
+    // 8. Loot Updates
+    const handleLootOpened = (data: any) => {
+      useGameStore.getState().setActiveLoot(data);
+    };
  
     // Register listeners
     socket.on("quest_update", handleQuestUpdate);
@@ -82,6 +87,8 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
     socket.on("party_invite_received", handlePartyInvite);
     socket.on("terrain_sync", handleTerrainSync);
     socket.on("world_sync", handleWorldSync);
+    socket.on("loot_opened", handleLootOpened);
+    socket.on("loot_update", handleLootOpened);
 
     logger.info("system", "Socket listeners registered via useGameSync");
 
@@ -94,6 +101,8 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       socket.off("party_invite_received", handlePartyInvite);
       socket.off("terrain_sync", handleTerrainSync);
       socket.off("world_sync", handleWorldSync);
+      socket.off("loot_opened", handleLootOpened);
+      socket.off("loot_update", handleLootOpened);
     };
   }, [socket, connected, setSelectedCharacter]);
 };

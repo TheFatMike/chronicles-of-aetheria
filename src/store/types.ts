@@ -116,6 +116,7 @@ export interface UISlice {
   isSkillsOpen: boolean;
   isWorldLoading: boolean;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
+  activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -135,6 +136,7 @@ export interface UISlice {
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
   setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;
+  setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
 }
 
 export interface QuestSlice {

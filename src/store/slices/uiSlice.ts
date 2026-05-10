@@ -56,4 +56,6 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setSelectedWorldObjectId: (id) => set({ selectedWorldObjectId: id }),
   requestTeleport: (pos) => set({ teleportRequest: pos }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
+  activeLoot: null,
+  setActiveLoot: (loot) => set({ activeLoot: loot }),
 });

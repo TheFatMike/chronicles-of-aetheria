@@ -4,7 +4,7 @@ import { handleJoin, handleDisconnect } from "./handlers/session";
 import { handleMove } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
 import { handleCreateCharacter } from "./handlers/character";
-import { handleLootEntity, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack } from "./handlers/inventory";
+import { handleLootEntity, handleTakeLootItem, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack } from "./handlers/inventory";
 import { handleSaveWorldObject, handleRemoveWorldObject, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleChatMessage } from "./handlers/chat";
@@ -37,6 +37,8 @@ export const registerHandlers = (io: Server, socket: Socket) => {
 
   // Inventory & Loot
   socket.on("loot_entity", (data) => handleLootEntity(io, socket, data));
+  socket.on("take_loot_item", (data) => handleTakeLootItem(socket, data));
+  socket.on("take_all_loot", (data) => handleTakeAllLoot(io, socket, data));
   socket.on("equip_item", (data) => handleEquipItem(socket, data));
   socket.on("unequip_item", (data) => handleUnequipItem(socket, data));
   socket.on("move_item", (data) => handleMoveItem(socket, data));

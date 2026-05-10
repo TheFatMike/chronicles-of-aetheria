@@ -12,7 +12,7 @@ import { Hotbar } from "./Hotbar";
 import { MenuManager } from "./MenuManager";
 import { NavigationMenu } from "./NavigationMenu";
 import { GameMenu } from "./GameMenu";
-import { DebugOverlay } from "./DebugOverlay";
+import { LootWindow } from "./LootWindow";
 import { useGameStore } from "../../store/useGameStore";
 import { Socket } from "socket.io-client";
 
@@ -101,6 +101,7 @@ export const InGameView = ({
         <NotificationManager />
         <TradeWindow />
         <CastBar />
+        <LootWindow socket={socket} />
         <WorldEditor socket={socket} userEmail={userEmail} />
         
         <Hotbar
