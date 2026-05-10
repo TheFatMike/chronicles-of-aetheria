@@ -59,6 +59,16 @@ async function bootstrap() {
     terrainTiles: terrainData.size,
     logs: logBuffer 
   }));
+
+  app.get("/api/debug/db-stats", async (req, res) => {
+    try {
+      const { getDatabaseStats } = await import("./server/diagnostics");
+      const stats = await getDatabaseStats();
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
   
   app.post("/api/admin/wipe-terrain", async (req, res) => {
     try {
@@ -71,6 +81,12 @@ async function bootstrap() {
       await batch.commit();
       
       terrainData.clear();
+      
+      // Clear Redis Cache
+      const { redis } = await import("./server/redis");
+      await redis.del("world:terrain");
+      redis.publish("terrain:sync", JSON.stringify([]));
+
       io.emit("terrain_sync", []); 
       
       serverLogger.info("admin", `Wipe complete. Deleted ${snapshot.size} tiles.`);
@@ -119,10 +135,20 @@ async function bootstrap() {
   // 7. MMO Global Services (Redis Pub/Sub)
   const { redisSub } = await import("./server/redis");
   redisSub.subscribe("chat:global");
+  redisSub.subscribe("terrain:sync");
+
   redisSub.on("message", (channel, message) => {
     if (channel === "chat:global") {
       const data = JSON.parse(message);
       io.emit("chat_message", data);
+    } else if (channel === "terrain:sync") {
+      const updates = JSON.parse(message);
+      // Update local memory state
+      for (const p of updates) {
+        terrainData.set(`${p.x}_${p.z}`, { y: p.y, type: p.type });
+      }
+      // Broadcast to clients connected to THIS instance
+      io.emit("terrain_sync", updates);
     }
   });
 

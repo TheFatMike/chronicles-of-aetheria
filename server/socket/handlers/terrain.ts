@@ -8,6 +8,7 @@ import { Server, Socket } from "socket.io";
 import { terrainData, players } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
+import { saveTerrainRedis } from "../../redis";
 
 export const handleUpdateTerrain = (io: Server, socket: Socket, data: { 
   points: { x: number, z: number, y?: number, deltaY?: number, type?: string }[] 
@@ -40,6 +41,7 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
     terrainData.set(key, current);
     updates.push({ x: p.x, z: p.z, ...current });
   }
+
 
   // Persist to Firestore with chunking
   if (updates.length > 0) {
@@ -74,7 +76,11 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
     }
   }
 
-  // Broadcast updates to all players
+  // Sync to Redis for cross-instance consistency
+  saveTerrainRedis(updates);
+  import("../../redis").then(m => m.redis.publish("terrain:sync", JSON.stringify(updates)));
+
+  // Broadcast updates to all players connected to THIS instance
   io.emit("terrain_sync", updates);
 };
 

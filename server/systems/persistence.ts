@@ -8,8 +8,7 @@ import { db } from "../db";
 import { players, worldObjects, spawners, entities, terrainData } from "../state";
 import { serverLogger } from "../logger";
 import admin from "firebase-admin";
-import { getCachedDoc, CACHE_TTL } from "../lib/cache";
-import { redis } from "../redis";
+import { redis, loadTerrainRedis, saveTerrainRedis } from "../redis";
 
 import { createNPCEntity } from "../lib/entities";
 import { updateInGrid, objectGrid, entityGrid } from "./spatial";
@@ -89,14 +88,27 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
         if (await redis.exists(chunkKey)) return;
 
         try {
+          // Check Redis Cache for specific points in this chunk if we had a per-point cache
+          // But for now, we'll load from Firestore and cache the result.
           const snapshot = await db.collection("terrain").where("chunkId", "==", chunkId).get();
           if (!snapshot.empty) {
+            const updates: any[] = [];
             snapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
               const data = doc.data();
               const normalizedId = doc.id.replace(',', '_');
-              terrainData.set(normalizedId, { y: data.y, type: data.type || 'grass' });
+              const point = { y: data.y, type: data.type || 'grass' };
+              terrainData.set(normalizedId, point);
+              
+              const [x, z] = normalizedId.split('_').map(Number);
+              updates.push({ x, z, ...point });
             });
+            
+            // Mark as loaded in Redis to prevent redundant hits
             await redis.set(chunkKey, "true", "EX", 3600);
+            
+            // Also cache to our global terrain Redis hash for cross-instance sync
+            if (updates.length > 0) await saveTerrainRedis(updates);
+            
             serverLogger.info("system", `Loaded chunk ${chunkId} (${snapshot.size} tiles)`);
           }
         } catch (e: any) {
@@ -110,10 +122,20 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
 };
 
 export const initializeTerrain = async () => {
-  // We no longer load anything on startup! 
-  // Terrain will load on-demand when the first player connects or moves.
-  serverLogger.info("system", "Terrain Engine Initialized (Lazy Loading Active)");
-  terrainData.clear();
+  try {
+    // Attempt to warm the local memory from the Redis cache on startup
+    // This allows for immediate availability of modified terrain even before chunks are lazy-loaded
+    serverLogger.info("system", "Warming terrain cache from Redis...");
+    const redisTerrain = await loadTerrainRedis();
+    if (redisTerrain.size > 0) {
+      redisTerrain.forEach((val, key) => terrainData.set(key, val));
+      serverLogger.info("system", `Pre-loaded ${terrainData.size} terrain modifications from Redis.`);
+    }
+  } catch (e: any) {
+    serverLogger.error("system", "Failed to warm terrain cache", e.message);
+  }
+
+  serverLogger.info("system", "Terrain Engine Initialized (Lazy Loading Enabled)");
 };
 
 export const initializeSpawners = async () => {
@@ -158,7 +180,7 @@ export const autosavePlayers = async () => {
     const chunkIds = playerIds.slice(i, i + CHUNK_SIZE);
     const batch = db.batch();
     let count = 0;
-
+ 
     for (const id of chunkIds) {
       const p = players.get(id);
       const changedFields = playersToSave.get(id);
@@ -207,8 +229,8 @@ export const startPeriodicTasks = () => {
   }, 1000 * 60 * 5);
 
   // 2. Redis Ghost Cleanup (10 minutes)
-  const { cleanupGhostPlayers } = require("../redis");
   setInterval(async () => {
+    const { cleanupGhostPlayers } = await import("../redis");
     await cleanupGhostPlayers();
   }, 1000 * 60 * 10);
 };

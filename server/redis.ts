@@ -130,3 +130,38 @@ export const cleanupGhostPlayers = async () => {
     serverLogger.error("redis", `Ghost player cleanup failed: ${err}`);
   }
 };
+
+/**
+ * Saves a chunk of terrain modifications to Redis for fast cross-instance access.
+ */
+export const saveTerrainRedis = async (points: { x: number, z: number, y: number, type: string }[]) => {
+  try {
+    const pipeline = redis.pipeline();
+    for (const p of points) {
+      const key = `${p.x}_${p.z}`;
+      pipeline.hset("world:terrain", key, JSON.stringify({ y: p.y, type: p.type }));
+    }
+    await pipeline.exec();
+  } catch (err) {
+    serverLogger.error("redis", `Error saving terrain to Redis: ${err}`);
+  }
+};
+
+/**
+ * Loads all terrain modifications from Redis.
+ */
+export const loadTerrainRedis = async (): Promise<Map<string, { y: number, type: string }>> => {
+  try {
+    const data = await redis.hgetall("world:terrain");
+    const terrainMap = new Map<string, { y: number, type: string }>();
+    
+    for (const [key, value] of Object.entries(data)) {
+      terrainMap.set(key, JSON.parse(value));
+    }
+    
+    return terrainMap;
+  } catch (err) {
+    serverLogger.error("redis", `Error loading terrain from Redis: ${err}`);
+    return new Map();
+  }
+};
