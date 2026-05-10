@@ -51,7 +51,17 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
       chunk.forEach(u => {
         const key = `${u.x}_${u.z}`;
         const docRef = db.collection("terrain").doc(key);
-        batch.set(docRef, { y: u.y, type: u.type });
+        const chunkX = Math.floor(u.x / 100);
+        const chunkZ = Math.floor(u.z / 100);
+        const chunkId = `chunk_${chunkX}_${chunkZ}`;
+
+        batch.set(docRef, { 
+          x: u.x, 
+          z: u.z, 
+          chunkId,
+          y: u.y, 
+          type: u.type 
+        }, { merge: true });
       });
 
       batch.commit()

@@ -97,7 +97,9 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     
     socket.emit("spawners_sync", Array.from(spawners.values()));
     
-    // 5. Send Terrain Modifications
+    // 5. Regional Terrain & Sync
+    const { loadTerrainRegion } = await import("../../systems/persistence");
+    await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
     handleRequestTerrainSync(socket);
   } catch (e: any) {
     serverLogger.error("net", "Join error", e.message);

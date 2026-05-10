@@ -117,6 +117,10 @@ export const startHeartbeat = (io: Server) => {
       // 5. Decoupled Subsystem: Autosave (Every 60 seconds)
       if (timeSinceLastAutosave >= 60000) {
         autosavePlayers().catch(e => serverLogger.error("game", "Autosave failed", e.message));
+        
+        // Also perform Redis Ghost Cleanup to keep free-tier small
+        import("../redis").then(m => m.cleanupGhostPlayers());
+        
         timeSinceLastAutosave -= 60000;
       }
 

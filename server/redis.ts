@@ -69,7 +69,9 @@ export const updatePlayerPositionRedis = async (playerId: string, pos: [number, 
     });
     
     // Set expiry to clean up disconnected/crashed players (e.g., 5 minutes)
+    // This is crucial for keeping the free-tier memory usage low.
     await redis.expire(`player:${playerId}`, 300);
+    await redis.expire("world:player_positions", 600); // Also expire the geo set if it's not updated
   } catch (err: any) {
     // Only log if it's not a coordinate out of range error (which is common if coordinates are large)
     if (!err.message.includes("out of range")) {
@@ -87,16 +89,44 @@ export const getNearbyPlayersRedis = async (x: number, z: number, radius: number
 };
 
 /**
- * Removes a player from all Redis indices.
- * Crucial for keeping the free-tier dataset small.
+ * Optimized removal of player data.
+ * Uses a pipeline to reduce round-trips to the Redis server, which is important for free-tier latency.
  */
 export const removePlayerRedis = async (playerId: string) => {
   try {
     const pipeline = redis.pipeline();
     pipeline.zrem("world:player_positions", playerId);
     pipeline.del(`player:${playerId}`);
+    // Also remove any chat-related transient data if exists
+    pipeline.del(`chat:limit:${playerId}`);
     await pipeline.exec();
+    serverLogger.debug("redis", `Cleaned up Redis data for player ${playerId}`);
   } catch (err) {
     serverLogger.error("redis", `Error removing player from Redis: ${err}`);
+  }
+};
+
+/**
+ * Periodically cleans up the player_positions set to ensure no "ghost" players remain
+ * if the server crashes or disconnect logic fails.
+ */
+export const cleanupGhostPlayers = async () => {
+  try {
+    // In a production environment with many players, we'd use ZSCAN.
+    // For free-tier/small scale, ZRANGE is acceptable.
+    const allPlayerIds = await redis.zrange("world:player_positions", 0, -1);
+    const pipeline = redis.pipeline();
+    
+    for (const id of allPlayerIds) {
+      // Check if the player hash still exists
+      const exists = await redis.exists(`player:${id}`);
+      if (!exists) {
+        pipeline.zrem("world:player_positions", id);
+      }
+    }
+    
+    await pipeline.exec();
+  } catch (err) {
+    serverLogger.error("redis", `Ghost player cleanup failed: ${err}`);
   }
 };

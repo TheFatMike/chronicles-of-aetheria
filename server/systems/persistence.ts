@@ -8,6 +8,8 @@ import { db } from "../db";
 import { players, worldObjects, spawners, entities, terrainData } from "../state";
 import { serverLogger } from "../logger";
 import admin from "firebase-admin";
+import { getCachedDoc, CACHE_TTL } from "../lib/cache";
+import { redis } from "../redis";
 
 import { createNPCEntity } from "../lib/entities";
 import { updateInGrid, objectGrid, entityGrid } from "./spatial";
@@ -65,26 +67,53 @@ export const initializeWorld = async () => {
   }
 };
 
-export const initializeTerrain = async () => {
-  try {
-    serverLogger.info("system", "Loading terrain data from Firestore...");
-    const snapshot = await db.collection("terrain").get();
-    
-    if (snapshot.empty) {
-      const collections = await db.listCollections();
-      serverLogger.info("system", `Terrain collection is empty. Available collections: ${collections.map((c: any) => c.id).join(", ")}`);
+/**
+ * Loads terrain tiles for a specific region. 
+ * This is called on-demand as players move, preventing the need to load the entire world at once.
+ */
+export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
+  const currentChunkX = Math.floor(centerX / 100);
+  const currentChunkZ = Math.floor(centerZ / 100);
+
+  // Load a 3x3 grid of chunks around the player to ensure a buffer
+  const loadPromises: Promise<void>[] = [];
+
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dz = -1; dz <= 1; dz++) {
+      const tx = currentChunkX + dx;
+      const tz = currentChunkZ + dz;
+      const chunkId = `chunk_${tx}_${tz}`;
+      const chunkKey = `loaded_chunk:${tx},${tz}`;
+
+      loadPromises.push((async () => {
+        if (await redis.exists(chunkKey)) return;
+
+        try {
+          const snapshot = await db.collection("terrain").where("chunkId", "==", chunkId).get();
+          if (!snapshot.empty) {
+            snapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
+              const data = doc.data();
+              const normalizedId = doc.id.replace(',', '_');
+              terrainData.set(normalizedId, { y: data.y, type: data.type || 'grass' });
+            });
+            await redis.set(chunkKey, "true", "EX", 3600);
+            serverLogger.info("system", `Loaded chunk ${chunkId} (${snapshot.size} tiles)`);
+          }
+        } catch (e: any) {
+          serverLogger.error("system", `Failed to load chunk ${chunkId}`, e.message);
+        }
+      })());
     }
-    
-    snapshot.forEach((doc: any) => {
-      const data = doc.data();
-      if (!isNaN(data.y)) {
-        terrainData.set(doc.id, { y: data.y, type: data.type || 'grass' });
-      }
-    });
-    serverLogger.info("system", `Loaded ${terrainData.size} terrain modifications.`);
-  } catch (e: any) {
-    serverLogger.error("system", "Failed to load terrain", e.message);
   }
+
+  await Promise.all(loadPromises);
+};
+
+export const initializeTerrain = async () => {
+  // We no longer load anything on startup! 
+  // Terrain will load on-demand when the first player connects or moves.
+  serverLogger.info("system", "Terrain Engine Initialized (Lazy Loading Active)");
+  terrainData.clear();
 };
 
 export const initializeSpawners = async () => {
@@ -115,44 +144,51 @@ export const initializeSpawners = async () => {
 };
 
 export const autosavePlayers = async () => {
-  if (players.size === 0) return;
+  const { dirtyPlayers } = await import("../state");
+  if (dirtyPlayers.size === 0) return;
   
-  const playerArray = Array.from(players.values());
-  const CHUNK_SIZE = 450; // Keep a buffer below the 500 limit
+  // Clone the dirty map and clear it immediately
+  const playersToSave = new Map(dirtyPlayers);
+  dirtyPlayers.clear();
   
-  for (let i = 0; i < playerArray.length; i += CHUNK_SIZE) {
-    const chunk = playerArray.slice(i, i + CHUNK_SIZE);
+  const CHUNK_SIZE = 450; 
+  const playerIds = Array.from(playersToSave.keys());
+  
+  for (let i = 0; i < playerIds.length; i += CHUNK_SIZE) {
+    const chunkIds = playerIds.slice(i, i + CHUNK_SIZE);
     const batch = db.batch();
     let count = 0;
 
-    for (const p of chunk) {
-      if (!p.userId || !p.characterId) continue;
+    for (const id of chunkIds) {
+      const p = players.get(id);
+      const changedFields = playersToSave.get(id);
+      
+      if (!p || !p.userId || !p.characterId || !changedFields) continue;
+
       const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
-      batch.set(charRef, {
-        pos: p.pos,
-        rot: p.rot,
-        hp: p.hp,
-        mp: p.mp,
-        stats: p.stats,
-        equipment: p.equipment,
-        inventory: p.inventory,
-        hotbar: p.hotbar,
-        gold: p.gold || 0,
-        level: p.level || 1,
-        exp: p.exp || 0,
-        maxExp: p.maxExp || 100,
+      
+      // Build dynamic payload based on dirty fields
+      const payload: any = {
         lastActive: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      };
+
+      changedFields.forEach(field => {
+        if (p[field] !== undefined) {
+          payload[field] = p[field];
+        }
+      });
+
+      batch.set(charRef, payload, { merge: true });
       count++;
     }
 
     try {
       if (count > 0) {
         await batch.commit();
-        serverLogger.info("firestore", `Autosave chunk complete. ${count} players backed up.`);
+        serverLogger.info("firestore", `Surgical Autosave complete. ${count} players updated with selective fields.`);
       }
     } catch (e: any) {
-      serverLogger.error("firestore", "Autosave chunk failed", e.message);
+      serverLogger.error("firestore", "Surgical Autosave failed", e.message);
     }
   }
 };
@@ -164,8 +200,15 @@ export const performShutdownSave = async () => {
 };
 
 // Periodic save wrapper to maintain the interval if needed
-export const startPeriodicSave = () => {
+export const startPeriodicTasks = () => {
+  // 1. Player Autosave (5 minutes)
   setInterval(async () => {
     await autosavePlayers();
-  }, 1000 * 60 * 5); // 5 minutes
+  }, 1000 * 60 * 5);
+
+  // 2. Redis Ghost Cleanup (10 minutes)
+  const { cleanupGhostPlayers } = require("../redis");
+  setInterval(async () => {
+    await cleanupGhostPlayers();
+  }, 1000 * 60 * 10);
 };

@@ -13,6 +13,7 @@ import { decrementSpawnerCount } from "../../systems/spawners";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { InventoryItem } from "../../../src/types";
 import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
+import { markPlayerDirty } from "../../lib/stateUtils";
 
 export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
@@ -97,10 +98,8 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
     gold: target.gold || 0
   });
 
-  // Save to DB
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    inventory: newInventory
-  }, { merge: true });
+  // Mark as dirty for eventual batch persistence (Selective)
+  markPlayerDirty(socket.id, ["inventory"]);
 
   // Update Quest Progress
   syncQuestInventory(socket, player);
@@ -184,12 +183,9 @@ export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
   syncQuestInventory(socket, player);
 
 
-  // Sync & Save
+  // Sync & Mark Dirty
   socket.emit("inventory_update", { inventory: newInventory });
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    inventory: newInventory,
-    gold: player.gold
-  }, { merge: true });
+  markPlayerDirty(socket.id, ["inventory", "gold"]);
 
   if (target.lootInstances.length === 0) {
     entities.delete(target.id);
@@ -221,9 +217,7 @@ export const handleTakeGold = (socket: Socket, data: any) => {
     gold: 0
   });
 
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    gold: player.gold
-  }, { merge: true });
+  markPlayerDirty(socket.id, ["gold"]);
 
   // If empty, despawn
   if ((target.lootInstances || []).length === 0) {
@@ -245,12 +239,7 @@ export const handleEquipItem = (socket: Socket, data: any) => {
     players.set(socket.id, { ...updated, id: socket.id });
     socket.emit("session_start", players.get(socket.id));
     
-    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      equipment: updated.equipment,
-      inventory: updated.inventory,
-      maxHp: updated.maxHp,
-      maxMp: updated.maxMp
-    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Equip save failed", e.message));
+    markPlayerDirty(socket.id, ["equipment", "inventory", "maxHp", "maxMp", "stats"]);
 
     updateQuestProgress(socket, player, "equip", itemInInventory.type);
   }
@@ -265,12 +254,7 @@ export const handleUnequipItem = (socket: Socket, data: any) => {
     players.set(socket.id, { ...updated, id: socket.id });
     socket.emit("session_start", players.get(socket.id));
 
-    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      equipment: updated.equipment,
-      inventory: updated.inventory,
-      maxHp: updated.maxHp,
-      maxMp: updated.maxMp
-    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Unequip save failed", e.message));
+    markPlayerDirty(socket.id, ["equipment", "inventory", "maxHp", "maxMp", "stats"]);
   }
 };
 
@@ -308,9 +292,7 @@ export const handleMoveItem = (socket: Socket, data: any) => {
       player.inventory = newInventory;
       socket.emit("inventory_update", { inventory: newInventory });
       
-      db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-        inventory: newInventory
-      }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+      markPlayerDirty(socket.id, ["inventory"]);
       
       return;
     }
@@ -322,10 +304,7 @@ export const handleMoveItem = (socket: Socket, data: any) => {
   
   player.inventory = newInventory;
   socket.emit("inventory_update", { inventory: newInventory });
-
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    inventory: newInventory
-  }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+  markPlayerDirty(socket.id, ["inventory"]);
 };
 
 export const handleSplitStack = (socket: Socket, data: any) => {
@@ -352,10 +331,7 @@ export const handleSplitStack = (socket: Socket, data: any) => {
 
   player.inventory = newInventory;
   socket.emit("inventory_update", { inventory: newInventory });
-
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    inventory: newInventory
-  }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+  markPlayerDirty(socket.id, ["inventory"]);
 };
 
 export const handleDestroyItem = (socket: Socket, data: any) => {
@@ -375,9 +351,7 @@ export const handleDestroyItem = (socket: Socket, data: any) => {
   socket.emit("inventory_update", { inventory: newInventory });
   syncQuestInventory(socket, player);
 
-  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-    inventory: newInventory
-  }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+  markPlayerDirty(socket.id, ["inventory"]);
   
   serverLogger.info("inventory", `Player ${player.characterName} destroyed item: ${item.name}`);
 };

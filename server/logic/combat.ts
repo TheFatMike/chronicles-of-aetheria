@@ -6,11 +6,13 @@
  */
 import { ALL_SKILLS } from "../../src/data/skills";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../src/lib/gameUtils";
-import { players, entities, lastSkillUse, parties, dirtyEntities } from "../state";
+import { players, entities, lastSkillUse, parties, dirtyEntities, dirtyPlayers } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
 import { updateQuestProgress } from "./quest";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
+import { CharacterModel } from "../../src/models/CharacterModel";
+import { markPlayerDirty } from "../lib/stateUtils";
 import { decrementSpawnerCount } from "../systems/spawners";
 
 export const handleCastSkill = (socket: any, io: any, data: any) => {
@@ -54,6 +56,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   }
 
   player.mp -= skill.manaCost;
+  markPlayerDirty(socket.id, ["mp"]);
   
   // Update Cooldown
   const currentCooldowns = lastSkillUse.get(socket.id) || {};
@@ -88,6 +91,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
     let target = players.get(data.targetId || socket.id);
     if (target) {
       target.hp = Math.min(target.maxHp || 100, target.hp + amount);
+      markPlayerDirty(target.id, ["hp"]);
       io.emit("player_stats", { id: target.id, hp: target.hp, mp: target.mp });
       // If the target is a player, send them their full private stats too
       io.to(target.id).emit("player_stats", { 
@@ -210,6 +214,7 @@ export function giveExperience(io: any, player: any, amount: number) {
     player.maxExp = player.level * 100;
     player.hp = player.maxHp; // Heal on level up
     player.mp = player.maxMp;
+    markPlayerDirty(player.id, ["level", "exp", "maxExp", "hp", "mp"]);
     
     io.to(player.id).emit("chat_message", { 
       sender: "SYSTEM", 
@@ -229,5 +234,5 @@ export function giveExperience(io: any, player: any, amount: number) {
     maxExp: player.maxExp,
     gold: player.gold
   });
-  
+  markPlayerDirty(player.id, ["exp", "level", "gold", "hp", "mp"]);
 }

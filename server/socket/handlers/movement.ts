@@ -9,6 +9,7 @@ import { players, terrainData } from "../../state";
 import { serverLogger } from "../../logger";
 import { resolveWorldCollision, updateInGrid, entityGrid, getNearbyGridKeys } from "../../systems/spatial";
 import { getInterpolatedHeight } from "../../lib/terrainUtils";
+import { markPlayerDirty } from "../../lib/stateUtils";
 
 export const handleMove = (socket: Socket, data: any, io: Server) => {
   const player = players.get(socket.id);
@@ -61,6 +62,19 @@ export const handleMove = (socket: Socket, data: any, io: Server) => {
 
   // 1. Update Spatial Grid
   updateInGrid(entityGrid, socket.id, oldPos, finalPos);
+
+  // 2. Lazy Terrain Loading: Check if we crossed into a new 100x100 region
+  const oldChunkX = Math.floor(oldPos[0] / 100);
+  const oldChunkZ = Math.floor(oldPos[2] / 100);
+  const newChunkX = Math.floor(finalPos[0] / 100);
+  const newChunkZ = Math.floor(finalPos[2] / 100);
+
+  if (oldChunkX !== newChunkX || oldChunkZ !== newChunkZ) {
+    import("../../systems/persistence").then(m => m.loadTerrainRegion(finalPos[0], finalPos[2]));
+  }
+
+  // 2. Mark as dirty for eventual persistence (Selective Fields)
+  markPlayerDirty(socket.id, ["pos", "rot"]);
 
   // 3. Update Redis Cache (Asynchronous)
   import("../../redis").then(m => m.updatePlayerPositionRedis(socket.id, finalPos));

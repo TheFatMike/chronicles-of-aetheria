@@ -9,6 +9,13 @@ import { DEBUG_CONFIG, isDebugEnabled, DebugCategory } from "../src/debug.config
 export const logBuffer: string[] = [];
 
 export const serverLogger = {
+  debug: (ctx: string, msg: string, data?: any) => {
+    if (!DEBUG_CONFIG.ENABLED || !isDebugEnabled('SERVER', ctx.toUpperCase() as DebugCategory)) return;
+    const line = `[${new Date().toLocaleTimeString()}] [DEBUG] [${ctx.toUpperCase()}] ${msg}${data ? ' ' + JSON.stringify(data) : ""}`;
+    console.debug(line);
+    logBuffer.push(line);
+    if (logBuffer.length > 200) logBuffer.shift();
+  },
   info: (ctx: string, msg: string, data?: any) => {
     if (!DEBUG_CONFIG.ENABLED || !isDebugEnabled('SERVER', ctx.toUpperCase() as DebugCategory)) return;
     const line = `[${new Date().toLocaleTimeString()}] [INFO] [${ctx.toUpperCase()}] ${msg}${data ? ' ' + JSON.stringify(data) : ""}`;

@@ -6,6 +6,7 @@
  */
 import { db } from "../db";
 import { serverLogger } from "../logger";
+import { markPlayerDirty } from "../lib/stateUtils";
 
 export const updateQuestProgress = (socket: any, player: any, type: string, targetId: string, amount: number = 1) => {
   if (!player.quests) return;
@@ -43,10 +44,7 @@ export const updateQuestProgress = (socket: any, player: any, type: string, targ
 
   if (questChanged) {
     socket.emit("quest_update", player.quests);
-    // PERSIST TO DB
-    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      quests: player.quests
-    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Quest save failed", e.message));
+    markPlayerDirty(socket.id, ["quests"]);
   }
 };
 
@@ -105,9 +103,7 @@ export const syncQuestInventory = (socket: any, player: any, silent: boolean = f
 
   if (questChanged) {
     socket.emit("quest_update", player.quests);
-    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      quests: player.quests
-    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Quest inventory sync failed", e.message));
+    markPlayerDirty(socket.id, ["quests"]);
   }
 };
 
@@ -148,8 +144,6 @@ export const validateQuestState = (socket: any, player: any) => {
 
   if (questChanged) {
     socket.emit("quest_update", player.quests);
-    db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
-      quests: player.quests
-    }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Quest re-validation save failed", e.message));
+    markPlayerDirty(socket.id, ["quests"]);
   }
 };
