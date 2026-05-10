@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Chronicles of Aetheria 🌌
 
-# Run and deploy your AI Studio app
+Welcome to **Chronicles of Aetheria**, my personal ARPG sandbox built with React, Three.js, and a Node.js backend.  This game lets you explore a handcrafted world, collect loot, complete quests, trade with other heroes, and fully customize your character.
 
-This contains everything you need to run your app locally.
+## Quick Start
 
-View your app in AI Studio: https://ai.studio/apps/08e9223a-25f0-44f5-a5e9-83dc050eaad5
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/yourusername/chronicles-of-aetheria.git
+   cd chronicles-of-aetheria
+   ```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+3. **Set up environment** – copy the example file and add your Firebase and Gemini keys:
+   ```bash
+   cp .env.example .env
+   # edit .env with your credentials
+   ```
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` in a browser.
 
-## Run Locally
+## What you’ll find
+- **Dynamic quest system** – quests chain together, auto‑track collection items, and update instantly when you receive items via trade.
+- **Rich inventory** – stacking, splitting, and drag‑and‑drop with camera‑blocking UI.
+- **Player‑to‑player trading** – safe item exchange that automatically syncs quest progress.
+- **Character selection** – up to six heroes, with a clean UI that hides the “new character” button once the limit is reached.
+- **Procedural terrain & movement** – smooth camera, physics‑driven movement, and server‑side persistence.
 
-**Prerequisites:**  Node.js
+## Contributing
+Feel free to open issues or submit pull requests.  If you add new features, keep the UI consistent with the dark‑gold aesthetic and update the quest‑sync logic so that any new item type works out‑of‑the‑box.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## License
+This project is shared under the Apache‑2.0 License.
