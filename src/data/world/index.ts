@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/index.ts
+ * @description Aggregates all static world object placements.
+ * Combines nature, town, prop, and spawner data into a single master collection.
+ * @importance Essential: The entry point for loading all environmental objects into the game world.
+ */
 import { WorldObject } from "../../types";
 import { SPAWNER_OBJECTS } from "./spawners";
 import { NATURE_OBJECTS } from "./nature";

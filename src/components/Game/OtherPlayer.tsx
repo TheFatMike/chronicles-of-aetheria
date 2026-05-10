@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/OtherPlayer.tsx
+ * @description Renders other players currently connected to the game world.
+ * Synchronizes their visual state, animations, and equipment based on server updates.
+ * @importance Essential: Key for the multiplayer experience, allowing players to see and interact with each other.
+ */
 import { memo } from "react";
 import { Humanoid } from "./Humanoid";
 import { useGameStore } from "../../store/useGameStore";

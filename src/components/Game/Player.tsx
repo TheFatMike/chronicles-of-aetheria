@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Player.tsx
+ * @description The local player's character component in the 3D scene.
+ * Manages the player's visuals, camera following, and integrates with the movement system.
+ * @importance Critical: The primary point of interaction and visual representation for the user in the game world.
+ */
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef, memo } from "react";
 import * as THREE from "three";

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CharacterCard.tsx
+ * @description A UI component that displays a summary of a character's state.
+ * Used in the character selection screen to show basic info like name, level, and class.
+ * @importance Essential: Provides a clear and attractive overview of the player's available characters.
+ */
 import { motion, AnimatePresence } from "motion/react";
 import { Trash2, ChevronRight } from "lucide-react";
 import { Character } from "../../types";

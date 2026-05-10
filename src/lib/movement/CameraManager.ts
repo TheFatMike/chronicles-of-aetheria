@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/movement/CameraManager.ts
+ * @description Manages the behavior and positioning of the 3D game camera.
+ * Handles camera following, smoothing, and state transitions between different view modes.
+ * @importance Essential: Vital for providing a stable and pleasant visual perspective for the player.
+ */
 import * as THREE from "three";
 import { CameraState } from "./types";
 

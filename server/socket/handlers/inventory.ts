@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/inventory.ts
+ * @description Manages player inventory and item-related socket events.
+ * Handles item movement, stack splitting, and item consumption/usage.
+ * @importance Essential: Core to the RPG experience, allowing players to manage their gear and resources.
+ */
 import { Socket, Server } from "socket.io";
 import { players, entities } from "../../state";
 import { db } from "../../db";

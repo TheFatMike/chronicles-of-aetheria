@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Projectiles.tsx
+ * @description Renders and manages all active projectiles (arrows, spells, etc.) in the scene.
+ * Uses efficient rendering techniques to handle multiple simultaneous projectiles with low overhead.
+ * @importance Essential: Crucial for visual feedback during combat and representing ranged abilities.
+ */
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

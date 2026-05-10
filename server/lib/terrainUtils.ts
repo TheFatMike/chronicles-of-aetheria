@@ -1,3 +1,9 @@
+/**
+ * @file server/lib/terrainUtils.ts
+ * @description Server-side utilities for procedural terrain height calculations.
+ * Provides authoritative height sampling to ensure entities and players are correctly positioned.
+ * @importance Essential: Vital for server-side physics validation and ensuring world consistency.
+ */
 export function getInterpolatedHeight(
   x: number, 
   z: number, 

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/EditorOutliner.tsx
+ * @description Provides a hierarchical view of all objects in the current scene.
+ * Facilitates searching, selecting, and organizing world entities from a list.
+ * @importance Essential: Vital for managing complex scenes with many overlapping or distant objects.
+ */
 import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { List, Search, Target, Trash2, MapPin, TreePine, Home, MousePointer2, Ghost } from 'lucide-react';

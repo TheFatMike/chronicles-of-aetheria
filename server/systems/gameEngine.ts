@@ -1,3 +1,9 @@
+/**
+ * @file server/systems/gameEngine.ts
+ * @description The core heartbeat of the Chronicles of Aetheria backend.
+ * Orchestrates all game systems including AI, spawners, stats regeneration, and state synchronization.
+ * @importance Critical: The central loop that ensures the game world progresses and stays in sync across all players.
+ */
 import { Server } from "socket.io";
 import { players, entities, dirtyEntities, playerLastGridCell, playerKnownEntities } from "../state";
 import { serverLogger } from "../logger";

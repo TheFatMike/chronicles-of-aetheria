@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/party.ts
+ * @description Handlers for player party management.
+ * Facilitates grouping players together, managing invites, and tracking party state.
+ * @importance Essential: Core to the cooperative multiplayer aspect of the game.
+ */
 import { Server, Socket } from "socket.io";
 import { players, parties } from "../../state";
 import { serverLogger } from "../../logger";

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/PlayerHUD.tsx
+ * @description The primary head-up display for the local player.
+ * Shows essential vitals like Health, Mana, Experience, and level.
+ * @importance Critical: The most vital UI element for player survival and awareness in the game world.
+ */
 import { getAccountRole } from "../../lib/permissions";
 import { motion } from "motion/react";
 import { Character } from "../../types";

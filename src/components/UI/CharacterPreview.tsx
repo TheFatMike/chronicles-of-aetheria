@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CharacterPreview.tsx
+ * @description Renders a 3D preview of a character within a UI context.
+ * Uses a secondary React-Three-Fiber canvas to display the character's model and equipment.
+ * @importance Essential: Enhances the character selection and creation process with high-quality visual previews.
+ */
 import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Environment, Float } from "@react-three/drei";

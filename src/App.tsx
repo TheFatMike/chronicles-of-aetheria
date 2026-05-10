@@ -1,6 +1,8 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @file src/App.tsx
+ * @description The central React component and root of the application logic.
+ * Manages user authentication, socket lifecycle, and top-level navigation between menus and the game world.
+ * @importance Critical: Coordinates all client-side systems and provides the primary user interface structure.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";

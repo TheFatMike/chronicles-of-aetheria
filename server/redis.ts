@@ -1,3 +1,9 @@
+/**
+ * @file server/redis.ts
+ * @description Manages Redis connections and provides geospatial indexing for player positions.
+ * Supports real-time proximity queries and global messaging via Pub/Sub.
+ * @importance Essential: Critical for performance-sensitive features like player visibility and global chat synchronization.
+ */
 import Redis from "ioredis";
 import { serverLogger } from "./logger";
 import dotenv from "dotenv";

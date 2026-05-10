@@ -1,3 +1,9 @@
+/**
+ * @file src/store/types.ts
+ * @description Defines the comprehensive state structure and types for the client-side game store.
+ * Provides the central type definitions for players, entities, and world state.
+ * @importance Essential: Ensures type safety and consistent state management across the entire client application.
+ */
 import { GameTarget, GameEntity, Spawner, WorldObject, Quest } from '../types';
 
 export interface PlayerState {

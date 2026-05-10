@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/trade.ts
+ * @description Manages the secure item trading system between players.
+ * Handles trade requests, item locking, confirmation, and final transaction processing.
+ * @importance Essential: Provides a safe and reliable way for players to exchange goods and currency.
+ */
 import { Server, Socket } from "socket.io";
 import { players, activeTrades } from "../../state";
 import { serverLogger } from "../../logger";

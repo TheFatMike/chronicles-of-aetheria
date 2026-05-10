@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/EntityRenderer.tsx
+ * @description Central manager for rendering all non-player entities.
+ * Dynamically selects and renders the appropriate component based on entity type.
+ * @importance Essential: Simplifies the main scene logic by abstracting the rendering of diverse entities.
+ */
 import { memo } from "react";
 import { NPC } from "./NPC";
 import { SlimeEnemy, SkeletonEnemy, GoblinEnemy } from "./Enemy";

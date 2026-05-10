@@ -1,3 +1,9 @@
+/**
+ * @file server/logic/combat.ts
+ * @description Implements the core authoritative combat logic on the server.
+ * Handles skill execution, damage calculations, and state updates for combat participants.
+ * @importance Critical: The heart of the game's combat system, ensuring fair and synchronized interactions.
+ */
 import { ALL_SKILLS } from "../../src/data/skills";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../src/lib/gameUtils";
 import { players, entities, lastSkillUse, parties, dirtyEntities } from "../state";

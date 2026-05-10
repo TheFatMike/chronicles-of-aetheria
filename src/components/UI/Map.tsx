@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Map.tsx
+ * @description The in-game world map interface.
+ * Shows the player's position, party members, and key points of interest.
+ * @importance Essential: Crucial for navigation and coordination within the expansive game world.
+ */
 import React, { memo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Map as MapIcon, Users, Navigation, X, ZoomIn, ZoomOut, Compass } from "lucide-react";

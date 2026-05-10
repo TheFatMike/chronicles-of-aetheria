@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/WorldObjectItem.tsx
+ * @description A wrapper component for individual static objects in the game world.
+ * Decides whether to render a procedural object (like a tree) or an external GLB model.
+ * @importance Essential: Simplifies object management by providing a uniform interface for all environmental props.
+ */
 import { memo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";

@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/session.ts
+ * @description Manages player connection lifecycles and authentication sessions.
+ * Handles login, logout, and ensuring the server state is cleaned up when players leave.
+ * @importance Critical: The gateway for players to access the game and the primary safeguard for state consistency.
+ */
 import { Server, Socket } from "socket.io";
 import admin from "firebase-admin";
 import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerLastGridCell } from "../../state";

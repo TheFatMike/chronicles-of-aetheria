@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/LoadingScreen.tsx
+ * @description The visual interface shown during loading states.
+ * Features thematic animations and particles to keep the player engaged while assets load.
+ * @importance Essential: Provides a premium and polished experience during necessary wait times.
+ */
 import { motion } from "motion/react";
 import { memo } from "react";
 import { ParticleEffect } from "./Particles";

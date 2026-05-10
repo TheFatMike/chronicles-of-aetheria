@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/LootWindow.tsx
+ * @description An interface for viewing and retrieving items from defeated enemies.
+ * Allows players to selectively take loot or "take all" from a temporary container.
+ * @importance Essential: The primary way players receive rewards and items from combat and exploration.
+ */
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from '../../store/useGameStore';

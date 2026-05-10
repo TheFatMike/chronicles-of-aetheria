@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Login.tsx
+ * @description The primary authentication interface for the game.
+ * Supports social login (Google) and traditional email/password credentials.
+ * @importance Critical: The entry point for all users, ensuring secure access to their game accounts.
+ */
 import { useState, memo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 

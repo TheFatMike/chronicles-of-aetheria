@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CreationForm.tsx
+ * @description Manages the data entry and validation for character creation.
+ * Handles name input, class selection, and color customization.
+ * @importance Essential: Ensures that player-created characters have valid and complete data before entering the game.
+ */
 import { motion, AnimatePresence } from "motion/react";
 import { User, Shield, Info, ChevronRight } from "lucide-react";
 import { CHARACTER_CLASSES } from "../../constants";

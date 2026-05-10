@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/TradeWindow.tsx
+ * @description The interface for secure item and gold trading between players.
+ * Supports offering items, locking the trade, and final confirmation from both parties.
+ * @importance Essential: Provides a safe environment for player-to-player commerce and interaction.
+ */
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../../store/useGameStore';

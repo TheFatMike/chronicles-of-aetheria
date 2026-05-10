@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/PlacementGhost.tsx
+ * @description Provides a semi-transparent visual preview of an object being placed in the editor.
+ * Snaps to the grid and terrain height to show the exact final position of the object.
+ * @importance Essential: Improves the world-building experience by providing immediate visual feedback during editing.
+ */
 import { memo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";

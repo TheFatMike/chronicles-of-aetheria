@@ -1,3 +1,9 @@
+/**
+ * @file server/config.ts
+ * @description Handles loading and exporting the Firebase configuration.
+ * It searches for the configuration file in multiple possible paths.
+ * @importance Essential: Required for connecting the server to Firebase services for authentication and data.
+ */
 import fs from "fs";
 import path from "path";
 

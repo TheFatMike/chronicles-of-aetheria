@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/logger.ts
+ * @description Provides a structured and configurable logging system for the client.
+ * Supports different log levels and can be toggled via the debug configuration.
+ * @importance Essential: Aids in monitoring client-side behavior and identifying issues during development.
+ */
 import { useGameStore } from '../store/useGameStore';
 import { DEBUG_CONFIG, isDebugEnabled, DebugCategory } from '../debug.config';
 

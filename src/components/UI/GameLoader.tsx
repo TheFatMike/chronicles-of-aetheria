@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/GameLoader.tsx
+ * @description A bridge component that tracks loading progress and shows the loading screen.
+ * Wait for 3D assets, textures, and world data to be ready before starting the game.
+ * @importance Essential: Ensures a smooth transition from the menus into the 3D world without pop-in.
+ */
 import { useProgress } from "@react-three/drei";
 import { LoadingScreen } from "./LoadingScreen";
 import { useEffect, useState } from "react";

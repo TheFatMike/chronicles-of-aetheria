@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/PartyFrames.tsx
+ * @description Renders health and status frames for all members of the player's party.
+ * Provides real-time updates on party vitals and leader status.
+ * @importance Essential: Critical for cooperative gameplay, allowing players to monitor and support their teammates.
+ */
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../../store/useGameStore';

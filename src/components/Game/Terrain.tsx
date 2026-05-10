@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Terrain.tsx
+ * @description Generates and renders the procedural terrain mesh.
+ * Dynamically updates vertex positions and colors based on heightmap data and sculpting actions.
+ * @importance Critical: Provides the physical and visual ground for the entire game world.
+ */
 import React, { useRef, useEffect, useMemo, memo } from "react";
 import * as THREE from "three";
 import { GAME_CONFIG } from "../../config";

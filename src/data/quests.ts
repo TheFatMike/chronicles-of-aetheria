@@ -1,3 +1,9 @@
+/**
+ * @file src/data/quests.ts
+ * @description Static definitions for the game's quest content.
+ * Defines quest chains, objectives, requirements, and rewards for players.
+ * @importance Essential: The primary content source for the game's narrative and progression systems.
+ */
 import { Quest } from "../types";
 
 export const SAMPLE_QUESTS: Record<string, Quest> = {

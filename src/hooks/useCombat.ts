@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useCombat.ts
+ * @description Manages combat actions, skill casting, and ability management on the client.
+ * Handles the logic for triggering skills, managing cooldowns, and calculating visual combat data.
+ * @importance Essential: The central point for all player-initiated combat interactions and mechanics.
+ */
 import { useCallback, useRef, useEffect } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { Character, Skill } from "../types";

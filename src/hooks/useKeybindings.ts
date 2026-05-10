@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useKeybindings.ts
+ * @description Centralizes keyboard input handling for the game.
+ * Maps physical key presses to game actions like using skills or opening menus.
+ * @importance Essential: The primary bridge between user input and game interaction.
+ */
 import { useEffect } from "react";
 import { useGameStore } from "../store/useGameStore";
 

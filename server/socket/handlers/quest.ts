@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/quest.ts
+ * @description Manages quest-related events and player progression.
+ * Handles quest acceptance, objective tracking, and reward processing.
+ * @importance Essential: Provides structure and goals for the player, driving engagement and narrative progression.
+ */
 import { Socket } from "socket.io";
 import { players } from "../../state";
 import { db } from "../../db";

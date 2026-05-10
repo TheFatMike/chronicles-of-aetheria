@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/movement/CollisionSystem.ts
+ * @description Implements the client-side collision detection logic.
+ * Uses raycasting and spatial checks to prevent players and entities from clipping through the world.
+ * @importance Critical: Crucial for maintaining the physical integrity of the game world and preventing exploitation.
+ */
 import * as THREE from "three";
 import { logger } from "../logger";
 

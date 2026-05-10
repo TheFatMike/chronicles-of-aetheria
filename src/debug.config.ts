@@ -1,6 +1,8 @@
 /**
- * Centralized Debug Configuration for Chronicles of Aetheria.
- * Allows toggling debug logs and features for both Client and Server.
+ * @file src/debug.config.ts
+ * @description Centralized configuration for toggling debug features and logs.
+ * Allows independent control over various subsystems for both client and server.
+ * @importance Essential: Vital for developers to monitor and troubleshoot specific parts of the system during development.
  */
 
 export type DebugCategory = 

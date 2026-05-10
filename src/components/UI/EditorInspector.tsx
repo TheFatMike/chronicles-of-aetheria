@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/EditorInspector.tsx
+ * @description The property editing pane for the world editor.
+ * Allows for manual adjustment of an object's transformation, properties, and specific metadata.
+ * @importance Essential: Key for fine-tuning the placement and configuration of objects in the world.
+ */
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Save, Target, X, Copy, Trash2, MapPin, Box, Layers, Settings, ChevronRight, Activity } from 'lucide-react';

@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/usePlayerMovement.ts
+ * @description Implements the movement and physics logic for the local player's character.
+ * Handles input processing, collision resolution, and synchronization with the server.
+ * @importance Critical: Directly responsible for the responsiveness and "feel" of character movement.
+ */
 import { useRef, useEffect, useMemo, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";

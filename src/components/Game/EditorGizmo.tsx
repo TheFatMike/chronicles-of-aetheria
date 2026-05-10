@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/EditorGizmo.tsx
+ * @description Provides interactive transformation handles for world objects.
+ * Allows developers to precisely position, rotate, and scale objects within the editor.
+ * @importance Essential: The primary interface for manipulating the spatial properties of game world objects.
+ */
 import { memo } from "react";
 import * as THREE from "three";
 import { TransformControls } from "@react-three/drei";

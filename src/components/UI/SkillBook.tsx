@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/SkillBook.tsx
+ * @description The interface for viewing and managing character skills and abilities.
+ * Allows players to review their powers and drag them to the hotbar for use.
+ * @importance Essential: Core for character progression and combat customization.
+ */
 import React, { memo } from "react";
 import { motion } from "motion/react";
 import { X, Book, Sparkles, Target, Zap, Clock } from "lucide-react";

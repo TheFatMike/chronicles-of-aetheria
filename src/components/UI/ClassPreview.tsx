@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/ClassPreview.tsx
+ * @description Displays details about a specific character class during the creation process.
+ * Shows class-specific stats, descriptions, and icon.
+ * @importance Essential: Helps players make an informed decision when choosing their character's path.
+ */
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import * as Icons from "lucide-react";

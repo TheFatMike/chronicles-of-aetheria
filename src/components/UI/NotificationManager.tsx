@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/NotificationManager.tsx
+ * @description Manages and displays temporary in-game notifications.
+ * Handles alerts for party invites, trade requests, and system messages.
+ * @importance Essential: Provides non-intrusive feedback to the player about external events and social interactions.
+ */
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../../store/useGameStore';

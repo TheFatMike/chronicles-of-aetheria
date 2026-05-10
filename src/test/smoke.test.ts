@@ -1,3 +1,9 @@
+/**
+ * @file src/test/smoke.test.ts
+ * @description A collection of high-level tests to verify basic application functionality.
+ * Ensures that the main components render correctly and that core logic remains intact.
+ * @importance Essential: Provides a fast and reliable way to catch regression and major rendering issues.
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore } from '../store/useGameStore';
 

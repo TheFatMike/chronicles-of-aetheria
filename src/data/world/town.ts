@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/town.ts
+ * @description Static placements for structures and buildings in the town area.
+ * Includes houses, tents, and other architectural elements.
+ * @importance Essential: Forms the structural foundation for civilized areas and quest hubs in the world.
+ */
 import { WorldObject } from "../../types";
 
 export const TOWN_OBJECTS: WorldObject[] = [

@@ -1,3 +1,9 @@
+/**
+ * @file src/test/setup.ts
+ * @description Global configuration and environmental setup for the Vitest test suite.
+ * Includes necessary polyfills and global mocks for browser-specific APIs.
+ * @importance Essential: Ensures a stable and predictable environment for running automated tests.
+ */
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 

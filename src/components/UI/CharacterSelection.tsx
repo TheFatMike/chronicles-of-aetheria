@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CharacterSelection.tsx
+ * @description The main screen for choosing an existing character to play.
+ * Displays a list of available characters and allows the player to delete them or create new ones.
+ * @importance Essential: The primary portal for returning players to enter the game world.
+ */
 import React, { useState, memo } from "react";
 import { motion } from "motion/react";
 import { Character } from "../../types";

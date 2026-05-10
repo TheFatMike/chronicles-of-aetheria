@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/combatSlice.ts
+ * @description State management for combat-related mechanics.
+ * Tracks current targets, cast progress, and ability-specific state.
+ * @importance Essential: Vital for coordinating combat interactions and providing real-time feedback.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, CombatSlice } from '../types';
 

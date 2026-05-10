@@ -1,3 +1,9 @@
+/**
+ * @file server/state.ts
+ * @description Defines and exports the in-memory state containers for the game server.
+ * Tracks players, entities, parties, trades, and terrain data in real-time.
+ * @importance Critical: Serves as the authoritative source of truth for the game world's current state on the server.
+ */
 export const players = new Map<string, any>();
 export const entities = new Map<string, any>();
 export const spawners = new Map<string, any>();

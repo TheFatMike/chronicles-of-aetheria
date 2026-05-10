@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/GameScaffold.tsx
+ * @description A layout component that manages responsive scaling for the game UI.
+ * Ensures the interface maintains its design proportions across various screen sizes.
+ * @importance Essential: Vital for cross-platform and multi-resolution support, ensuring the UI is always usable and visually consistent.
+ */
 import React, { useLayoutEffect, useState, ReactNode, createContext, useContext } from 'react';
 
 export const DESIGN_RES = { width: 1920, height: 1080 };

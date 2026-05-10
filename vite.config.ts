@@ -1,3 +1,9 @@
+/**
+ * @file vite.config.ts
+ * @description Configuration for the Vite build tool and development server.
+ * Manages plugin integration, build settings, and development environment options.
+ * @importance Essential: Coordinates the bundling, optimization, and serving of the client-side application.
+ */
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';

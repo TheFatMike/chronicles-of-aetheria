@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Hotbar.tsx
+ * @description The action bar for skills and items.
+ * Allows players to map and quickly trigger abilities using keyboard shortcuts or mouse clicks.
+ * @importance Essential: The primary interface for combat and ability usage in the game.
+ */
 import React from "react";
 import { motion } from "motion/react";
 import { HotbarSlot as HotbarSlotType, ItemRarity } from "../../types";

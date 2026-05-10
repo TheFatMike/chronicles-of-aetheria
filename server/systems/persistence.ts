@@ -1,3 +1,9 @@
+/**
+ * @file server/systems/persistence.ts
+ * @description Manages data durability by saving and loading game state from Firestore.
+ * Handles world initialization, player autosaves, and shutdown procedures.
+ * @importance Critical: Ensures that player progress and world changes are preserved across server restarts.
+ */
 import { db } from "../db";
 import { players, worldObjects, spawners, entities, terrainData } from "../state";
 import { serverLogger } from "../logger";

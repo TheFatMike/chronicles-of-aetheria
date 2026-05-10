@@ -1,3 +1,9 @@
+/**
+ * @file src/index.css
+ * @description The core stylesheet for the application.
+ * Defines global CSS variables, custom themes, and utility classes using Tailwind CSS.
+ * @importance Essential: Establishes the visual identity and design system of the entire project.
+ */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Quivira&family=Almendra:ital,wght@0,400;0,700;1,400&family=MedievalSharp&display=swap');
 @import "tailwindcss";
 

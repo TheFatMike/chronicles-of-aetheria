@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/EditorConstants.tsx
+ * @description Centralized configuration and asset definitions for the world editor.
+ * Defines object categories, icons, and template mappings used in the editor UI.
+ * @importance Essential: Provides a structured data source for the world editor's interface and tools.
+ */
 import React from 'react';
 import { TreePine, Home, MousePointer2, Droplets, Target, Mountain, Flower2, Fence as FenceIcon, Flame, Container, Briefcase, MapPin, Tent } from 'lucide-react';
 

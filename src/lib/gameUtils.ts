@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/gameUtils.ts
+ * @description A collection of utility functions for common game logic and calculations.
+ * Includes formulas for stat aggregation, damage calculation, and regeneration rates.
+ * @importance Essential: Ensures that complex game mechanics are implemented consistently across the client.
+ */
 import { Stats, EquipmentSlots } from "../types";
 
 /**

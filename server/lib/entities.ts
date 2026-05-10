@@ -1,3 +1,9 @@
+/**
+ * @file server/lib/entities.ts
+ * @description Utility functions for managing and initializing game entities on the server.
+ * Handles the creation of NPC and enemy instances based on world object data and templates.
+ * @importance Essential: Orchestrates the instantiation and initial configuration of all world actors.
+ */
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { calculateMaxHP, calculateMaxMP } from "../../src/lib/gameUtils";
 

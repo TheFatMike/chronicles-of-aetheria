@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/ConfirmationModal.tsx
+ * @description A generic reusable modal for confirming critical actions.
+ * Used for character deletion, item destruction, and other irreversible steps.
+ * @importance Essential: Provides a safety net for users, preventing accidental data loss or unwanted actions.
+ */
 import { motion } from "motion/react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 

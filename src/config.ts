@@ -1,3 +1,9 @@
+/**
+ * @file src/config.ts
+ * @description Stores environment-specific settings and game balance constants.
+ * Manages movement speeds, physics properties, and network synchronization intervals.
+ * @importance Essential: Allows for easy tuning of game mechanics and adaptation to different hosting environments.
+ */
 export const GAME_CONFIG = {
   MOVEMENT: {
     MOVE_SPEED: 8,

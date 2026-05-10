@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Inventory.tsx
+ * @description The character's inventory and equipment window.
+ * Facilitates item management, equipment changes, and viewing item details.
+ * @importance Essential: A core RPG system that allows players to organize their loot and customize their character's gear.
+ */
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { InventoryItem } from "../../types";

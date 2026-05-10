@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/firebase.ts
+ * @description Initializes the Firebase Client SDK for the application.
+ * Configures authentication services, Firestore database access, and analytics.
+ * @importance Critical: The core service provider for all client-side data persistence and security.
+ */
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 

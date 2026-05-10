@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/templates.ts
+ * @description Provides metadata and visual defaults for world object types.
+ * Defines scales, icons, and categories for everything from trees to buildings.
+ * @importance Essential: Acts as a central library for world object properties used by the renderer and editor.
+ */
 import { WorldObjectType } from "../../types";
 
 export interface ObjectTemplate {

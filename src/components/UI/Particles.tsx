@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Particles.tsx
+ * @description A lightweight UI particle system using Framer Motion.
+ * Adds visual flair and ambient effects to screens like the loading screen and character selection.
+ * @importance Essential: Enhances the aesthetic appeal and polish of the game's user interface.
+ */
 import { motion } from "motion/react";
 import { useMemo } from "react";
 

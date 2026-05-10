@@ -1,3 +1,9 @@
+/**
+ * @file server/logic/quest.ts
+ * @description Manages the authoritative quest progression logic on the server.
+ * Handles objective tracking, quest completion validation, and reward distribution.
+ * @importance Essential: Ensures that player progression is accurately tracked and secured against cheating.
+ */
 import { db } from "../db";
 import { serverLogger } from "../logger";
 

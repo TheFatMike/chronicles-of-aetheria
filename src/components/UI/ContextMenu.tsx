@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/ContextMenu.tsx
+ * @description A dynamic menu that appears at the cursor's position based on user interaction.
+ * Provides relevant actions like trade, invite to party, or view info when clicking on entities.
+ * @importance Essential: Offers a quick and intuitive way for players to interact with the game world and others.
+ */
 import React, { memo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { DESIGN_RES } from "./GameScaffold";

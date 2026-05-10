@@ -1,3 +1,9 @@
+/**
+ * @file server/systems/spawners.ts
+ * @description Logic for entity lifecycle management via world spawners.
+ * Automatically generates mobs and NPCs based on template definitions and spatial constraints.
+ * @importance Essential: Populates the game world with interactable entities and maintains the ecosystem's balance.
+ */
 import { performance } from "perf_hooks";
 import { entities, spawners, dirtyEntities, spawnerEntityCounts } from "../state";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";

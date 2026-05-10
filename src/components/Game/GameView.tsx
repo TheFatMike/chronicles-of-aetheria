@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/GameView.tsx
+ * @description The main 3D viewport for the game.
+ * Sets up the React-Three-Fiber canvas, lighting, and integrates the core world components.
+ * @importance Critical: The primary visual container for the entire 3D gameplay experience.
+ */
 import { Suspense, memo } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";

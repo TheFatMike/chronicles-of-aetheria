@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Environment.tsx
+ * @description A collection of static environment objects and props.
+ * Includes trees, rocks, buildings, and other decorative elements that populate the world.
+ * @importance Essential: Provides the visual foundation and atmosphere of the game world.
+ */
 import { memo } from "react";
 
 interface EnvironmentProps {

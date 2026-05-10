@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/EditorPalette.tsx
+ * @description The object selection menu for the world editor.
+ * Organizes available templates into categories for quick access and placement.
+ * @importance Essential: The primary tool for choosing and instantiating new objects in the world.
+ */
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Grid, MousePointer2, Trash2, MapPin, Search, ChevronRight, Settings2, Info } from 'lucide-react';

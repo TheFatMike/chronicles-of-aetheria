@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CharacterCreation.tsx
+ * @description The high-level orchestrator for the character creation workflow.
+ * Manages the transitions between class selection, customization, and final creation.
+ * @importance Essential: The first point of deep interaction for a player, defining their identity in the world.
+ */
 import React, { useState, memo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";

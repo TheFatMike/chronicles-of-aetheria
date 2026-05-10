@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/EditorCamera.tsx
+ * @description Custom camera controller designed specifically for the world editor mode.
+ * Allows for free movement, rotation, and zooming to facilitate easy world building.
+ * @importance Essential: Provides the necessary perspective and control for efficient environment editing.
+ */
 import { useRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";

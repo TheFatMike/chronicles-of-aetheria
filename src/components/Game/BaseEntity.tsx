@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/BaseEntity.tsx
+ * @description An abstract base component for all interactable entities in the game.
+ * Provides common UI elements like health bars, nameplates, and selection indicators.
+ * @importance Essential: Ensures visual and functional consistency across all NPCs, players, and enemies.
+ */
 import { memo, ReactNode, useRef, useState, useEffect } from "react";
 import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";

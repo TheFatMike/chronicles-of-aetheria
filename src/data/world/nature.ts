@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/nature.ts
+ * @description Defines initial placements for natural objects.
+ * Includes coordinates and transformations for trees, rocks, and bushes.
+ * @importance Essential: Populates the wilderness areas of the game world with static scenery.
+ */
 import { WorldObject } from "../../types";
 
 export const NATURE_OBJECTS: WorldObject[] = [

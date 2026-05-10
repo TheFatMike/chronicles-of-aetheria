@@ -1,3 +1,9 @@
+/**
+ * @file server.ts
+ * @description The entry point for the Chronicles of Aetheria backend server.
+ * Initializes Express, Socket.io, Firebase, Redis, and the game engine loop.
+ * @importance Critical: Acts as the central hub connecting all server-side systems and serving the client application.
+ */
 import dotenv from "dotenv";
 dotenv.config();
 

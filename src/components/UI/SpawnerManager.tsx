@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/SpawnerManager.tsx
+ * @description A specialized editor tool for creating and managing entity spawners.
+ * Allows for precise control over spawn intervals, mob types, and radii.
+ * @importance Essential: Vital for populating the world with content and managing the game's challenge level.
+ */
 import React, { useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, MapPin, Users, Target, RefreshCw, RotateCcw, Activity, Zap, Shield, AlertTriangle } from 'lucide-react';

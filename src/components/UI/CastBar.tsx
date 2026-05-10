@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CastBar.tsx
+ * @description Renders a progress bar for the current casting action.
+ * Provides visual feedback on the timing of skills and abilities.
+ * @importance Essential: Crucial for gameplay clarity, allowing players to time their actions and react to enemy casts.
+ */
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 

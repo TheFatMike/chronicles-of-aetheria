@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/GLBModel.tsx
+ * @description A utility component for rendering external 3D models in GLB/GLTF format.
+ * Handles model loading, cloning for multiple instances, and basic property application.
+ * @importance Essential: Provides a flexible way to incorporate high-quality 3D assets into the game world.
+ */
 import { memo, useMemo, Suspense, useEffect } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";

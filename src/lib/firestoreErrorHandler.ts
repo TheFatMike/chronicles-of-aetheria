@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/firestoreErrorHandler.ts
+ * @description Provides centralized error handling and logging for Firestore operations.
+ * Helps identify and recover from common database errors like permission issues or network failures.
+ * @importance Essential: Improves the robustness of the application's data layer and aids in debugging persistence issues.
+ */
 import { auth } from "./firebase";
 
 export enum OperationType {

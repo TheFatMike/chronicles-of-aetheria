@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/DebugOverlay.tsx
+ * @description A comprehensive diagnostic and administrative interface.
+ * Provides real-time telemetry, log viewing, and server-side state manipulation for development.
+ * @importance Essential: Crucial for rapid testing, debugging, and maintaining the project during development.
+ */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Settings, X, Terminal, Monitor, Server as ServerIcon, Activity, FileDown, ScrollText } from "lucide-react";

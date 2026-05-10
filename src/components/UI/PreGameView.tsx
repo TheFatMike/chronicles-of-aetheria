@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/PreGameView.tsx
+ * @description Manages the user interface flow before entering the game world.
+ * Coordinates the login, character selection, and character creation screens.
+ * @importance Critical: The first point of contact for all users, facilitating account access and character management.
+ */
 import { motion } from "motion/react";
 import { User } from "firebase/auth";
 import { Character } from "../../types";

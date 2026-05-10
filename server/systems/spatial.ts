@@ -1,3 +1,9 @@
+/**
+ * @file server/systems/spatial.ts
+ * @description Implements a grid-based spatial partitioning system.
+ * Used for efficient collision detection, proximity filtering, and localized network updates.
+ * @importance Essential: Crucial for server performance, allowing the engine to handle many entities by limiting calculations to nearby objects.
+ */
 import { worldObjects } from "../state";
 
 export const GRID_SIZE = 50;

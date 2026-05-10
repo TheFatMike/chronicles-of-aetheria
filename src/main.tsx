@@ -1,3 +1,9 @@
+/**
+ * @file src/main.tsx
+ * @description The bootstrap file for the React application.
+ * Initializes the React root and renders the main App component.
+ * @importance Critical: The entry point for the browser, responsible for starting the client-side application.
+ */
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';

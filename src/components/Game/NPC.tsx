@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/NPC.tsx
+ * @description Renders and manages non-player characters in the 3D world.
+ * Integrates humanoid visuals with NPC-specific logic like quest markers and dialogue triggers.
+ * @importance Essential: Populates the world with interactive storytellers and quest givers.
+ */
 import { memo } from "react";
 import { Humanoid } from "./Humanoid";
 import { BaseEntity } from "./BaseEntity";

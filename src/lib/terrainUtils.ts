@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/terrainUtils.ts
+ * @description Provides mathematical helpers for procedural terrain manipulation.
+ * Includes functions for height interpolation, sampling, and mesh calculations.
+ * @importance Essential: Vital for the accuracy and performance of the procedural terrain and sculpting systems.
+ */
 export function getInterpolatedHeight(
   x: number, 
   z: number, 

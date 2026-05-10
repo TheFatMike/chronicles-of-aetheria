@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/DialogueBox.tsx
+ * @description Renders the narrative and quest-related dialogue from NPCs.
+ * Handles story presentation and quest offer/completion choices for the player.
+ * @importance Essential: The primary medium for storytelling and quest interaction within the game.
+ */
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Quest } from '../../types';

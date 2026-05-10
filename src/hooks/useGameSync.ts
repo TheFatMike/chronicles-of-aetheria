@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useGameSync.ts
+ * @description Centralizes the real-time synchronization of game state via sockets.
+ * Listens for server updates and reflects changes in the local client store.
+ * @importance Essential: Keeps the local world state consistent with the authoritative server version.
+ */
 import { useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { useGameStore } from "../store/useGameStore";

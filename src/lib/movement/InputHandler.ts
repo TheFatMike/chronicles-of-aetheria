@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/movement/InputHandler.ts
+ * @description Manages raw player input specifically for the movement system.
+ * Translates device events (keyboard/mouse) into logical movement vectors for the physics engine.
+ * @importance Essential: The foundational component for converting user intent into character motion.
+ */
 import * as THREE from "three";
 import { logger } from "../logger";
 

@@ -1,4 +1,10 @@
 
+/**
+ * @file server/data/lootTables.ts
+ * @description Defines the drop logic and probability for items in the world.
+ * Orchestrates what items entities drop upon death or what can be found in containers.
+ * @importance Essential: Controls the game's reward distribution and item economy.
+ */
 export interface LootEntry {
   itemId: string;
   chance: number; // 0.0 to 1.0

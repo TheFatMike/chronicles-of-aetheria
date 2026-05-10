@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/InGameView.tsx
+ * @description The main container for all UI elements visible during gameplay.
+ * Orchestrates the HUD, chat, inventory, and other contextual overlays.
+ * @importance Critical: Coordinates the entire in-game user interface and ensures all elements work together.
+ */
 import { motion, AnimatePresence } from "motion/react";
 import { Character } from "../../types";
 import { PlayerHUD } from "./PlayerHUD";

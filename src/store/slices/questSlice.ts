@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/questSlice.ts
+ * @description State management for the questing system and NPC interactions.
+ * Tracks active quests, completed objectives, and current dialogue states.
+ * @importance Essential: Vital for tracking narrative progression and providing clear goals for the player.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, QuestSlice } from '../types';
 

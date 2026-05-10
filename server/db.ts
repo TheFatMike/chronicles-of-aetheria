@@ -1,3 +1,9 @@
+/**
+ * @file server/db.ts
+ * @description Initializes the Firebase Admin SDK and exports the Firestore database instance.
+ * Handles authentication via service account keys or environment variables.
+ * @importance Critical: Provides the foundation for persistent data storage across the entire application.
+ */
 import admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { firebaseConfig } from "./config";

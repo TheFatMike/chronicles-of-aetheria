@@ -1,3 +1,9 @@
+/**
+ * @file server/data/entityTemplates.ts
+ * @description Authoritative templates for all non-player entities.
+ * Defines base stats, behaviors, and loot table associations for NPCs and enemies.
+ * @importance Essential: The definitive source of truth for entity properties on the server.
+ */
 import { LOOT_TABLES, LootTable } from "./lootTables";
 
 export interface EntityTemplate {

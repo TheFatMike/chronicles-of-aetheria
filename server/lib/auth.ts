@@ -1,3 +1,9 @@
+/**
+ * @file server/lib/auth.ts
+ * @description Provides authentication and role-based access control helpers on the server.
+ * Verifies user identities and manages administrative permissions.
+ * @importance Essential: Ensures the security of server operations and restricts access to privileged tools.
+ */
 import { db } from "../db";
 
 export async function getUserRole(userId: string, email: string): Promise<string> {

@@ -1,3 +1,9 @@
+/**
+ * @file src/types.ts
+ * @description Centralized TypeScript type and interface definitions.
+ * Provides a common schema for players, items, entities, and game state across the client.
+ * @importance Essential: Ensures type safety and consistent data structures throughout the frontend codebase.
+ */
 export interface Stats {
   strength: number;
   dexterity: number;

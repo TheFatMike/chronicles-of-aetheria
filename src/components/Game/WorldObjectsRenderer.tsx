@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/WorldObjectsRenderer.tsx
+ * @description Efficiently renders large numbers of static world objects.
+ * Utilizes spatial partitioning and filtering to only render objects within the player's vicinity.
+ * @importance Essential: Crucial for maintaining high frame rates in complex environments with many objects.
+ */
 import { memo, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useGameStore } from "../../store/useGameStore";

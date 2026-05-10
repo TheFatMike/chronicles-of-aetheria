@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/NavigationMenu.tsx
+ * @description The main navigation bar for accessing in-game systems.
+ * Provides quick links to Inventory, Character Info, Skills, Quests, and the Map.
+ * @importance Essential: The primary interface for navigating between the game's various feature windows.
+ */
 import React from "react";
 import { motion } from "motion/react";
 import { Briefcase, User, Scroll, Shield, Map as MapIcon, Settings } from "lucide-react";

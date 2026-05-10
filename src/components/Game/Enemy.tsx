@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Enemy.tsx
+ * @description Specialized components for rendering various enemy types.
+ * Manages unique meshes, animations, and visual effects for different mobs.
+ * @importance Essential: Populates the world with visual variety and distinct threats for the player to face.
+ */
 import { memo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

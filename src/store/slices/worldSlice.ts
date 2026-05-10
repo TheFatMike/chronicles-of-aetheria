@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/worldSlice.ts
+ * @description State management for static and global world elements.
+ * Tracks world object placements, entity spawners, and terrain height data.
+ * @importance Essential: The primary data source for the environment and static entities in the game world.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, WorldSlice } from '../types';
 import { Spawner, WorldObject } from '../../types';

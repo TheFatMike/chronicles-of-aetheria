@@ -1,3 +1,9 @@
+/**
+ * @file server/logger.ts
+ * @description Provides a structured logging utility for the server.
+ * Integrates with the debug configuration to allow filtered logging of info, warnings, and errors.
+ * @importance Essential: Vital for debugging, monitoring server health, and tracking game events.
+ */
 import { DEBUG_CONFIG, isDebugEnabled, DebugCategory } from "../src/debug.config";
 
 export const logBuffer: string[] = [];

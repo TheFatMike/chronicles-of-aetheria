@@ -1,3 +1,9 @@
+/**
+ * @file src/store/useGameStore.ts
+ * @description The primary Zustand store for the game client.
+ * Orchestrates multiple state slices into a single source of truth for the entire application.
+ * @importance Critical: The central hub for all client-side game state and data management.
+ */
 import { create } from 'zustand';
 import { GameState } from './types';
 import { createPlayerSlice } from './slices/playerSlice';

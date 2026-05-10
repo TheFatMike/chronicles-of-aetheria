@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/TargetFrame.tsx
+ * @description Displays information about the player's currently selected target.
+ * Shows health, name, and level of the targeted entity.
+ * @importance Essential: Vital for combat awareness, allowing players to monitor their opponent's status.
+ */
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect } from "react";
 import { useGameStore } from "../../store/useGameStore";

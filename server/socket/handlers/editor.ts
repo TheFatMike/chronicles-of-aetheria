@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/editor.ts
+ * @description Handlers for the in-game world editor.
+ * Manages object placement, environmental changes, and spawner configuration.
+ * @importance Essential: Empowers creators to build and modify the game world dynamically.
+ */
 import { Socket, Server } from "socket.io";
 import { players, worldObjects, spawners, entities } from "../../state";
 import { db } from "../../db";

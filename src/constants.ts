@@ -1,3 +1,9 @@
+/**
+ * @file src/constants.ts
+ * @description Holds static game data and configuration constants.
+ * Includes character classes, base stats, and world-wide configuration values.
+ * @importance Essential: Acts as a single source of truth for fixed game data and environmental settings.
+ */
 import { InventoryItem } from "./types";
 
 export const CHARACTER_CLASSES = [

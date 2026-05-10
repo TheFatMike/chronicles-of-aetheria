@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/character.ts
+ * @description Socket handlers for player character management.
+ * Facilitates character creation, selection, and retrieval from the database.
+ * @importance Essential: Required for players to enter the game world with their chosen identity and stats.
+ */
 import { Socket } from "socket.io";
 import admin from "firebase-admin";
 import { db } from "../../db";

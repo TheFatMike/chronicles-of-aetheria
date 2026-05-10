@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/QuestLog.tsx
+ * @description A dedicated window for viewing and tracking the player's quest progress.
+ * Displays active objectives, completed tasks, and quest descriptions.
+ * @importance Essential: Key for player progression and providing a clear sense of direction and purpose.
+ */
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../../store/useGameStore';

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/MenuManager.tsx
+ * @description Coordinates the visibility and layering of major UI windows.
+ * Ensures that only one primary menu is active at a time or manages their concurrent display.
+ * @importance Essential: Simplifies window management and prevents UI clutter by centralizing the menu state.
+ */
 import { AnimatePresence } from "motion/react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -141,7 +147,7 @@ export const MenuManager = ({
               label: "Cancel",
               icon: <X size={14} />,
               onClick: () => {},
-              color: "text-red-400"
+              variant: "danger"
             }
           ]}
           onClose={() => setContextMenu(null)}

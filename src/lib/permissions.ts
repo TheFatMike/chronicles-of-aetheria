@@ -1,4 +1,10 @@
 /**
+ * @file src/lib/permissions.ts
+ * @description Centralizes the definition of administrative roles and access levels.
+ * Maps user identities (emails) to specific roles like 'admin' or 'developer'.
+ * @importance Essential: Controls access to sensitive features like the world editor and debug tools.
+ */
+/**
  * Permission System
  * 
  * Centralized mapping of email addresses to administrative roles.

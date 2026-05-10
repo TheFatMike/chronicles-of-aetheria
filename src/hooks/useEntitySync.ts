@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useEntitySync.ts
+ * @description Synchronizes the positions and states of non-player entities in the 3D scene.
+ * Implements interpolation to ensure smooth movement and visual consistency across network updates.
+ * @importance Essential: Crucial for a smooth visual experience, preventing entities from "teleporting" during updates.
+ */
 import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

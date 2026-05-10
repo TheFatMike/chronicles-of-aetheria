@@ -1,3 +1,9 @@
+/**
+ * @file src/data/skills.ts
+ * @description Static data for all character skills and abilities.
+ * Includes damage formulas, mana costs, cooldowns, and visual effect references.
+ * @importance Essential: Acts as the definitive source for all active and passive player abilities.
+ */
 import { Skill } from "../types";
 
 export const ALL_SKILLS: Skill[] = [

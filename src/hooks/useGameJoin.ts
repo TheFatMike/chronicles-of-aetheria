@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useGameJoin.ts
+ * @description Manages the logic for a player joining the game world.
+ * Handles character-to-world transitions, initial state requests, and loading status updates.
+ * @importance Essential: Orchestrates the critical transition from the menu into the active gameplay state.
+ */
 import { useEffect, useRef } from "react";
 import { User } from "firebase/auth";
 import { Character } from "../types";

@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/uiSlice.ts
+ * @description State management for general user interface elements.
+ * Tracks chat history, active menu windows, and system notifications.
+ * @importance Essential: Coordinates the visibility and state of non-gameplay UI components.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, UISlice } from '../types';
 

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/Chat.tsx
+ * @description The user interface for the in-game chat system.
+ * Handles message display, input, and channel switching (Global, Party, etc.).
+ * @importance Essential: Vital for social interaction and providing real-time feedback to the player.
+ */
 import React, { useState, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, MessageSquare, X } from "lucide-react";

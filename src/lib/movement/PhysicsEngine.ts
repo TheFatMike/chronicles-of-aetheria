@@ -1,3 +1,9 @@
+/**
+ * @file src/lib/movement/PhysicsEngine.ts
+ * @description The core engine for calculating entity movement and physics on the client.
+ * Handles velocity updates, friction, gravity, and terrain snapping for smooth motion.
+ * @importance Critical: Directly responsible for the responsiveness and "feel" of character movement in the world.
+ */
 import * as THREE from "three";
 import { MovementConfig } from "./types";
 import { getInterpolatedHeight } from "../terrainUtils";

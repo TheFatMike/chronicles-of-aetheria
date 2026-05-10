@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useSocket.ts
+ * @description Manages the Socket.io connection lifecycle for the client.
+ * Provides a unified interface for emitting events and handling real-time server responses.
+ * @importance Critical: The primary communication channel between the client and the backend server.
+ */
 import { useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import customParser from "socket.io-msgpack-parser";

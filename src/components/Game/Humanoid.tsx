@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/Humanoid.tsx
+ * @description The base mesh and animation component for all humanoid entities.
+ * Handles the visual representation of players and NPCs, including skeletal animations.
+ * @importance Essential: Provides a consistent visual framework for all character-based entities in the game.
+ */
 import { useRef, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

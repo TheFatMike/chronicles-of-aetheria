@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/movement.ts
+ * @description Processes and validates player movement updates.
+ * Handles synchronization of player positions and ensures collision rules are respected.
+ * @importance Critical: Essential for a smooth multiplayer experience and maintaining a consistent world state.
+ */
 import { Socket, Server } from "socket.io";
 import { players, terrainData } from "../../state";
 import { serverLogger } from "../../logger";

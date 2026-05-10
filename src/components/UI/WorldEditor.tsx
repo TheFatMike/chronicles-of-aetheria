@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/WorldEditor.tsx
+ * @description The master interface for the in-game world building tools.
+ * Orchestrates the palette, inspector, outliner, and specialized tools like terrain sculpting.
+ * @importance Essential: Empowers developers and creators to build and refine the game world in real-time.
+ */
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';

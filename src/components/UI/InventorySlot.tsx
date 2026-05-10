@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/InventorySlot.tsx
+ * @description Renders an individual slot within an inventory grid or hotbar.
+ * Handles drag-and-drop interactions, tooltips, and visual feedback for items.
+ * @importance Essential: The building block for all item-based interfaces in the game.
+ */
 import React from "react";
 import * as Icons from "lucide-react";
 import { InventoryItem, ItemRarity } from "../../types";

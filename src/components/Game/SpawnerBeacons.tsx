@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/SpawnerBeacons.tsx
+ * @description Renders visual markers for entity spawners in the world.
+ * These beacons are typically only visible when the editor is active or in debug mode.
+ * @importance Essential: Vital for world builders to visualize and manage entity spawn points.
+ */
 import { memo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

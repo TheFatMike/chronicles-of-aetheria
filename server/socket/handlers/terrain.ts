@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/terrain.ts
+ * @description Handlers for real-time terrain modification and synchronization.
+ * Facilitates sculpting and painting actions, ensuring all players see the updated world.
+ * @importance Essential: Key for the sandbox and world-building elements of the game.
+ */
 import { Server, Socket } from "socket.io";
 import { terrainData, players } from "../../state";
 import { db } from "../../db";

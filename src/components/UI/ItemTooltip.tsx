@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/ItemTooltip.tsx
+ * @description Provides a detailed information overlay for game items.
+ * Shows item names, stats, rarity, and descriptions when hovering over inventory slots.
+ * @importance Essential: Key for player decision-making, allowing them to compare and understand their items.
+ */
 import { motion } from "motion/react";
 import { Info } from "lucide-react";
 import { InventoryItem, ItemRarity } from "../../types";

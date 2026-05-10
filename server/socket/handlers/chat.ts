@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/chat.ts
+ * @description Manages communication between players via socket-based chat.
+ * Supports global, localized, and party-specific messaging as well as chat commands.
+ * @importance Essential: The primary tool for social interaction and community building within the game.
+ */
 import { Socket, Server } from "socket.io";
 import { players, lastChatMessage } from "../../state";
 import { handlePartyInvite, handlePartyLeave } from "./party";

@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/utils.ts
+ * @description Utility functions for managing world object data and templates.
+ * Provides helper methods for ID generation and property retrieval.
+ * @importance Essential: Simplifies the manipulation and management of complex world object data.
+ */
 import { WorldObject, WorldObjectType } from "../../types";
 import { OBJECT_TEMPLATES } from "./templates";
 

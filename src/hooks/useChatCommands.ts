@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useChatCommands.ts
+ * @description Implements the logic for processing and executing chat-based commands.
+ * Handles administrative and debugging shortcuts directly from the chat interface.
+ * @importance Essential: Provides a powerful and flexible way for developers and admins to interact with the game state.
+ */
 import { useCallback } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { doc, updateDoc, setDoc } from "firebase/firestore";

@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/playerSlice.ts
+ * @description State management for the local player's character.
+ * Tracks health, mana, experience, level, position, and inventory data.
+ * @importance Critical: The core state store for everything relating to the user's active character.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, PlayerSlice, PlayerState } from '../types';
 

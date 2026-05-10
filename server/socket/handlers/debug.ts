@@ -1,3 +1,9 @@
+/**
+ * @file server/socket/handlers/debug.ts
+ * @description Provides administrative socket handlers for debugging and testing.
+ * Allows for real-time monitoring and manipulation of server state by authorized clients.
+ * @importance Essential: Crucial for development and troubleshooting in a live or testing environment.
+ */
 import { Server, Socket } from "socket.io";
 import { DEBUG_CONFIG, DebugCategory } from "../../../src/debug.config";
 import { serverLogger } from "../../logger";

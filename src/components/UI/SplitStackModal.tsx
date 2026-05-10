@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/SplitStackModal.tsx
+ * @description A utility modal for dividing stacks of items in the inventory.
+ * Provides a simple slider or input to choose the amount to split.
+ * @importance Essential: Key for inventory management and preparing items for trade or use.
+ */
 import { motion } from "motion/react";
 import { InventoryItem } from "../../types";
 

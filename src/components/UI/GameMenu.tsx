@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/GameMenu.tsx
+ * @description The escape/pause menu for the game.
+ * Provides access to settings, character selection, logout, and world editing tools.
+ * @importance Essential: The main hub for meta-actions and navigating out of the active gameplay state.
+ */
 import { motion } from "motion/react";
 import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";

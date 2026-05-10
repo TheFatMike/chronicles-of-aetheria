@@ -1,3 +1,9 @@
+/**
+ * @file server/systems/ai.ts
+ * @description Manages the artificial intelligence logic for all non-player entities.
+ * Handles patrolling, aggro states, pathfinding, and combat decision-making.
+ * @importance Essential: Drives the behavior of enemies and NPCs, making the game world feel alive and challenging.
+ */
 import { entities, worldObjects, dirtyEntities } from "../state";
 import { checkWorldCollision, updateInGrid, entityGrid, objectGrid } from "./spatial";
 

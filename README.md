@@ -1,6 +1,6 @@
 # Chronicles of Aetheria 🌌
 
-Welcome to **Chronicles of Aetheria**, my personal ARPG sandbox built with React, Three.js, and a Node.js backend.  This game lets you explore a handcrafted world, collect loot, complete quests, trade with other heroes, and fully customize your character.
+Welcome to **Chronicles of Aetheria**, my personal MMORPG sandbox built with React, Three.js, and a Node.js backend.  This game lets you explore a handcrafted world, collect loot, complete quests, trade with other heroes, and fully customize your character.
 
 ## Quick Start
 

@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/World.tsx
+ * @description Orchestrates the 3D environment and global scene elements.
+ * Manages lighting, skybox, stars, and the collection of players and objects within the scene.
+ * @importance Critical: The container component that brings together all elements of the 3D game world.
+ */
 import { memo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThree, useFrame } from "@react-three/fiber";

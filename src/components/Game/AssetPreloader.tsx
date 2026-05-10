@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/AssetPreloader.tsx
+ * @description Manages the asynchronous loading of 3D models and textures.
+ * Ensures all necessary assets are available in memory before they are needed in the scene.
+ * @importance Essential: Prevents visual glitches and stuttering by pre-caching large assets.
+ */
 import { useEffect } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { logger } from "../../lib/logger";

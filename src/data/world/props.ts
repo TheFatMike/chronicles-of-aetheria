@@ -1,3 +1,9 @@
+/**
+ * @file src/data/world/props.ts
+ * @description Static placements for small environmental props and interactive objects.
+ * Includes campfires, dummies, and other decorative world details.
+ * @importance Essential: Adds visual density and points of interest to the game environment.
+ */
 import { WorldObject } from "../../types";
 
 export const PROP_OBJECTS: WorldObject[] = [

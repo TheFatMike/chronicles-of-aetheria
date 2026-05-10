@@ -1,3 +1,9 @@
+/**
+ * @file src/components/Game/SelectionCircle.tsx
+ * @description Renders a visual ring on the ground beneath a selected or targeted entity.
+ * Provides clear visual feedback on the currently active target.
+ * @importance Essential: Key for target identification and clarity during combat and interaction.
+ */
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";

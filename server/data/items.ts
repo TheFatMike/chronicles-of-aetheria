@@ -1,3 +1,9 @@
+/**
+ * @file server/data/items.ts
+ * @description Authoritative definitions for all game items.
+ * Includes stats, requirements, and metadata for weapons, armor, and consumables.
+ * @importance Essential: The primary source of truth for item data used by the server's inventory and combat systems.
+ */
 import { InventoryItem, ItemType, ItemRarity } from "../../src/types";
 
 export interface ItemTemplate {

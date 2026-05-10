@@ -1,3 +1,9 @@
+/**
+ * @file src/store/slices/entitySlice.ts
+ * @description Manages the collection of all dynamic entities in the game world.
+ * Tracks positions, health, and metadata for NPCs, enemies, and other players.
+ * @importance Critical: The authoritative source for all non-player character state on the client.
+ */
 import { StateCreator } from 'zustand';
 import { GameState, EntitySlice } from '../types';
 import { GameEntity } from '../../types';

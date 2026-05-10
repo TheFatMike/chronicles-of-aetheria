@@ -1,3 +1,9 @@
+/**
+ * @file src/components/UI/CharacterInfo.tsx
+ * @description A detailed modal displaying comprehensive character information.
+ * Shows primary and secondary stats, calculated combat values, and equipment details.
+ * @importance Essential: Allows players to understand their character's power level and the impact of their gear.
+ */
 import React, { memo, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Shield, Sword, Gem, Shirt, Footprints, Info, Activity, Zap, HardDrive, Target, Heart, Sparkles, Wind, Crosshair, Swords } from "lucide-react";

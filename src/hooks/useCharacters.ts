@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useCharacters.ts
+ * @description Provides functionality for managing player characters.
+ * Handles fetching character lists, creating new characters, and deleting existing ones from Firestore.
+ * @importance Essential: The primary interface for all character-related database operations on the client.
+ */
 import { useState, useCallback, useEffect } from "react";
 import { collection, query, orderBy, getDocs, doc, getDoc, setDoc, runTransaction, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";

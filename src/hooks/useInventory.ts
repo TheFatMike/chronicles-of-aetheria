@@ -1,3 +1,9 @@
+/**
+ * @file src/hooks/useInventory.ts
+ * @description Manages player inventory and equipment logic on the client.
+ * Handles item movement, equipment slots, and hotbar updates, coordinating with the server.
+ * @importance Essential: Provides the business logic for managing player resources and character customization.
+ */
 import { useCallback } from "react";
 import { Socket } from "socket.io-client";
 import { Character, InventoryItem, EquipmentSlots, HotbarSlot } from "../types";
