@@ -56,6 +56,9 @@ export const handleMove = (socket: Socket, data: any, io: Server) => {
   // 1. Update Spatial Grid
   updateInGrid(entityGrid, socket.id, oldPos, finalPos);
 
+  // 3. Update Redis Cache (Asynchronous)
+  import("../../redis").then(m => m.updatePlayerPositionRedis(socket.id, finalPos));
+
   // 2. Targeted Broadcast (AoI)
   const nearbyKeys = getNearbyGridKeys(finalPos, 100);
   const payload = { id: socket.id, ...data, pos: finalPos };

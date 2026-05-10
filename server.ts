@@ -1,9 +1,13 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import customParser from "socket.io-msgpack-parser";
 import admin from "firebase-admin";
 import { initDb } from "./server/db";
+import { redis } from "./server/redis";
 import { serverLogger, logBuffer } from "./server/logger";
 import { startHeartbeat, initializeSpawners, initializeWorld } from "./server/systems/gameEngine";
 import { registerHandlers } from "./server/socket/handlers";
@@ -105,6 +109,16 @@ async function bootstrap() {
   await initializeWorld();
   await initializeSpawners();
   startHeartbeat(io);
+
+  // 7. MMO Global Services (Redis Pub/Sub)
+  const { redisSub } = await import("./server/redis");
+  redisSub.subscribe("chat:global");
+  redisSub.on("message", (channel, message) => {
+    if (channel === "chat:global") {
+      const data = JSON.parse(message);
+      io.emit("chat_message", data);
+    }
+  });
 
   // 6. Graceful Shutdown
   const shutdown = async (signal: string) => {

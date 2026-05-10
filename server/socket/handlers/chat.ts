@@ -55,12 +55,16 @@ export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
     }
   }
 
-  io.emit("chat_message", { 
+  const payload = { 
     id: Math.random().toString(), 
     sender: player.characterName, 
     text, 
     timestamp: now,
     color: player.color,
     role: player.role || "player"
-  });
+  };
+
+  // Instead of broadcasting to just this server, we publish to Redis
+  // Our server (and all other instances) is listening to this channel and will broadcast it to local players
+  import("../../redis").then(m => m.redis.publish("chat:global", JSON.stringify(payload)));
 };
