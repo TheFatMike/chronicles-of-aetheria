@@ -28,6 +28,49 @@ export const useGameJoin = ({
   const lastJoinedRef = useRef<{ charId: string; socketId: string } | null>(null);
 
   useEffect(() => {
+    if (!setIsJoining || !selectedCharacter) return;
+    
+    // Check if essential data is ready
+    const checkReady = () => {
+      const state = useGameStore.getState();
+      const hasObjects = Object.keys(state.worldObjects).length > 0;
+      const hasSpawners = Object.keys(state.spawners).length > 0;
+      const hasEntities = Object.keys(state.entities).length > 0;
+      
+      // If we are joining, we should at least wait for world objects and spawners sync
+      // Note: In an empty world, this might never trigger, so we still need a safety timeout
+      if (hasObjects && hasSpawners) {
+        return true;
+      }
+      return false;
+    };
+
+    if (useGameStore.getState().isWorldLoading) {
+      const interval = setInterval(() => {
+        if (checkReady()) {
+          setIsJoining(false);
+          useGameStore.getState().setWorldLoading(false);
+          logger.info("play", "World data verified. Weaving complete.");
+          clearInterval(interval);
+        }
+      }, 500);
+
+      // Safety timeout: 8 seconds
+      const timeout = setTimeout(() => {
+        setIsJoining(false);
+        useGameStore.getState().setWorldLoading(false);
+        logger.warn("play", "World loading timed out (Safety Trigger).");
+        clearInterval(interval);
+      }, 8000);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [selectedCharacter, setIsJoining]);
+
+  useEffect(() => {
     const socketId = socket?.id;
     if (!user || !selectedCharacter || !connected || !socketId) return;
 
@@ -54,10 +97,6 @@ export const useGameJoin = ({
       });
 
       requestWorldSync();
-      setTimeout(() => {
-        setIsJoining(false);
-        useGameStore.getState().setWorldLoading(false);
-      }, 1500);
     }
   }, [user, selectedCharacter, connected, socket?.id, sendJoin, requestWorldSync, setIsJoining]);
 };

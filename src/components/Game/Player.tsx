@@ -48,21 +48,7 @@ export const Player = memo(({ onMove, color, socket, initialPos, initialRot }: P
     }
   }, [teleportRequest, requestTeleport, updateCamera]);
 
-  // Network sync throttled
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!meshRef.current) return;
-      
-      onMove(
-        [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
-        [0, meshRef.current.rotation.y, 0],
-        isMoving.current,
-        isGrounded.current
-      );
-    }, 50);
 
-    return () => clearInterval(interval);
-  }, [onMove, isMoving, isGrounded]);
 
   return (
     <group ref={meshRef} raycast={() => null}>

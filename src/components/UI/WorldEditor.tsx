@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WorldObject } from '../../types';
-import { AnimatePresence } from 'motion/react';
-import { Save } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Save, Settings2, Activity } from 'lucide-react';
 import { EditorPalette } from './EditorPalette';
 import { EditorInspector } from './EditorInspector';
 import { EditorOutliner } from './EditorOutliner';
@@ -24,7 +24,13 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     gridSnap,
     setGridSnap,
     editorTransformMode,
-    setEditorTransformMode
+    setEditorTransformMode,
+    editorBrushSize,
+    setEditorBrushSize,
+    editorBrushStrength,
+    setEditorBrushStrength,
+    activeMenu,
+    setActiveMenu
   } = useGameStore(useShallow(s => ({
     devMode: s.devMode,
     worldObjects: s.worldObjects,
@@ -39,7 +45,13 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     gridSnap: s.gridSnap,
     setGridSnap: s.setGridSnap,
     editorTransformMode: s.editorTransformMode,
-    setEditorTransformMode: s.setEditorTransformMode
+    setEditorTransformMode: s.setEditorTransformMode,
+    editorBrushSize: s.editorBrushSize,
+    setEditorBrushSize: s.setEditorBrushSize,
+    editorBrushStrength: s.editorBrushStrength,
+    setEditorBrushStrength: s.setEditorBrushStrength,
+    activeMenu: s.activeMenu,
+    setActiveMenu: s.setActiveMenu
   })));
 
   const [activeCategory, setActiveCategory] = useState('nature');
@@ -116,18 +128,40 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
   if (!devMode || !hasAccess) return null;
 
   return (
-    <div className="fixed bottom-24 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
-      <button 
-        onClick={() => setEditorOpen(!isEditorOpen)}
-        className={`pointer-events-auto px-6 h-12 rounded-xl flex items-center gap-3 transition-all shadow-2xl border-2 font-black uppercase tracking-widest text-xs ${
-          isEditorOpen 
-            ? 'bg-amber-500 border-amber-400 text-white' 
-            : 'bg-slate-900/90 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'
-        }`}
-      >
-        <Save size={18} />
-        {isEditorOpen ? 'CLOSE SCULPTOR' : 'WORLD SCULPTOR'}
-      </button>
+    <div className="fixed bottom-24 right-8 z-50 flex flex-col items-end gap-5 pointer-events-none">
+      <div className="flex items-center gap-3">
+        {isEditorOpen && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveMenu(activeMenu === 'spawners' ? null : 'spawners')}
+            className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
+              activeMenu === 'spawners'
+                ? 'bg-red-500 text-white shadow-red-500/20'
+                : 'bg-slate-900/80 text-slate-300 hover:text-white'
+            }`}
+          >
+            <Activity size={16} />
+            {activeMenu === 'spawners' ? 'Hide Spawners' : 'Manage Spawners'}
+          </motion.button>
+        )}
+
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setEditorOpen(!isEditorOpen)}
+          className={`pointer-events-auto px-8 h-14 rounded-2xl flex items-center gap-4 transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl font-black uppercase tracking-[0.2em] text-[10px] ring-1 ring-white/5 ${
+            isEditorOpen 
+              ? 'bg-amber-500 text-white shadow-amber-500/20' 
+              : 'bg-slate-950/90 text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <div className={`transition-transform duration-500 ${isEditorOpen ? 'rotate-180' : ''}`}>
+            <Settings2 size={18} strokeWidth={2.5} />
+          </div>
+          {isEditorOpen ? 'Exit Studio' : 'Launch Studio'}
+        </motion.button>
+      </div>
 
       <AnimatePresence>
         {isEditorOpen && (
@@ -145,6 +179,10 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
               setActivePathId={setActivePathId}
               nextWaypointOrder={nextWaypointOrder}
               setNextWaypointOrder={setNextWaypointOrder}
+              editorBrushSize={editorBrushSize}
+              setEditorBrushSize={setEditorBrushSize}
+              editorBrushStrength={editorBrushStrength}
+              setEditorBrushStrength={setEditorBrushStrength}
             />
 
             <EditorOutliner socket={socket} />

@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'motion/react';
-import { Save, Target, X, Copy, Trash2, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Save, Target, X, Copy, Trash2, MapPin, Box, Layers, Settings, ChevronRight, Activity } from 'lucide-react';
 
 export const EditorInspector = ({
   selectedObject,
@@ -11,190 +11,292 @@ export const EditorInspector = ({
 }: any) => {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 50 }}
-      className="pointer-events-auto fixed right-6 top-1/2 -translate-y-1/2 w-80 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+      initial={{ opacity: 0, x: 50, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 50, scale: 0.95 }}
+      className="pointer-events-auto fixed right-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/98 border border-slate-800/60 rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/5"
     >
-      <div className="bg-slate-900/50 p-4 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-amber-500/20 rounded-lg">
-            <Save size={18} className="text-amber-500" />
+      {/* Header */}
+      <div className="bg-linear-to-b from-slate-900/80 to-transparent p-5 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Box size={16} className="text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-white font-black text-[11px] uppercase tracking-[0.2em]">Inspector</h3>
+              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-wider">Properties & Logic</p>
+            </div>
           </div>
-          <h3 className="text-white font-bold text-xs uppercase tracking-widest">Inspector</h3>
-        </div>
-        <div className="flex gap-2">
-          {selectedObject && (
-            <button 
-              onClick={() => {
-                const event = new KeyboardEvent('keydown', { code: 'KeyF' });
-                window.dispatchEvent(event);
-              }}
-              className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg transition-all"
-              title="Focus Camera (F)"
-            >
-              <Target size={14} />
-            </button>
-          )}
-          {selectedObject && (
-            <button 
-              onClick={() => setSelectedWorldObjectId(null)}
-              className="p-1.5 text-slate-500 hover:text-white transition-colors"
-              title="Deselect"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-        {!selectedObject ? (
-          <div className="h-40 flex flex-col items-center justify-center text-slate-600 text-center space-y-2">
-            <div className="p-4 bg-slate-900/50 rounded-full border border-slate-800/50">
-              <Save size={24} className="opacity-20" />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-tighter">No Object Selected</p>
-            <p className="text-[9px] lowercase italic">Select an object in the world to edit its properties.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-500 uppercase font-black">Entity Type</span>
-              <span className="text-[10px] text-amber-500 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{selectedObject.type}</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={duplicateSelected} className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-[9px] font-black border border-slate-700 transition-all uppercase"><Copy size={12} /> Duplicate</button>
-              <button onClick={() => socket?.emit("remove_world_object", { id: selectedObject.id })} className="flex items-center justify-center gap-2 bg-red-950/20 hover:bg-red-950/40 text-red-400 py-2 rounded-lg text-[9px] font-black border border-red-900/20 transition-all uppercase"><Trash2 size={12} /> Remove</button>
-            </div>
-
-            {/* Transform */}
-            <div className="space-y-4 pt-3 border-t border-slate-800">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Transform</h4>
-                <button 
-                  onClick={() => updateSelected({ pos: [selectedObject.pos[0], 0, selectedObject.pos[2]] })}
-                  className="text-[8px] text-amber-500 hover:text-amber-400 font-black uppercase transition-colors"
-                >
-                  Snap to Ground
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2">
-                {['X', 'Y', 'Z'].map((axis, i) => (
-                  <div key={axis} className="space-y-1">
-                    <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Pos {axis}</label>
-                    <input 
-                      type="number" step="0.1"
-                      value={Number(selectedObject.pos[i].toFixed(2))}
-                      onChange={(e) => {
-                        const newPos = [...selectedObject.pos];
-                        newPos[i] = parseFloat(e.target.value) || 0;
-                        updateSelected({ pos: newPos as [number, number, number] });
-                      }}
-                      className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Rotation (Y)</label>
-                  <input 
-                    type="number" step="0.1"
-                    value={Number(selectedObject.rot[1].toFixed(2))}
-                    onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
-                    className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[7px] text-slate-500 font-bold uppercase block px-1">Scale</label>
-                  <input 
-                    type="number" step="0.1"
-                    value={Number(selectedObject.scale.toFixed(2))}
-                    onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
-                    className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* GLB Model Support */}
-              <div className="space-y-1 pt-2">
-                <label className="text-[7px] text-amber-500/80 font-black uppercase px-1 flex items-center gap-1">
-                  <Save size={8} /> Custom GLB Model (Optional)
-                </label>
-                <input 
-                  type="text"
-                  placeholder="/assets/models/tent.glb"
-                  value={selectedObject.modelUrl || ''}
-                  onChange={(e) => updateSelected({ modelUrl: e.target.value })}
-                  className="w-full bg-slate-900 text-white text-[9px] p-2 rounded border border-slate-800 outline-none focus:border-amber-500/50"
-                />
-                <p className="text-[7px] text-slate-600 italic px-1 leading-tight">
-                  Leave empty for default procedural model. Place GLB files in /public/assets/models/
-                </p>
-              </div>
-            </div>
-
-            {/* PATHING SYSTEM */}
-            {(selectedObject.type === 'waypoint' || selectedObject.type.startsWith('spawner_')) && (
-              <div className="space-y-3 pt-3 border-t border-slate-800">
-                <h4 className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <MapPin size={10} /> Pathing & Waypoints
-                </h4>
-                
-                <div className="space-y-1">
-                  <label className="text-[8px] text-slate-500 uppercase font-black px-1">Path ID (Category)</label>
-                  <input 
-                    type="text"
-                    placeholder="e.g. guard_patrol_1"
-                    value={selectedObject.pathId || ''}
-                    onChange={(e) => updateSelected({ pathId: e.target.value })}
-                    className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-emerald-500/50"
-                  />
-                </div>
-
-                {selectedObject.type === 'waypoint' && (
-                  <>
-                    <div className="space-y-1">
-                      <label className="text-[8px] text-slate-500 uppercase font-black px-1">Waypoint ID (Order)</label>
-                      <input 
-                        type="number"
-                        value={selectedObject.waypointId || ''}
-                        onChange={(e) => updateSelected({ waypointId: e.target.value })}
-                        className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-emerald-500/50"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[8px] text-slate-500 uppercase font-black px-1">Next Waypoint (Order)</label>
-                      <input 
-                        type="number"
-                        value={selectedObject.nextWaypointId || ''}
-                        onChange={(e) => updateSelected({ nextWaypointId: e.target.value })}
-                        className="w-full bg-slate-900 text-white text-[10px] p-2 rounded border border-slate-800 outline-none focus:border-emerald-500/50"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <p className="text-[8px] text-slate-600 italic leading-tight px-1">
-                  {selectedObject.type === 'waypoint' 
-                    ? "Waypoints with the same Path ID will be followed in order of their Waypoint ID."
-                    : "This spawner will assign its entities to follow the specified Path ID."}
-                </p>
-              </div>
+          <div className="flex gap-2">
+            {selectedObject && (
+              <button 
+                onClick={() => setSelectedWorldObjectId(null)}
+                className="p-2 text-slate-500 hover:text-white bg-slate-900/50 rounded-xl ring-1 ring-white/5 transition-all"
+                title="Deselect"
+              >
+                <X size={16} />
+              </button>
             )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+      <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+        <AnimatePresence mode="wait">
+          {!selectedObject ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="h-60 flex flex-col items-center justify-center text-slate-600 text-center space-y-4"
+            >
+              <div className="w-16 h-16 bg-slate-900/50 rounded-3xl border border-slate-800/50 flex items-center justify-center shadow-inner">
+                <Layers size={32} className="opacity-20" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Idle Inspector</p>
+                <p className="text-[9px] text-slate-700 font-bold uppercase tracking-wider italic">Select an object to inspect</p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Type Badge */}
+              <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
+                <div className="flex flex-col">
+                  <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">Asset ID</span>
+                  <span className="text-[10px] text-white font-mono truncate max-w-[120px]">{selectedObject.id.slice(0, 8)}...</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">Category</span>
+                  <span className="text-[10px] text-amber-500 font-black uppercase tracking-wider">{selectedObject.type}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={duplicateSelected} className="flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-white/5 text-white py-3 rounded-xl text-[9px] font-black border border-white/5 transition-all uppercase tracking-widest group">
+                  <Copy size={12} className="group-hover:text-blue-400" /> Duplicate
+                </button>
+                <button onClick={() => socket?.emit("remove_world_object", { id: selectedObject.id })} className="flex items-center justify-center gap-2 bg-rose-500/5 hover:bg-rose-500/20 text-rose-500 py-3 rounded-xl text-[9px] font-black border border-rose-500/20 transition-all uppercase tracking-widest">
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
+
+              {/* Transform Section */}
+              <div className="space-y-5 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Settings size={12} className="text-slate-500" />
+                    <h4 className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Transform</h4>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        const event = new KeyboardEvent('keydown', { code: 'KeyF' });
+                        window.dispatchEvent(event);
+                      }}
+                      className="text-[8px] text-blue-400 hover:text-blue-300 font-black uppercase flex items-center gap-1"
+                    >
+                      <Target size={10} /> Focus
+                    </button>
+                    <button 
+                      onClick={() => updateSelected({ pos: [selectedObject.pos[0], 0, selectedObject.pos[2]] })}
+                      className="text-[8px] text-emerald-400 hover:text-emerald-300 font-black uppercase"
+                    >
+                      Ground
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Position Inputs */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { axis: 'X', color: 'bg-rose-500' },
+                    { axis: 'Y', color: 'bg-emerald-500' },
+                    { axis: 'Z', color: 'bg-blue-500' }
+                  ].map((config, i) => (
+                    <div key={config.axis} className="space-y-2">
+                      <div className="flex items-center gap-1.5 px-1">
+                        <div className={`w-1 h-1 rounded-full ${config.color}`} />
+                        <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Pos {config.axis}</label>
+                      </div>
+                      <input 
+                        type="number" step="0.1"
+                        value={Number(selectedObject.pos[i].toFixed(2))}
+                        onChange={(e) => {
+                          const newPos = [...selectedObject.pos];
+                          newPos[i] = parseFloat(e.target.value) || 0;
+                          updateSelected({ pos: newPos as [number, number, number] });
+                        }}
+                        className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono transition-all"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest block px-1">Rotation (Y)</label>
+                    <input 
+                      type="number" step="0.1"
+                      value={Number(selectedObject.rot[1].toFixed(2))}
+                      onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
+                      className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest block px-1">Global Scale</label>
+                    <input 
+                      type="number" step="0.1"
+                      value={Number(selectedObject.scale.toFixed(2))}
+                      onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
+                      className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Model Configuration */}
+                <div className="space-y-2 pt-2">
+                  <label className="text-[7px] text-amber-500/80 font-black uppercase px-1 flex items-center gap-2">
+                    <Layers size={10} /> External GLB URL
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="/assets/models/..."
+                      value={selectedObject.modelUrl || ''}
+                      onChange={(e) => updateSelected({ modelUrl: e.target.value })}
+                      className="w-full bg-slate-900/50 text-white text-[9px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-amber-500/50 pr-8"
+                    />
+                    <ChevronRight size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Logic Section (Waypoints/Spawners) */}
+              {(selectedObject.type === 'waypoint' || selectedObject.type.startsWith('spawner_')) && (
+                <div className="space-y-4 pt-5 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={12} className="text-emerald-500" />
+                    <h4 className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Logic & Pathing</h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Network Path ID</label>
+                      <input 
+                        type="text"
+                        placeholder="e.g. city_patrol"
+                        value={selectedObject.pathId || ''}
+                        onChange={(e) => updateSelected({ pathId: e.target.value })}
+                        className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-emerald-500/50"
+                      />
+                    </div>
+
+                    {selectedObject.type === 'waypoint' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Order #</label>
+                          <input 
+                            type="number"
+                            value={selectedObject.waypointId || ''}
+                            onChange={(e) => updateSelected({ waypointId: e.target.value })}
+                            className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-emerald-500/50 font-mono"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Next #</label>
+                          <input 
+                            type="number"
+                            value={selectedObject.nextWaypointId || ''}
+                            onChange={(e) => updateSelected({ nextWaypointId: e.target.value })}
+                            className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-emerald-500/50 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedObject.type.startsWith('spawner_') && (
+                      <div className="space-y-3 pt-2 border-t border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Activity size={10} className="text-red-400" />
+                          <span className="text-[7px] text-red-400 uppercase font-black tracking-widest">Spawner Configuration</span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Entity Class</label>
+                          <input 
+                            type="text"
+                            placeholder="e.g. slime, wolf, guard"
+                            value={selectedObject.entityClass || ''}
+                            onChange={(e) => updateSelected({ entityClass: e.target.value })}
+                            className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-red-500/50"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Level</label>
+                            <input 
+                              type="number"
+                              value={selectedObject.level || 1}
+                              onChange={(e) => updateSelected({ level: parseInt(e.target.value) || 1 })}
+                              className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-red-500/50 font-mono"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Max Entities</label>
+                            <input 
+                              type="number"
+                              value={selectedObject.maxEntities || 3}
+                              onChange={(e) => updateSelected({ maxEntities: parseInt(e.target.value) || 1 })}
+                              className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-red-500/50 font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Radius (u)</label>
+                            <input 
+                              type="number"
+                              value={selectedObject.spawnRadius || 5}
+                              onChange={(e) => updateSelected({ spawnRadius: parseInt(e.target.value) || 1 })}
+                              className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-red-500/50 font-mono"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[7px] text-slate-500 uppercase font-black tracking-widest px-1">Respawn (s)</label>
+                            <input 
+                              type="number"
+                              value={selectedObject.respawnTime || 10}
+                              onChange={(e) => updateSelected({ respawnTime: parseInt(e.target.value) || 5 })}
+                              className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-red-500/50 font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Footer Info */}
+      <div className="bg-slate-900/50 p-4 border-t border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full animate-pulse ${socket?.connected ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{socket?.connected ? 'Live Sync' : 'Offline'}</span>
+          <div className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
+          <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em]">{socket?.connected ? 'Realtime Sync' : 'Offline Mode'}</span>
         </div>
+        <div className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">v1.2.0-STABLE</div>
       </div>
     </motion.div>
   );

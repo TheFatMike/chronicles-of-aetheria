@@ -1,423 +1,270 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { GAME_CONFIG } from "../config";
 import { useGameStore } from "../store/useGameStore";
 import { Socket } from "socket.io-client";
+import { isDebugEnabled } from "../debug.config";
+
+// Modular Imports
+import { InputHandler } from "../lib/movement/InputHandler";
+import { PhysicsEngine } from "../lib/movement/PhysicsEngine";
+import { CollisionSystem } from "../lib/movement/CollisionSystem";
+import { CameraManager } from "../lib/movement/CameraManager";
+import { CameraState } from "../lib/movement/types";
+import { logger } from "../lib/logger";
+
+const PHYSICS_STEP = 1/60;
+const UP_AXIS = new THREE.Vector3(0, 1, 0);
 
 export const usePlayerMovement = (
   meshRef: React.RefObject<THREE.Group | null>,
   socket: Socket | null,
   config = GAME_CONFIG.MOVEMENT
 ) => {
-  const { camera, gl } = useThree();
+  const { camera, scene } = useThree();
+  const store = useGameStore();
 
-  // Listen for Server Corrections (e.g. Collision Snapback)
-  useEffect(() => {
-    if (!socket) return;
-    const handleSync = (data: any) => {
-      if (meshRef.current && data.pos) {
-        meshRef.current.position.set(data.pos[0], data.pos[1], data.pos[2]);
-        velocity.current.set(0, 0, 0); // Stop movement immediately on "bonk"
-      }
-    };
-    socket.on("session_start", handleSync);
-    socket.on("move_sync", handleSync);
-    return () => {
-      socket.off("session_start", handleSync);
-      socket.off("move_sync", handleSync);
-    };
-  }, [socket, meshRef]);
-  const { 
-    MOVE_SPEED, 
-    FRICTION, 
-    GRAVITY, 
-    JUMP_FORCE, 
-    SENSITIVITY, 
-    MIN_RADIUS, 
-    MAX_RADIUS 
-  } = config;
-  
-  const keys = useRef<{ [key: string]: boolean }>({});
+  // 1. Initialize Modular Systems
+  const systems = useMemo(() => ({
+    input: new InputHandler(),
+    physics: new PhysicsEngine(),
+    collision: new CollisionSystem(),
+    camera: new CameraManager()
+  }), []);
+
+  // 2. Refs for high-performance state (Zero-GC)
   const velocity = useRef(new THREE.Vector3());
+  const physicsPosition = useRef(new THREE.Vector3());
+  const worldMoveVec = useRef(new THREE.Vector3());
   const isGrounded = useRef(true);
   const isMoving = useRef(false);
+  const accumulator = useRef(0);
+  const lastTime = useRef(performance.now());
+  const frameCount = useRef(0);
+  const allCollidablesRef = useRef<THREE.Object3D[]>([]);
+  const filteredCollidablesRef = useRef<THREE.Object3D[]>([]);
+  const playerMeshesRef = useRef<THREE.Object3D[]>([]);
   
-  const cameraState = useRef({
+  const cameraState = useRef<CameraState>({
     theta: 0,
     phi: Math.PI / 6,
     radius: 8,
     isLeftMouseDown: false,
     isRightMouseDown: false,
+    lastX: 0,
+    lastY: 0
   });
 
-  const inputDir = useRef(new THREE.Vector3());
-  const moveVec = useRef(new THREE.Vector3());
-  const targetCamPos = useRef(new THREE.Vector3());
+  // Public Interface helpers for Player.tsx
+  const updateCamera = useCallback((pos: [number, number, number]) => {
+    physicsPosition.current.set(...pos);
+    if (meshRef.current) meshRef.current.position.set(...pos);
+  }, [meshRef]);
 
-  // THROTTLED COLLIDABLES CACHE
-  const collidablesRef = useRef<THREE.Object3D[]>([]);
-  const lastCollidablesUpdate = useRef<number>(0);
+  const setRotation = useCallback((y: number) => {
+    if (meshRef.current) meshRef.current.rotation.y = y;
+  }, [meshRef]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
-      keys.current[e.code] = true;
-    };
-    const handleKeyUp = (e: KeyboardEvent) => (keys.current[e.code] = false);
-    
-    const handleMouseDown = (e: MouseEvent) => {
-      const state = useGameStore.getState();
-      if (state.isEditorOpen || state.isWorldLoading) return;
-      if (e.button === 0) cameraState.current.isLeftMouseDown = true;
-      if (e.button === 2) {
-        cameraState.current.isRightMouseDown = true;
-        // Don't lock pointer if we're over an entity or UI
-        const isHoveringEntity = document.body.classList.contains('npc-hover') || 
-                                 document.body.classList.contains('enemy-hover') || 
-                                 document.body.classList.contains('loot-hover') ||
-                                 document.body.classList.contains('player-hover');
-        
-        if (!isHoveringEntity) {
-          gl.domElement.requestPointerLock();
-        }
-      }
-    };
-    
-    const handleMouseUp = (e: MouseEvent) => {
-      if (useGameStore.getState().isEditorOpen) {
-        cameraState.current.isLeftMouseDown = false;
-        cameraState.current.isRightMouseDown = false;
-        return;
-      }
-      if (e.button === 0) cameraState.current.isLeftMouseDown = false;
-      if (e.button === 2) {
-        cameraState.current.isRightMouseDown = false;
-        if (document.pointerLockElement === gl.domElement) {
-          document.exitPointerLock();
-        }
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const state = useGameStore.getState();
-      if (state.isEditorOpen || state.isWorldLoading) return;
-      if (cameraState.current.isLeftMouseDown || cameraState.current.isRightMouseDown) {
-        cameraState.current.theta -= e.movementX * SENSITIVITY;
-        cameraState.current.phi = Math.max(
-          0.05,
-          Math.min(Math.PI / 2.1, cameraState.current.phi - e.movementY * SENSITIVITY)
-        );
-      }
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      cameraState.current.radius = Math.max(
-        MIN_RADIUS,
-        Math.min(MAX_RADIUS, cameraState.current.radius + e.deltaY * 0.01)
-      );
-    };
-
-    const preventDefault = (e: MouseEvent) => e.button === 2 && e.preventDefault();
-
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    gl.domElement.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("wheel", handleWheel);
-    gl.domElement.addEventListener("contextmenu", preventDefault);
-    
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      gl.domElement.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("wheel", handleWheel);
-      gl.domElement.removeEventListener("contextmenu", preventDefault);
-    };
-  }, [gl, SENSITIVITY, MIN_RADIUS, MAX_RADIUS]);
-
-  const playerMeshesRef = useRef<THREE.Object3D[]>([]);
-
+  // Sync player meshes for ignore list
   useEffect(() => {
     if (meshRef.current) {
       const meshes: THREE.Object3D[] = [];
-      meshRef.current.traverse(child => { if ((child as THREE.Mesh).isMesh) meshes.push(child); });
+      meshRef.current.traverse(obj => { if ((obj as any).isMesh) meshes.push(obj); });
       playerMeshesRef.current = meshes;
     }
   }, [meshRef]);
 
-  const updateCamera = (pos: [number, number, number] | THREE.Vector3) => {
-    const { theta, phi, radius } = cameraState.current;
-    const p = Array.isArray(pos) ? pos : [pos.x, pos.y, pos.z];
-    
-    camera.position.set(
-      p[0] + radius * Math.sin(phi) * Math.sin(theta),
-      p[1] + radius * Math.cos(phi) + 1.5,
-      p[2] + radius * Math.sin(phi) * Math.cos(theta)
-    );
-    camera.lookAt(p[0], p[1] + 1, p[2]);
-  };
+  // Sync Input Listeners
+  useEffect(() => {
+    systems.input.setup();
 
-  const setRotation = (y: number) => {
-    cameraState.current.theta = y;
-  };
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) cameraState.current.isLeftMouseDown = true;
+      if (e.button === 2) cameraState.current.isRightMouseDown = true;
+      cameraState.current.lastX = e.clientX;
+      cameraState.current.lastY = e.clientY;
+    };
 
-  useFrame((_state, delta) => {
-    if (!meshRef.current) return;
-    const isEditorOpen = useGameStore.getState().isEditorOpen;
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) cameraState.current.isLeftMouseDown = false;
+      if (e.button === 2) cameraState.current.isRightMouseDown = false;
+    };
 
-    const isTyping = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
-    const isWorldLoading = useGameStore.getState().isWorldLoading;
-    let forwardInput = 0;
-    let sideInput = 0;
+    const onMouseMove = (e: MouseEvent) => {
+      const { isLeftMouseDown, isRightMouseDown, lastX, lastY } = cameraState.current;
+      if (!isLeftMouseDown && !isRightMouseDown) return;
 
-    if (!isTyping && !isEditorOpen && !isWorldLoading) {
-      forwardInput = (keys.current["KeyS"] || keys.current["ArrowDown"] ? 1 : 0) - (keys.current["KeyW"] || keys.current["ArrowUp"] ? 1 : 0);
-      sideInput = (keys.current["KeyD"] ? 1 : 0) - (keys.current["KeyA"] ? 1 : 0);
+      const deltaX = e.clientX - lastX;
+      const deltaY = e.clientY - lastY;
       
-      // Arrow Turning Logic
-      const turnInput = (keys.current["ArrowLeft"] ? 1 : 0) - (keys.current["ArrowRight"] ? 1 : 0);
-      if (turnInput !== 0) {
-        cameraState.current.theta += turnInput * delta * 2.5; // Turn speed
+      const sensitivity = 0.005;
+      cameraState.current.theta -= deltaX * sensitivity;
+      cameraState.current.phi -= deltaY * sensitivity;
+
+      // Clamp Phi to prevent flipping (0 to PI)
+      const minPhi = 0.1;
+      const maxPhi = Math.PI - 0.1;
+      cameraState.current.phi = Math.max(minPhi, Math.min(maxPhi, cameraState.current.phi));
+
+      cameraState.current.lastX = e.clientX;
+      cameraState.current.lastY = e.clientY;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      const zoomSpeed = 0.005;
+      cameraState.current.radius += e.deltaY * zoomSpeed;
+      cameraState.current.radius = Math.max(2, Math.min(20, cameraState.current.radius));
+    };
+
+    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      systems.input.destroy();
+      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("wheel", onWheel);
+    };
+  }, [systems]);
+
+  // Full Collidables Scan (Throttled)
+  useEffect(() => {
+    const update = () => {
+      const all: THREE.Object3D[] = [];
+      scene.traverse(obj => { if (obj.userData?.isCollidable) all.push(obj); });
+      allCollidablesRef.current = all;
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [scene]);
+
+  // MAIN GAME LOOP
+  useFrame((_, delta) => {
+    if (!meshRef.current) return;
+
+    // Handle Teleportation
+    if (store.teleportRequest) {
+      const [tx, ty, tz] = store.teleportRequest;
+      physicsPosition.current.set(tx, ty, tz);
+      meshRef.current.position.set(tx, ty, tz);
+      velocity.current.set(0, 0, 0);
+      store.requestTeleport(null);
+      return;
+    }
+
+    const clampedDelta = Math.min(delta, 0.1);
+    
+    // 1. Spatial Filtering (Every 10 frames)
+    frameCount.current++;
+    if (frameCount.current % 10 === 0 || filteredCollidablesRef.current.length === 0) {
+      filteredCollidablesRef.current = allCollidablesRef.current.filter(obj => 
+        obj.position.distanceToSquared(meshRef.current!.position) < 400 // 20m radius
+      );
+    }
+    
+    // 2. INPUT & ROTATION
+    const { direction: inputDir, turn } = systems.input.getMovementInput(store.isEditorOpen, store.isWorldLoading);
+    
+    // Sync mouse states from InputHandler
+    cameraState.current.isLeftMouseDown = systems.input.isLeftMouseDown;
+    cameraState.current.isRightMouseDown = systems.input.isRightMouseDown;
+    
+    const isRMB = cameraState.current.isRightMouseDown;
+    const isLMB = cameraState.current.isLeftMouseDown;
+
+    if (turn !== 0) {
+      const turnSpeed = 3.5;
+      meshRef.current.rotation.y += turn * turnSpeed * clampedDelta;
+      // In WoW, camera follows character rotation unless orbiting (LMB) or steering (RMB)
+      if (!isLMB && !isRMB) {
+        cameraState.current.theta += turn * turnSpeed * clampedDelta;
       }
     }
-    
-    if (isEditorOpen || isWorldLoading) {
-      forwardInput = 0;
-      sideInput = 0;
-      velocity.current.set(0, velocity.current.y, 0); // Stop horizontal movement immediately
-    }
 
-    inputDir.current.set(sideInput, 0, forwardInput);
-    if (inputDir.current.lengthSq() > 1) inputDir.current.normalize();
-    
-    isMoving.current = inputDir.current.lengthSq() > 0.01;
-
-    // Sync mesh rotation with camera theta if right-clicking OR turning with arrows
-    if (!isEditorOpen && (cameraState.current.isRightMouseDown || keys.current["ArrowLeft"] || keys.current["ArrowRight"])) {
+    // Steering: Character faces where camera looks when RMB is held
+    if (isRMB) {
       meshRef.current.rotation.y = cameraState.current.theta;
     }
 
-    moveVec.current.copy(inputDir.current).applyEuler(meshRef.current.rotation);
+    // Zero-GC World Move Calculation
+    worldMoveVec.current.copy(inputDir).applyAxisAngle(UP_AXIS, meshRef.current.rotation.y);
 
-    // Clamp delta to prevent "teleporting" through floors after lag or tabbing out
-    const clampedDelta = Math.min(delta, 0.1);
-
-    if (moveVec.current.lengthSq() > 0) {
-      velocity.current.x += moveVec.current.x * MOVE_SPEED * clampedDelta;
-      velocity.current.z += moveVec.current.z * MOVE_SPEED * clampedDelta;
-    }
-
-    velocity.current.x -= velocity.current.x * FRICTION * clampedDelta;
-    velocity.current.z -= velocity.current.z * FRICTION * clampedDelta;
-
-    if (isGrounded.current && !isTyping && !isEditorOpen && !isWorldLoading && keys.current["Space"]) {
-      velocity.current.y = JUMP_FORCE;
-      isGrounded.current = false;
-    }
-    if (!isGrounded.current) {
-      velocity.current.y -= GRAVITY * clampedDelta;
-    }
-
-    // --- 3D WALL COLLISION (HORIZONTAL RAYCASTING) ---
-    const horizontalVel = new THREE.Vector3(velocity.current.x, 0, velocity.current.z);
-    
-    const updateCollidables = () => {
-      const now = performance.now();
-      if (now - lastCollidablesUpdate.current < 500) return collidablesRef.current;
+    // 3. PHYSICS (Fixed Timestep)
+    accumulator.current += clampedDelta;
+    while (accumulator.current >= PHYSICS_STEP) {
+      const groundingObj = { current: isGrounded.current };
       
-      const collidables: THREE.Object3D[] = [];
-      const sceneChildren = _state.scene.children;
-      for (let i = 0; i < sceneChildren.length; i++) {
-        const child = sceneChildren[i];
-        if (
-          child.name === "terrain_mesh" || 
-          (child as any).isWorldObject ||
-          (child.type === "Mesh" && (child as any).geometry?.type === "PlaneGeometry")
-        ) {
-          collidables.push(child);
-        }
-      }
-      collidablesRef.current = collidables;
-      lastCollidablesUpdate.current = now;
-      return collidables;
-    };
+      systems.physics.update(
+        physicsPosition.current,
+        velocity.current,
+        worldMoveVec.current,
+        groundingObj,
+        PHYSICS_STEP,
+        GAME_CONFIG.MOVEMENT,
+        store.terrainData,
+        filteredCollidablesRef.current,
+        playerMeshesRef.current
+      );
 
-    if (horizontalVel.lengthSq() > 0.001) {
-      const dir = horizontalVel.clone().normalize();
-      const rayOrigin = new THREE.Vector3(meshRef.current.position.x, meshRef.current.position.y + 0.8, meshRef.current.position.z);
-      const wallRay = new THREE.Raycaster(rayOrigin, dir, 0, 0.4);
-      
-      const collidables = updateCollidables();
-      const wallIntersects = wallRay.intersectObjects(collidables, true);
-      
-      let wallHit = false;
-      for (const hit of wallIntersects) {
-        const name = hit.object.name || "";
-        if (
-          playerMeshesRef.current.includes(hit.object) || 
-          (hit.object as any).material?.wireframe ||
-          name.includes("editor_helper")
-        ) continue;
-        
-        wallHit = true;
-        break;
+      isGrounded.current = groundingObj.current;
+
+      if (systems.input.isJumpPressed() && isGrounded.current) {
+        velocity.current.y = GAME_CONFIG.MOVEMENT.JUMP_FORCE;
+        isGrounded.current = false;
       }
 
-      if (wallHit) {
-        // --- SLIDING LOGIC ---
-        const xDir = new THREE.Vector3(velocity.current.x > 0 ? 1 : -1, 0, 0);
-        const xRay = new THREE.Raycaster(rayOrigin, xDir, 0, 0.4);
-        const xHit = xRay.intersectObjects(collidables, true).some(h => {
-          const n = h.object.name || "";
-          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
-        });
-
-        const zDir = new THREE.Vector3(0, 0, velocity.current.z > 0 ? 1 : -1);
-        const zRay = new THREE.Raycaster(rayOrigin, zDir, 0, 0.4);
-        const zHit = zRay.intersectObjects(collidables, true).some(h => {
-          const n = h.object.name || "";
-          return !playerMeshesRef.current.includes(h.object) && !(h.object as any).material?.wireframe && !n.includes("editor_helper");
-        });
-
-        if (xHit && zHit) {
-          velocity.current.x = 0;
-          velocity.current.z = 0;
-        } else if (xHit) {
-          velocity.current.x = 0;
-        } else if (zHit) {
-          velocity.current.z = 0;
-        }
-      }
+      accumulator.current -= PHYSICS_STEP;
     }
 
-    meshRef.current.position.x += velocity.current.x * clampedDelta;
-    meshRef.current.position.y += velocity.current.y * clampedDelta;
-    meshRef.current.position.z += velocity.current.z * clampedDelta;
-
-    // --- 3D GROUND DETECTION (OPTIMIZED HEIGHT LOOKUP) ---
-    const groundCollidables = updateCollidables();
-    let groundY = 0;
-    let hitSomething = false;
-
-    // 1. Check Terrain Height directly (Fast O(1) lookup)
-    const terrainData = useGameStore.getState().terrainData;
-    const resolution = 4; // Must match Terrain.tsx
-    
-    // Simple nearest neighbor lookup
-    const tx = Math.round(meshRef.current.position.x / resolution) * resolution;
-    const tz = Math.round(meshRef.current.position.z / resolution) * resolution;
-    const key = `${tx}_${tz}`;
-    const terrainPoint = terrainData[key];
-    
-    // Always consider terrain as a solid floor, default to 0 if unmodified
-    groundY = terrainPoint ? terrainPoint.y : 0;
-    hitSomething = true;
-
-    // 2. Check for other objects (Small raycast)
-    const groundRayOrigin = new THREE.Vector3(meshRef.current.position.x, Math.max(meshRef.current.position.y, groundY) + 0.5, meshRef.current.position.z);
-    const rayDir = new THREE.Vector3(0, -1, 0);
-    const raycaster = new THREE.Raycaster(groundRayOrigin, rayDir, 0, 2); // Short ray
-    
-    // Only raycast against world objects, NOT the terrain mesh
-    const objectCollidables = groundCollidables.filter(c => c.name !== "terrain_mesh");
-    const intersects = raycaster.intersectObjects(objectCollidables, true);
-    
-    for (const intersect of intersects) {
-      const name = intersect.object.name || "";
-      if (
-        !intersect.object.visible ||
-        playerMeshesRef.current.includes(intersect.object) || 
-        (intersect.object as any).material?.wireframe ||
-        name.includes("editor_helper") ||
-        isNaN(intersect.point.y)
-      ) continue;
-      
-      // If object is higher than terrain, use it
-      if (intersect.point.y > groundY) {
-        groundY = intersect.point.y;
-        hitSomething = true;
-      }
-      break;
-    }
-
-    if (hitSomething && meshRef.current.position.y <= groundY + 0.01) {
-      if (velocity.current.y <= 0) {
-        meshRef.current.position.y = groundY;
-        velocity.current.y = 0;
-        isGrounded.current = true;
-      }
+    // 4. VISUAL INTERPOLATION
+    const followSpeed = 40;
+    if (meshRef.current.position.distanceToSquared(physicsPosition.current) > 100) {
+      meshRef.current.position.copy(physicsPosition.current);
     } else {
-      isGrounded.current = false;
+      meshRef.current.position.lerp(physicsPosition.current, 1 - Math.exp(-followSpeed * clampedDelta));
     }
 
-    // Void Safety: If player falls out of the map, teleport directly back up to the surface
-    if (meshRef.current.position.y < -20) {
-      meshRef.current.position.set(
-        meshRef.current.position.x, 
-        groundY + 2, 
-        meshRef.current.position.z
+    // 5. CAMERA UPDATE (Disabled in Editor Mode)
+    if (!store.isEditorOpen) {
+      systems.camera.update(
+        camera,
+        cameraState.current,
+        meshRef.current.position,
+        clampedDelta,
+        filteredCollidablesRef.current,
+        playerMeshesRef.current
       );
-      velocity.current.set(0, 0, 0);
     }
 
+    // 6. NETWORK SYNC (15Hz)
+    const now = performance.now();
+    isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
-
-    if (!isEditorOpen) {
-      const { theta, phi, radius } = cameraState.current;
-      const offsetX = radius * Math.sin(phi) * Math.sin(theta);
-      const offsetY = radius * Math.cos(phi);
-      const offsetZ = radius * Math.sin(phi) * Math.cos(theta);
-
-      const lookTarget = new THREE.Vector3(
-        meshRef.current.position.x,
-        meshRef.current.position.y + 1.5, // Look at head
-        meshRef.current.position.z
-      );
-
-      targetCamPos.current.set(
-        meshRef.current.position.x + offsetX,
-        meshRef.current.position.y + offsetY + 1.5,
-        meshRef.current.position.z + offsetZ
-      );
-
-      // --- CAMERA COLLISION ---
-      const camRayDir = targetCamPos.current.clone().sub(lookTarget).normalize();
-      const camRayDist = targetCamPos.current.distanceTo(lookTarget);
-      const camRaycaster = new THREE.Raycaster(lookTarget, camRayDir, 0, camRayDist);
-      
-      const camIntersects = camRaycaster.intersectObjects(_state.scene.children, true);
-      let bestCamPos = targetCamPos.current.clone();
-
-      for (const hit of camIntersects) {
-        const name = hit.object.name || "";
-        if (
-          playerMeshesRef.current.includes(hit.object) || 
-          (hit.object as any).material?.wireframe ||
-          name.includes("editor_helper")
-        ) continue;
+    if (now - lastTime.current > 66) {
+      if (socket && (isMoving.current || frameCount.current % 10 === 0)) {
+        socket.emit("move", {
+          pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z],
+          rot: [0, meshRef.current.rotation.y, 0],
+          vel: [velocity.current.x, velocity.current.y, velocity.current.z],
+          ground: isGrounded.current
+        });
         
-        // We hit a wall/roof! Zoom in to hit point (with 0.2m padding)
-        bestCamPos.copy(hit.point).add(camRayDir.clone().multiplyScalar(-0.2));
-        break;
+        // Update local store for distance checks and UI
+        useGameStore.getState().updatePlayer(
+          useGameStore.getState().id || "", 
+          { pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z] }
+        );
+
+        lastTime.current = now;
       }
-      
-      // Frame-rate independent lerp for camera position
-      camera.position.lerp(bestCamPos, 1 - Math.exp(-15 * delta));
-      camera.lookAt(lookTarget);
     }
+
   });
 
-  return {
-    velocity,
-    isGrounded: isGrounded,
-    isMoving: isMoving,
-    updateCamera,
-    setRotation,
-  };
+  return { isGrounded, isMoving, updateCamera, setRotation, cameraState };
 };

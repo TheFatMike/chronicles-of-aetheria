@@ -10,6 +10,7 @@ import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleChatMessage } from "./handlers/chat";
 import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handlers/party";
 import { handleTradeRequest, handleTradeAccept, handleTradeCancel, handleTradeLock, handleTradeConfirm, handleTradeAddItem, handleTradeRemoveItem } from "./handlers/trade";
+import { handleDebugToggle } from "./handlers/debug";
 import { players, worldObjects, lastSkillUse, lastChatMessage } from "../state";
 import { filterNearby } from "../systems/spatial";
 
@@ -80,4 +81,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   socket.on("trade_confirm", (tradeId) => handleTradeConfirm(io, socket, tradeId));
   socket.on("trade_add_item", (data) => handleTradeAddItem(io, socket, data));
   socket.on("trade_remove_item", (data) => handleTradeRemoveItem(io, socket, data));
+
+  // Debug
+  socket.on("debug_toggle", (data) => handleDebugToggle(io, socket, data));
 };

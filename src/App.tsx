@@ -186,7 +186,13 @@ export default function App() {
             className="fixed inset-0 z-200"
           >
             <LoadingScreen 
-              message={showDisconnected ? "LOST CONNECTION... REWEAVING THREADS" : "MANIFESTING AVATAR..."} 
+              message={
+                showDisconnected 
+                  ? "LOST CONNECTION... REWEAVING THREADS" 
+                  : !connected 
+                    ? "AWAKENING THE REALM (Waking Server)..." 
+                    : "MANIFESTING WORLD... WEAVING DATA"
+              } 
             />
           </motion.div>
         )}
@@ -200,8 +206,8 @@ export default function App() {
         </div>
       )}
 
-      {selectedCharacter && connected && (
-        <div className="absolute inset-0 z-0">
+      {selectedCharacter && (
+        <div className={`absolute inset-0 z-0 ${!connected ? "opacity-50 grayscale pointer-events-none" : ""}`}>
           <GameView 
             onMove={sendMove} 
             onAttack={basicAttack} 
@@ -216,7 +222,7 @@ export default function App() {
       )}
 
       <GameScaffold>
-        <DebugOverlay />
+        <DebugOverlay socket={socket} />
         <AnimatePresence mode="wait">
           {showDisconnected ? (
             <motion.div

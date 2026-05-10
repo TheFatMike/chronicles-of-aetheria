@@ -7,7 +7,7 @@ import { initDb } from "./server/db";
 import { serverLogger, logBuffer } from "./server/logger";
 import { startHeartbeat, initializeSpawners, initializeWorld } from "./server/systems/gameEngine";
 import { registerHandlers } from "./server/socket/handlers";
-import { players, entities, spawners } from "./server/state";
+import { players, entities, spawners, terrainData } from "./server/state";
 
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -43,7 +43,33 @@ async function bootstrap() {
 
   // 2. HTTP Routes
   app.get("/api/health", (req, res) => res.json({ status: "ok", db: db.projectId }));
-  app.get("/api/debug/state", (req, res) => res.json({ players: Array.from(players.entries()), entities: Array.from(entities.entries()), logs: logBuffer }));
+  app.get("/api/debug/state", (req, res) => res.json({ 
+    players: Array.from(players.entries()), 
+    entities: Array.from(entities.entries()), 
+    terrainTiles: terrainData.size,
+    logs: logBuffer 
+  }));
+  
+  app.post("/api/admin/wipe-terrain", async (req, res) => {
+    try {
+      const { db } = await import("./server/db");
+      const snapshot = await db.collection("terrain").get();
+      serverLogger.info("admin", `Wipe request received. Found ${snapshot.size} tiles.`);
+      
+      const batch = db.batch();
+      snapshot.forEach((doc: any) => batch.delete(doc.ref));
+      await batch.commit();
+      
+      terrainData.clear();
+      io.emit("terrain_sync", []); 
+      
+      serverLogger.info("admin", `Wipe complete. Deleted ${snapshot.size} tiles.`);
+      res.json({ status: "ok", deleted: snapshot.size });
+    } catch (e: any) {
+      serverLogger.error("admin", `Wipe failed: ${e.message}`);
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   // 3. Vite / Static Files
   if (process.env.NODE_ENV !== "production") {

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
+import { logger } from "../../lib/logger";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
 
 // Essential assets to preload
@@ -17,7 +18,7 @@ const ESSENTIAL_TEXTURES = [
 
 export const AssetPreloader = () => {
   useEffect(() => {
-    console.log("[AssetPreloader] Starting preloading of essential assets...");
+    logger.info("system", "Starting preloading of essential assets...");
     
     // Preload GLB models
     ESSENTIAL_MODELS.forEach(url => {

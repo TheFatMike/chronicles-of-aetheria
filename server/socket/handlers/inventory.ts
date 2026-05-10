@@ -3,6 +3,7 @@ import { players, entities } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { generateItemInstance } from "../../data/items";
+import { decrementSpawnerCount } from "../../systems/spawners";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { updateQuestProgress } from "../../logic/quest";
 

@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { GAME_CONFIG } from "../config";
 import { useGameStore } from "../store/useGameStore";
+import { getInterpolatedHeight } from "../lib/terrainUtils";
 
 interface SyncProps {
   position: [number, number, number];
@@ -29,15 +30,16 @@ export const useEntitySync = (
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
 
-    // Fast O(1) Terrain Height Lookup for Entities
+    // Smooth Bilinear Terrain Height Lookup for Entities
     const terrainData = useGameStore.getState().terrainData;
     const resolution = 4;
-    const tx = Math.round(targetPos.current.x / resolution) * resolution;
-    const tz = Math.round(targetPos.current.z / resolution) * resolution;
-    const key = `${tx}_${tz}`;
-    const terrainPoint = terrainData[key];
     
-    const groundY = terrainPoint ? terrainPoint.y : 0;
+    const groundY = getInterpolatedHeight(
+      targetPos.current.x,
+      targetPos.current.z,
+      terrainData,
+      resolution
+    );
     targetPos.current.y = groundY;
 
     // Frame-independent lerp

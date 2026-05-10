@@ -12,6 +12,7 @@ import { Hotbar } from "./Hotbar";
 import { MenuManager } from "./MenuManager";
 import { NavigationMenu } from "./NavigationMenu";
 import { GameMenu } from "./GameMenu";
+import { DebugOverlay } from "./DebugOverlay";
 import { useGameStore } from "../../store/useGameStore";
 import { Socket } from "socket.io-client";
 
@@ -126,6 +127,7 @@ export const InGameView = ({
         />
 
         <NavigationMenu />
+        <DebugOverlay socket={socket} />
       </div>
     </motion.div>
   );

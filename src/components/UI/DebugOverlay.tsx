@@ -1,108 +1,159 @@
-import { useEffect, useState } from 'react';
-import { useGameStore } from '../../store/useGameStore';
-import { useShallow } from 'zustand/react/shallow';
-import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Radio, Users, Box, Terminal } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Settings, X, Terminal, Monitor, Server as ServerIcon, Activity, FileDown, ScrollText } from "lucide-react";
+import { DEBUG_CONFIG, DebugCategory } from "../../debug.config";
+import { Socket } from "socket.io-client";
+import { useGameStore } from "../../store/useGameStore";
+import { logger } from "../../lib/logger";
 
-export const DebugOverlay = () => {
-  const { connected, playersCount, entitiesCount, devMode } = useGameStore(
-    useShallow((s) => ({
-      connected: s.connected,
-      playersCount: Object.keys(s.players).length,
-      entitiesCount: Object.keys(s.entities).length,
-      devMode: s.devMode
-    }))
-  );
-  const [fps, setFps] = useState(0);
-  const [show, setShow] = useState(false);
+interface DebugOverlayProps {
+  socket: Socket | null;
+}
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'd') {
-        setShow(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'client' | 'server' | 'logs'>('client');
+  const [, setTick] = useState(0); // For forcing re-renders
+  const devMode = useGameStore(s => s.devMode);
 
   useEffect(() => {
-    let frames = 0;
-    let lastTime = performance.now();
-    const update = () => {
-      frames++;
-      const now = performance.now();
-      if (now - lastTime >= 1000) {
-        setFps(frames);
-        frames = 0;
-        lastTime = now;
-      }
-      requestAnimationFrame(update);
-    };
-    const handle = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(handle);
-  }, []);
+    if (!isOpen || activeTab !== 'logs') return;
+    const interval = setInterval(() => setTick(t => t + 1), 500);
+    return () => clearInterval(interval);
+  }, [isOpen, activeTab]);
 
-  if (!devMode && !show) return null;
+  if (!devMode) return null;
+
+  const toggleGlobal = () => {
+    DEBUG_CONFIG.ENABLED = !DEBUG_CONFIG.ENABLED;
+    if (socket) {
+      socket.emit("debug_toggle", { global: true, enabled: DEBUG_CONFIG.ENABLED });
+    }
+    setTick(t => t + 1);
+  };
+
+  const toggleCategory = (side: 'client' | 'server', category: DebugCategory) => {
+    const sideKey = side.toUpperCase() as 'CLIENT' | 'SERVER';
+    DEBUG_CONFIG[sideKey][category] = !DEBUG_CONFIG[sideKey][category];
+    
+    if (side === 'server' && socket) {
+      socket.emit("debug_toggle", { category, enabled: DEBUG_CONFIG.SERVER[category] });
+    }
+    setTick(t => t + 1);
+  };
 
   return (
-    <div className="fixed top-20 right-6 z-60 pointer-events-none select-none">
+    <div className="fixed top-20 right-6 z-50 pointer-events-auto">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className={`p-2 rounded-full border-2 transition-all ${
+          isOpen ? "bg-red-500 border-white text-white rotate-90" : "bg-black/80 border-red-500/50 text-red-500 hover:border-red-500"
+        }`}
+      >
+        {isOpen ? <X size={20} /> : <Settings size={20} />}
+      </button>
+
       <AnimatePresence>
-        {(show || devMode) && (
+        {isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 w-64 space-y-3 font-mono text-[10px] text-zinc-400"
+            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.9 }}
+            className="absolute top-12 right-0 w-80 bg-[#1a1410]/95 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-xl shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-2">
-              <span className="flex items-center gap-1.5 text-zinc-100">
-                <Terminal size={12} className="text-emerald-500" />
-                SYSTEM DEBUG
-              </span>
-              <span className={fps < 30 ? 'text-red-500' : 'text-emerald-500'}>{fps} FPS</span>
+            {/* Header */}
+            <div className="p-4 bg-black/40 border-b border-[#4a3a2a] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Terminal size={16} className="text-red-500" />
+                <span className="font-fantasy text-xs uppercase tracking-widest text-[#f4e4bc]">Debug Control</span>
+              </div>
+              <button 
+                onClick={toggleGlobal}
+                className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${
+                  DEBUG_CONFIG.ENABLED 
+                    ? "bg-red-500/20 border-red-500 text-red-500" 
+                    : "bg-gray-500/20 border-gray-500 text-gray-500"
+                }`}
+              >
+                {DEBUG_CONFIG.ENABLED ? "MASTER ON" : "MASTER OFF"}
+              </button>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Radio size={12} className={connected ? 'text-emerald-500' : 'text-red-500'} />
-                  SOCKET
-                </span>
-                <span className={connected ? 'text-emerald-400' : 'text-red-500'}>
-                  {connected ? 'CONNECTED' : 'DISCONNECTED'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Users size={12} />
-                  PLAYERS
-                </span>
-                <span className="text-zinc-200">{playersCount}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Box size={12} />
-                  ENTITIES
-                </span>
-                <span className="text-zinc-200">{entitiesCount}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Activity size={12} />
-                  DEV MODE
-                </span>
-                <span className={devMode ? 'text-amber-500' : 'text-zinc-500'}>
-                  {devMode ? 'ACTIVE' : 'INACTIVE'}
-                </span>
-              </div>
+            {/* Tabs */}
+            <div className="flex border-b border-[#4a3a2a]">
+              <TabButton 
+                active={activeTab === 'client'} 
+                onClick={() => setActiveTab('client')}
+                icon={<Monitor size={14} />}
+                label="Client"
+              />
+              <TabButton 
+                active={activeTab === 'server'} 
+                onClick={() => setActiveTab('server')}
+                icon={<ServerIcon size={14} />}
+                label="Server"
+              />
+              <TabButton 
+                active={activeTab === 'logs'} 
+                onClick={() => setActiveTab('logs')}
+                icon={<ScrollText size={14} />}
+                label="Logs"
+              />
             </div>
 
-            <div className="pt-2 border-t border-white/10 text-[9px] text-zinc-500 italic">
-              Shift + Alt + D to toggle
+            {/* List */}
+            <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {activeTab === 'logs' ? (
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => logger.downloadLogs()}
+                    className="w-full flex items-center justify-center gap-2 p-2 mb-4 bg-red-500/20 border border-red-500 rounded text-red-500 text-[10px] font-bold hover:bg-red-500/40 transition-all"
+                  >
+                    <FileDown size={14} /> DOWNLOAD LOG FILE (.TXT)
+                  </button>
+                  {logger.getBuffer().length === 0 ? (
+                    <div className="text-center py-8 text-[10px] text-[#6d5540] italic">No logs in buffer yet...</div>
+                  ) : (
+                    logger.getBuffer().slice().reverse().map((line, i) => (
+                      <div key={i} className="text-[9px] font-mono text-[#8b6b4d] wrap-break-word border-b border-white/5 pb-1 last:border-0 leading-tight">
+                        {line}
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                Object.keys(DEBUG_CONFIG[activeTab.toUpperCase() as 'CLIENT' | 'SERVER']).map((cat) => {
+                  const category = cat as DebugCategory;
+                  const enabled = DEBUG_CONFIG[activeTab.toUpperCase() as 'CLIENT' | 'SERVER'][category];
+                  
+                  return (
+                    <div 
+                      key={category}
+                      className="flex items-center justify-between p-2 rounded bg-black/20 border border-white/5 hover:bg-black/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-1.5 h-1.5 rounded-full ${enabled ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-gray-600"}`} />
+                        <span className="text-[10px] font-mono text-[#8b6b4d] uppercase tracking-tighter">{category}</span>
+                      </div>
+                      <button
+                        onClick={() => toggleCategory(activeTab, category)}
+                        className={`w-10 h-5 rounded-full relative transition-all ${enabled ? "bg-green-500/20 border-green-500/50" : "bg-gray-800 border-gray-700"} border`}
+                      >
+                        <motion.div 
+                          animate={{ x: enabled ? 20 : 2 }}
+                          className={`absolute top-1 w-2.5 h-2.5 rounded-full ${enabled ? "bg-green-400" : "bg-gray-500"}`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 bg-black/40 border-t border-[#4a3a2a] flex items-center gap-2">
+              <Activity size={12} className="text-green-500 animate-pulse" />
+              <span className="text-[9px] text-[#6d5540] font-mono">SYSTEM_STABLE // DEBUG_MODE_ACTIVE</span>
             </div>
           </motion.div>
         )}
@@ -110,3 +161,15 @@ export const DebugOverlay = () => {
     </div>
   );
 };
+
+const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
+  <button 
+    onClick={onClick}
+    className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-fantasy uppercase tracking-widest transition-all ${
+      active ? "bg-[#2d221a] text-[#f4e4bc] border-b-2 border-red-500" : "text-[#8b6b4d] hover:bg-[#2d221a]/50"
+    }`}
+  >
+    {icon}
+    {label}
+  </button>
+);

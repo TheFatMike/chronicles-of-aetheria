@@ -64,28 +64,36 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       useGameStore.getState().updateTerrainData(data);
     };
 
+    // 7. World Sync (Nearby Objects)
+    const handleWorldSync = (objects: any[]) => {
+      logger.info("socket", `World sync received: ${objects.length} objects`);
+      useGameStore.getState().setWorldObjects(objects);
+    };
+ 
     // Register listeners
     socket.on("quest_update", handleQuestUpdate);
-    socket.on("session_start", handleSessionStart);
+    socket.on("session_start", (data) => {
+      handleSessionStart(data);
+      if (data.pos) useGameStore.getState().requestTeleport(data.pos);
+    });
     socket.on("inventory_update", handleInventoryUpdate);
     socket.on("player_stats", handlePlayerStats);
     socket.on("party_update", handlePartyUpdate);
     socket.on("party_invite_received", handlePartyInvite);
     socket.on("terrain_sync", handleTerrainSync);
-
-    // Initial Terrain Request
-    socket.emit("request_terrain_sync");
+    socket.on("world_sync", handleWorldSync);
 
     logger.info("system", "Socket listeners registered via useGameSync");
 
     return () => {
       socket.off("quest_update", handleQuestUpdate);
-      socket.off("session_start", handleSessionStart);
+      socket.off("session_start");
       socket.off("inventory_update", handleInventoryUpdate);
       socket.off("player_stats", handlePlayerStats);
       socket.off("party_update", handlePartyUpdate);
       socket.off("party_invite_received", handlePartyInvite);
       socket.off("terrain_sync", handleTerrainSync);
+      socket.off("world_sync", handleWorldSync);
     };
   }, [socket, connected, setSelectedCharacter]);
 };

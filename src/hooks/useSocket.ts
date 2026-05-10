@@ -82,6 +82,21 @@ export const useSocket = (token: string | null) => {
         exp: data.exp,
         maxExp: data.maxExp
       });
+
+      // Show EXP notification if it increased
+      const state = useGameStore.getState();
+      if (data.id === state.id && data.exp !== undefined) {
+        const oldExp = state.players[data.id]?.exp || 0;
+        if (data.exp > oldExp) {
+          state.addMessage({
+            id: `exp-${Date.now()}`,
+            sender: "SYSTEM",
+            text: `+${data.exp - oldExp} EXP`,
+            timestamp: Date.now(),
+            color: "#fbbf24" // Amber
+          });
+        }
+      }
     });
 
     socket.on("players", (allPlayers) => {
@@ -147,21 +162,6 @@ export const useSocket = (token: string | null) => {
       useGameStore.getState().setSpawners(spawnersArray);
     });
     
-    socket.on("world_sync", (objects) => {
-      logger.debug("socket", `World sync received: ${objects.length} objects`);
-      useGameStore.getState().setWorldObjects(objects);
-    });
-
-    socket.on("session_start", (confirmedState) => {
-      // Use a ref to prevent spamming the log with every state sync
-      const lastSessionId = (socket as any)._lastSessionId;
-      if (lastSessionId !== confirmedState.characterId) {
-        logger.info("socket", "Session started with server-confirmed state", confirmedState.pos);
-        (socket as any)._lastSessionId = confirmedState.characterId;
-      }
-      useGameStore.getState().requestTeleport(confirmedState.pos);
-    });
-
     socket.on("world_object_updated", (obj) => {
       // Only log if not a campfire (to prevent flicker spam)
       if (obj.type !== "campfire") {
@@ -173,11 +173,6 @@ export const useSocket = (token: string | null) => {
     socket.on("world_object_removed", (data) => {
       logger.debug("socket", `World object removed: ${data.id}`);
       useGameStore.getState().removeWorldObject(data.id);
-    });
-
-    socket.on("world_sync", (objectsArray) => {
-      logger.info("socket", `World sync received: ${objectsArray.length} objects`);
-      useGameStore.getState().setWorldObjects(objectsArray);
     });
 
     // Party Events

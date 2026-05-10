@@ -4,6 +4,9 @@ import { OBJECT_TEMPLATES } from "../../data/world/templates";
 import { GLBModel } from "./GLBModel";
 import { ProceduralModel } from "./WorldObjectItem";
 import { snapToGrid } from "../../lib/gameUtils";
+import { logger } from "../../lib/logger";
+import { isDebugEnabled } from "../../debug.config";
+import { useGameStore } from "../../store/useGameStore";
 
 export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSelectedType: string | null, gridSnap: boolean }) => {
   const [pos, setPos] = useState<[number, number, number]>([0, 0, 0]);
@@ -14,15 +17,28 @@ export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSe
     
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    // Find the floor (usually a PlaneGeometry)
+    
+    // Find the floor or terrain (specifically target these for editor tools)
     const floor = intersects.find(i => 
-      i.object.type === 'Mesh' && 
-      ((i.object as any).geometry?.type === 'PlaneGeometry' || i.object.name === 'terrain_mesh')
+      i.object.name === 'terrain_mesh' || 
+      i.object.name === 'starting_plaza' ||
+      (i.object as any).geometry?.type === 'PlaneGeometry'
     );
     
     if (floor) {
       let p = floor.point;
-      if (gridSnap) {
+      
+      if (isDebugEnabled('CLIENT', 'EDITOR') && performance.now() % 500 < 16) {
+        logger.debug("editor", "Brush Raycast", { 
+          mouse: { x: mouse.x.toFixed(2), y: mouse.y.toFixed(2) },
+          hit: { x: p.x.toFixed(2), y: p.y.toFixed(2), z: p.z.toFixed(2) },
+          obj: floor.object.name 
+        });
+      }
+
+      // Keep the visual cursor smooth for better feel, 
+      // even though sculpting logic snaps to resolution internally
+      if (!editorSelectedType.startsWith('terrain_') && gridSnap) {
         p.set(
           snapToGrid(p.x),
           p.y,
@@ -30,35 +46,55 @@ export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSe
         );
       }
       setPos([p.x, p.y + 0.1, p.z]);
+    } else if (isDebugEnabled('CLIENT', 'EDITOR') && performance.now() % 500 < 16) {
+      logger.debug("editor", "Brush Raycast FAILED", { count: intersects.length });
     }
   });
 
+  const brushSize = useGameStore(state => state.editorBrushSize);
+
   if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') return null;
 
-  // Use the same logic as WorldObjectItem but with ghost material
-  const template = OBJECT_TEMPLATES[editorSelectedType];
-  const ghostProps = { 
-    position: [0,0,0] as [number, number, number], 
-    scale: template?.scale || 1, 
-    rotation: [0, 0, 0] as [number, number, number],
-    isGhost: true 
-  };
+  const isTerrainTool = editorSelectedType.startsWith('terrain_');
   
   return (
-    <group position={pos} scale={1} rotation={[0, 0, 0]} raycast={() => null}>
-      <group>
-        {/* If the template has a modelUrl, show the GLB ghost! */}
-        {template?.modelUrl ? (
-          <GLBModel url={template.modelUrl} {...ghostProps} castShadow={false} />
+    <group>
+      {/* Raw Hit Debug Marker (Red dot) */}
+      {isDebugEnabled('CLIENT', 'EDITOR') && (
+        <mesh position={pos}>
+          <boxGeometry args={[0.1, 0.1, 0.1]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+      )}
+
+      <group position={pos} raycast={() => null}>
+        {isTerrainTool ? (
+          <>
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[brushSize - 0.2, brushSize, 64]} />
+              <meshBasicMaterial color="#3b82f6" transparent opacity={0.5} />
+            </mesh>
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[brushSize, 64]} />
+              <meshBasicMaterial color="#3b82f6" transparent opacity={0.1} />
+            </mesh>
+          </>
         ) : (
-          <ProceduralModel type={editorSelectedType} modelProps={ghostProps} />
+          <>
+            <group>
+              {OBJECT_TEMPLATES[editorSelectedType]?.modelUrl ? (
+                <GLBModel url={OBJECT_TEMPLATES[editorSelectedType].modelUrl} position={[0,0,0]} scale={OBJECT_TEMPLATES[editorSelectedType].scale || 1} rotation={[0,0,0]} isGhost={true} castShadow={false} />
+              ) : (
+                <ProceduralModel type={editorSelectedType} modelProps={{ position: [0,0,0], scale: 1, rotation: [0,0,0], isGhost: true }} />
+              )}
+            </group>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+              <ringGeometry args={[0.4, 0.5, 32]} />
+              <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} />
+            </mesh>
+          </>
         )}
       </group>
-      {/* Visual aid for exact center */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-        <ringGeometry args={[0.4, 0.5, 32]} />
-        <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} />
-      </mesh>
     </group>
   );
 });

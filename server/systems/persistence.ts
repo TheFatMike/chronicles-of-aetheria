@@ -64,6 +64,11 @@ export const initializeTerrain = async () => {
     serverLogger.info("system", "Loading terrain data from Firestore...");
     const snapshot = await db.collection("terrain").get();
     
+    if (snapshot.empty) {
+      const collections = await db.listCollections();
+      serverLogger.info("system", `Terrain collection is empty. Available collections: ${collections.map((c: any) => c.id).join(", ")}`);
+    }
+    
     snapshot.forEach((doc: any) => {
       const data = doc.data();
       if (!isNaN(data.y)) {

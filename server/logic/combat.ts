@@ -1,10 +1,11 @@
 import { ALL_SKILLS } from "../../src/data/skills";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../src/lib/gameUtils";
-import { players, entities, lastSkillUse, parties } from "../state";
+import { players, entities, lastSkillUse, parties, dirtyEntities } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
 import { updateQuestProgress } from "./quest";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
+import { decrementSpawnerCount } from "../systems/spawners";
 
 export const handleCastSkill = (socket: any, io: any, data: any) => {
   const player = players.get(socket.id);
@@ -115,6 +116,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
 
       target.hp = Math.max(0, target.hp - amount);
       target.lastUpdate = Date.now();
+      dirtyEntities.add(target.id);
       
       socket.emit("chat_message", {
         id: Math.random().toString(),
@@ -127,6 +129,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
       if (target.hp <= 0 && !target.isDead) {
         target.isDead = true;
         target.isMoving = false;
+        decrementSpawnerCount(target.spawnerId);
         // Generate loot from template
         const loot: string[] = [];
         const templateKey = target.class.toLowerCase();
@@ -179,12 +182,14 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         // QUEST PROGRESS TRACKING
         updateQuestProgress(socket, player, "kill", target.class);
         
+        // Cleanup corpse after 5 minutes
         setTimeout(() => {
-          if (entities.has(target.id) && entities.get(target.id).isDead) {
+          const currentEntity = entities.get(target.id);
+          if (currentEntity && currentEntity.isDead) {
             entities.delete(target.id);
             io.emit("entity_despawn", target.id);
           }
-        }, 60000);
+        }, 300000); // 5 minutes
       }
     }
   }

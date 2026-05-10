@@ -62,10 +62,11 @@ export interface WorldSlice {
   spawners: Record<string, Spawner>;
   worldObjects: Record<string, WorldObject>;
   terrainData: Record<string, { y: number; type: string }>;
+  terrainDirtyPoints: { x: number; z: number; y: number; type: string }[];
   setSpawners: (spawners: Spawner[]) => void;
   setWorldObjects: (objects: WorldObject[]) => void;
   setTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
-  updateTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
+  updateTerrainData: (data: { x: number; z: number; y?: number; deltaY?: number; type?: string }[]) => void;
   addWorldObject: (obj: WorldObject) => void;
   updateWorldObject: (id: string, data: Partial<WorldObject>) => void;
   removeWorldObject: (id: string) => void;
@@ -105,6 +106,8 @@ export interface UISlice {
   gridSnap: boolean;
   editorTransformMode: 'translate' | 'rotate' | 'scale';
   editorSelectedType: import('../types').WorldObjectType | null;
+  editorBrushSize: number;
+  editorBrushStrength: number;
   selectedWorldObjectId: string | null;
   teleportRequest: [number, number, number] | null;
   isInventoryOpen: boolean;
@@ -127,6 +130,8 @@ export interface UISlice {
   setGridSnap: (val: boolean) => void;
   setEditorTransformMode: (mode: 'translate' | 'rotate' | 'scale') => void;
   setEditorSelectedType: (type: import('../types').WorldObjectType | null) => void;
+  setEditorBrushSize: (size: number) => void;
+  setEditorBrushStrength: (strength: number) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
   setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;

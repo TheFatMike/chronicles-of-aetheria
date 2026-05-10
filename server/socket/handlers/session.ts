@@ -6,6 +6,7 @@ import { serverLogger } from "../../logger";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../systems/spatial";
 import { getUserRole } from "../../lib/auth";
+import { handleRequestTerrainSync } from "./terrain";
 
 export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
   try {
@@ -88,6 +89,9 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     socket.emit("world_sync", nearbyWorldObjects);
     
     socket.emit("spawners_sync", Array.from(spawners.values()));
+    
+    // 5. Send Terrain Modifications
+    handleRequestTerrainSync(socket);
   } catch (e: any) {
     serverLogger.error("net", "Join error", e.message);
   }

@@ -10,9 +10,10 @@ interface GLBModelProps {
   onClick?: (e: any) => void;
   castShadow?: boolean;
   receiveShadow?: boolean;
+  isGhost?: boolean;
 }
 
-const ModelInner = ({ url, castShadow, receiveShadow }: any) => {
+const ModelInner = ({ url, castShadow, receiveShadow, isGhost }: any) => {
   const { scene } = useGLTF(url) as any;
 
   // Clone the scene and apply settings safely
@@ -38,11 +39,20 @@ const ModelInner = ({ url, castShadow, receiveShadow }: any) => {
             node.material.side = THREE.DoubleSide;
           }
         }
+        // Handle Ghost (Transparency)
+        if (isGhost && node.material) {
+          const mats = Array.isArray(node.material) ? node.material : [node.material];
+          mats.forEach((m: any) => {
+            m.transparent = true;
+            m.opacity = 0.5;
+            m.depthWrite = false; // Prevent ghost parts from occluding each other weirdly
+          });
+        }
       }
     });
     
     return clone;
-  }, [scene, castShadow, receiveShadow]);
+  }, [scene, castShadow, receiveShadow, isGhost]);
 
   return <primitive object={clonedScene} />;
 };
@@ -65,7 +75,8 @@ export const GLBModel = memo(({
   scale = 1, 
   onClick,
   castShadow = true,
-  receiveShadow = true
+  receiveShadow = true,
+  isGhost = false
 }: GLBModelProps) => {
   
   // Preload and monitor model status if needed
@@ -81,7 +92,7 @@ export const GLBModel = memo(({
       onClick={onClick}
     >
       <Suspense fallback={<LoadingFallback />}>
-        <ModelInner url={url} castShadow={castShadow} receiveShadow={receiveShadow} />
+        <ModelInner url={url} castShadow={castShadow} receiveShadow={receiveShadow} isGhost={isGhost} />
       </Suspense>
     </group>
   );

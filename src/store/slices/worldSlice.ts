@@ -5,6 +5,7 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   spawners: {},
   worldObjects: {},
   terrainData: {},
+  terrainDirtyPoints: [],
 
   setSpawners: (spawnersArray) => {
     const spawnersObj: Record<string, Spawner> = {};
@@ -22,20 +23,61 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     set({ worldObjects: objectsObj });
   },
 
-  setTerrainData: (dataArray) => {
+  setTerrainData: (dataArray) => set((state) => {
     const terrainObj: Record<string, { y: number; type: string }> = {};
+    const dirty: { x: number; z: number; y: number; type: string }[] = [];
+    
     dataArray.forEach(p => {
-      terrainObj[`${p.x}_${p.z}`] = { y: p.y, type: p.type };
+      const data = { y: p.y, type: p.type };
+      terrainObj[`${p.x}_${p.z}`] = data;
+      dirty.push({ x: p.x, z: p.z, ...data });
     });
-    set({ terrainData: terrainObj });
-  },
+
+    return { 
+      terrainData: terrainObj,
+      terrainDirtyPoints: dirty 
+    };
+  }),
 
   updateTerrainData: (dataArray) => set((state) => {
+    if (!dataArray || dataArray.length === 0) return state;
+    
     const newTerrain = { ...state.terrainData };
+    const dirty: { x: number; z: number; y: number; type: string }[] = [];
+    let hasChanges = false;
+
     dataArray.forEach(p => {
-      newTerrain[`${p.x}_${p.z}`] = { y: p.y, type: p.type };
+      const key = `${p.x}_${p.z}`;
+      const current = newTerrain[key] || { y: 0, type: 'grass' };
+      
+      const update: { y: number; type: string } = { ...current };
+      let itemChanged = false;
+
+      if (p.y !== undefined && !isNaN(p.y) && update.y !== p.y) {
+        update.y = p.y;
+        itemChanged = true;
+      }
+      if (p.deltaY !== undefined && !isNaN(p.deltaY) && p.deltaY !== 0) {
+        update.y += p.deltaY;
+        itemChanged = true;
+      }
+      if (p.type !== undefined && update.type !== p.type) {
+        update.type = p.type;
+        itemChanged = true;
+      }
+      
+      if (itemChanged) {
+        newTerrain[key] = update;
+        dirty.push({ x: p.x, z: p.z, ...update });
+        hasChanges = true;
+      }
     });
-    return { terrainData: newTerrain };
+
+    if (!hasChanges) return state;
+    return { 
+      terrainData: newTerrain,
+      terrainDirtyPoints: dirty
+    };
   }),
 
   addWorldObject: (obj) => set((state) => ({

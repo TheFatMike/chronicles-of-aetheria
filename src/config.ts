@@ -1,9 +1,9 @@
 export const GAME_CONFIG = {
   MOVEMENT: {
-    MOVE_SPEED: 65.0,
-    FRICTION: 12.0,
-    GRAVITY: 30.0,
-    JUMP_FORCE: 12.0,
+    MOVE_SPEED: 8,
+    FRICTION: 10,
+    GRAVITY: 30,
+    JUMP_FORCE: 12,
     SENSITIVITY: 0.005,
     MIN_RADIUS: 2,
     MAX_RADIUS: 20,

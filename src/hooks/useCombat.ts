@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { Character, Skill } from "../types";
+import { useShallow } from "zustand/react/shallow";
 import { calculatePhysicalDamage, calculateMagicDamage, calculateTotalStats } from "../lib/gameUtils";
 import { logger } from "../lib/logger";
 import { ALL_SKILLS } from "../data/skills";
@@ -10,7 +11,20 @@ export const useCombat = (
   setSelectedCharacter: React.Dispatch<React.SetStateAction<Character | null>>,
   socket: any
 ) => {
-  const { currentTarget, addMessage, setSkillCooldown, skillCooldowns, autoAttackTargetId, setAutoAttackTarget, setTarget } = useGameStore();
+  const { 
+    currentTarget, 
+    autoAttackTargetId, 
+    setAutoAttackTarget, 
+    setTarget 
+  } = useGameStore(useShallow(state => ({
+    currentTarget: state.currentTarget,
+    autoAttackTargetId: state.autoAttackTargetId,
+    setAutoAttackTarget: state.setAutoAttackTarget,
+    setTarget: state.setTarget
+  })));
+
+  const addMessage = useGameStore(state => state.addMessage);
+  const setSkillCooldown = useGameStore(state => state.setSkillCooldown);
 
   const useSkill = useCallback(async (skill: Skill) => {
     const state = useGameStore.getState();
@@ -33,7 +47,7 @@ export const useCombat = (
 
     // 1. Check Cooldown
     const now = Date.now();
-    const lastUsed = skillCooldowns[skill.id] || 0;
+    const lastUsed = state.skillCooldowns[skill.id] || 0;
     if (now - lastUsed < skill.cooldown * 1000) {
       if (skill.id !== 'basic_attack') {
         addMessage({
@@ -160,7 +174,7 @@ export const useCombat = (
     setAttacking(true);
     setTimeout(() => setAttacking(false), 300);
 
-  }, [selectedCharacter, socket, addMessage, setSelectedCharacter, skillCooldowns, setSkillCooldown]);
+  }, [selectedCharacter, socket, addMessage, setSelectedCharacter]);
 
 
   const basicAttack = useCallback(() => {
@@ -186,7 +200,7 @@ export const useCombat = (
       }
 
       basicAttack();
-    }, 1500); // Attack every 1.5s
+    }, 950); // Slightly more than cooldown (800ms) to ensure it's ready
 
     return () => clearInterval(interval);
   }, [autoAttackTargetId, selectedCharacter, basicAttack, setAutoAttackTarget]);

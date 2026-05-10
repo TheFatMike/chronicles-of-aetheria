@@ -1,3 +1,4 @@
+import { performance } from "perf_hooks";
 import { entities, spawners, dirtyEntities, spawnerEntityCounts } from "../state";
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import crypto from "crypto";
@@ -39,6 +40,28 @@ export const updateSpawners = (now: number) => {
       dirtyEntities.add(id);
       
       spawner.lastSpawn = now;
+    }
+  }
+};
+
+export const decrementSpawnerCount = (spawnerId?: string) => {
+  if (!spawnerId) return;
+  const spawner = spawners.get(spawnerId);
+  if (spawner) {
+    const count = spawnerEntityCounts.get(spawnerId) || 0;
+    // If the spawner was full, start the timer from now so we wait the full interval
+    if (count >= (spawner.maxEntities || 1)) {
+      spawner.lastSpawn = performance.now();
+    }
+    
+    if (count > 0) {
+      spawnerEntityCounts.set(spawnerId, count - 1);
+    }
+  } else {
+    // Fallback if spawner object not found
+    const count = spawnerEntityCounts.get(spawnerId) || 0;
+    if (count > 0) {
+      spawnerEntityCounts.set(spawnerId, count - 1);
     }
   }
 };

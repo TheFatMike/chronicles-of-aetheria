@@ -23,6 +23,7 @@ export const initAIWorker = () => {
 
 export const updateEntityAI = (tickTime: number) => {
   for (const entity of entities.values()) {
+    if (entity.isDead) continue;
     const speed = entity.stats.moveSpeed * (tickTime / 1000);
     const oldPos: [number, number, number] = [...entity.pos] as [number, number, number];
     const oldAIState = entity.aiState;

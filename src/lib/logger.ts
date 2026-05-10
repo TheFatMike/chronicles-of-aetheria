@@ -1,9 +1,12 @@
 import { useGameStore } from '../store/useGameStore';
+import { DEBUG_CONFIG, isDebugEnabled, DebugCategory } from '../debug.config';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 class Logger {
   private static instance: Logger;
+  private logBuffer: string[] = [];
+  private readonly MAX_BUFFER = 1000;
   
   private constructor() {}
 
@@ -16,17 +19,41 @@ class Logger {
 
   log(level: LogLevel, context: string, message: string, data?: any) {
     const { devMode } = useGameStore.getState();
+    
+    const category = context.toUpperCase() as DebugCategory;
+    const isCategoryEnabled = isDebugEnabled('CLIENT', category);
+    
+    if (level !== 'error' && (!DEBUG_CONFIG.ENABLED || !isCategoryEnabled)) return;
     if (level !== 'error' && !devMode) return;
 
     const timestamp = new Date().toLocaleTimeString();
-    const style = this.getStyle(level);
     const label = `[${timestamp}] [${context.toUpperCase()}]`;
+    const fullMessage = `${label} ${message}${data ? ' ' + JSON.stringify(data) : ''}`;
+    
+    // Buffer for file output
+    this.logBuffer.push(fullMessage);
+    if (this.logBuffer.length > this.MAX_BUFFER) this.logBuffer.shift();
 
+    const style = this.getStyle(level);
     if (data) {
       console.log(`%c${label} %c${message}`, style.label, style.message, data);
     } else {
       console.log(`%c${label} %c${message}`, style.label, style.message);
     }
+  }
+
+  getBuffer() {
+    return this.logBuffer;
+  }
+
+  downloadLogs() {
+    const blob = new Blob([this.logBuffer.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aetheria_debug_${new Date().getTime()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   private getStyle(level: LogLevel) {

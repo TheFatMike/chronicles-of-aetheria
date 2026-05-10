@@ -1,12 +1,25 @@
 import { Server, Socket } from "socket.io";
 import { terrainData, players } from "../../state";
 import { db } from "../../db";
+import { serverLogger } from "../../logger";
 
 export const handleUpdateTerrain = (io: Server, socket: Socket, data: { 
   points: { x: number, z: number, y?: number, deltaY?: number, type?: string }[] 
 }) => {
   const player = players.get(socket.id);
-  if (!player || (player.role !== 'admin' && player.role !== 'dev' && player.role !== 'mod')) return;
+  
+  if (!player) {
+    serverLogger.warn("terrain", `Update rejected: Player not found for socket ${socket.id}`);
+    return;
+  }
+
+  const hasPermission = player.role === 'admin' || player.role === 'dev' || player.role === 'mod';
+  if (!hasPermission) {
+    serverLogger.warn("terrain", `Update rejected: Player ${player.characterName} (${player.role}) lacks permissions`);
+    return;
+  }
+
+  serverLogger.info("terrain", `Processing ${data.points.length} points from ${player.characterName}`);
 
   const updates: any[] = [];
 
@@ -22,18 +35,27 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
     updates.push({ x: p.x, z: p.z, ...current });
   }
 
-  // Persist to Firestore
+  // Persist to Firestore with chunking
   if (updates.length > 0) {
-    const batch = db.batch();
-    updates.forEach(u => {
-      const key = `${u.x}_${u.z}`;
-      const docRef = db.collection("terrain").doc(key);
-      batch.set(docRef, { y: u.y, type: u.type });
-    });
-    
-    batch.commit().catch((e: any) => {
-      console.error("Failed to persist terrain updates:", e);
-    });
+    const CHUNK_SIZE = 400; // Firestore limit is 500
+    for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
+      const chunk = updates.slice(i, i + CHUNK_SIZE);
+      const batch = db.batch();
+      
+      chunk.forEach(u => {
+        const key = `${u.x}_${u.z}`;
+        const docRef = db.collection("terrain").doc(key);
+        batch.set(docRef, { y: u.y, type: u.type });
+      });
+
+      batch.commit()
+        .then(() => {
+          serverLogger.info("firestore", `Persisted chunk of ${chunk.length} terrain points.`);
+        })
+        .catch((e: any) => {
+          serverLogger.error("firestore", `Failed to persist terrain chunk: ${e.message}`);
+        });
+    }
   }
 
   // Broadcast updates to all players

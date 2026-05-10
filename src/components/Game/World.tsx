@@ -44,15 +44,16 @@ const MovingShadowLight = memo(() => {
       ref={lightRef}
       intensity={1.5} 
       castShadow 
-      shadow-mapSize={[512, 512]}
-      shadow-camera-left={-40}
-      shadow-camera-right={40}
-      shadow-camera-top={40}
-      shadow-camera-bottom={-40}
-      shadow-camera-far={200}
-      shadow-bias={-0.001}
+      shadow-mapSize={[128, 128]}
+      shadow-camera-left={-20}
+      shadow-camera-right={20}
+      shadow-camera-top={20}
+      shadow-camera-bottom={-20}
+      shadow-camera-near={0.1}
+      shadow-camera-far={40}
+      shadow-bias={-0.01}
     >
-      <orthographicCamera attach="shadow-camera" args={[-40, 40, 40, -40, 0.5, 200]} />
+      <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20, 0.1, 40]} />
     </directionalLight>
   );
 });
@@ -92,8 +93,9 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
     
     // Terrain Sculpting Logic
     if (editorSelectedType.startsWith('terrain_')) {
-      const brushSize = e.shiftKey ? 12 : 6;
-      const strength = 0.5;
+      const { editorBrushSize, editorBrushStrength } = useGameStore.getState();
+      const brushSize = editorBrushSize;
+      const strength = editorBrushStrength;
       const resolution = 4; // MUST match Terrain.tsx resolution
       const points = [];
       
@@ -123,6 +125,8 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
 
       if (socket && points.length > 0) {
         socket.emit("update_terrain", { points });
+        // Client-side prediction: Update local store immediately for instant feedback
+        useGameStore.getState().updateTerrainData(points);
       }
       return;
     }
@@ -144,13 +148,23 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
 
     if (socket && editorSelectedType !== 'waypoint') {
       const template = OBJECT_TEMPLATES[editorSelectedType];
+      const isSpawner = editorSelectedType.startsWith('spawner_');
+      const spawnerClass = isSpawner ? editorSelectedType.replace('spawner_', '') : undefined;
+      
       socket.emit("save_world_object", {
         id: crypto.randomUUID(),
         type: editorSelectedType,
-        pos: [point.x, point.y, point.z], // Use precise Y for placement on hills
-        rot: [0, Math.random() * Math.PI * 2, 0],
-        scale: (template?.scale || 1) * (0.9 + Math.random() * 0.2),
-        modelUrl: template?.modelUrl
+        pos: [point.x, point.y, point.z],
+        rot: isSpawner ? [0, 0, 0] : [0, Math.random() * Math.PI * 2, 0],
+        scale: isSpawner ? 1 : (template?.scale || 1) * (0.9 + Math.random() * 0.2),
+        modelUrl: template?.modelUrl,
+        // Spawner logic defaults
+        entityClass: spawnerClass,
+        level: isSpawner ? 1 : undefined,
+        spawnRadius: isSpawner ? 5 : undefined,
+        maxEntities: isSpawner ? 3 : undefined,
+        respawnTime: isSpawner ? 10 : undefined,
+        pathId: isSpawner ? '' : undefined
       });
     }
   };
@@ -166,17 +180,22 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       <MovingShadowLight />
       <pointLight position={[-10, 5, -10]} intensity={1} color="#fcd34d" />
       
-      <Terrain socket={socket} onClick={onFloorClick} />
-      
-      <Plane 
-        args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        position={[0, 0.02, 0]} 
-        receiveShadow
-        onClick={onFloorClick}
-      >
-        <meshStandardMaterial color="#44403c" roughness={1} />
-      </Plane>
+      <group name="collidables_root">
+        <Terrain socket={socket} onClick={onFloorClick} />
+        
+        <Plane 
+          args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} 
+          rotation={[-Math.PI / 2, 0, 0]} 
+          position={[0, 0.02, 0]} 
+          receiveShadow
+          onClick={onFloorClick}
+          name="starting_plaza"
+        >
+          <meshStandardMaterial color="#44403c" roughness={1} />
+        </Plane>
+
+        <WorldObjectsRenderer socket={socket} />
+      </group>
       
       <EntityRenderer entities={entities} onAttack={onAttack} onLoot={onLoot} />
 
@@ -184,19 +203,6 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         <OtherPlayer key={pid} id={pid} />
       ))}
 
-      <group position={[0, 0, -30]}>
-        <mesh position={[0, 2, 0]} castShadow>
-          <octahedronGeometry args={[2]} />
-          <meshStandardMaterial color="#38bdf8" transparent opacity={0.8} emissive="#0ea5e9" emissiveIntensity={2} />
-        </mesh>
-        <pointLight position={[0, 2, 0]} intensity={2} color="#0ea5e9" />
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-          <circleGeometry args={[5, 32]} />
-          <meshStandardMaterial color="#0ea5e9" transparent opacity={0.3} emissive="#0ea5e9" emissiveIntensity={1} />
-        </mesh>
-      </group>
-
-      <WorldObjectsRenderer socket={socket} />
       {devMode && isEditorOpen && spawners.length > 0 && (
         <SpawnerBeacons spawners={spawners} entities={entities} />
       )}

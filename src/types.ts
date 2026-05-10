@@ -145,6 +145,11 @@ export interface WorldObject {
   waypointId?: string; // For pathing
   nextWaypointId?: string; // For linking
   pathId?: string; // For categorizing paths
+  entityClass?: string; // For spawners
+  level?: number;
+  spawnRadius?: number;
+  maxEntities?: number;
+  respawnTime?: number;
 }
 
 export type TargetType = "player" | "npc" | "enemy";

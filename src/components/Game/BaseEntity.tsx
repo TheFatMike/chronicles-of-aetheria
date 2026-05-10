@@ -138,7 +138,6 @@ export const BaseEntity = memo(({
     if (distance <= 5) {
       if (isDead && onInteract) onInteract();
       else if (type === 'npc' && onInteract) onInteract();
-      else if (type === 'enemy' && onAttack) onAttack();
     }
   };
 
