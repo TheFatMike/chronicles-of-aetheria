@@ -13,6 +13,7 @@ import { MenuManager } from "./MenuManager";
 import { NavigationMenu } from "./NavigationMenu";
 import { GameMenu } from "./GameMenu";
 import { LootWindow } from "./LootWindow";
+import { DebugOverlay } from "./DebugOverlay";
 import { useGameStore } from "../../store/useGameStore";
 import { Socket } from "socket.io-client";
 

@@ -19,6 +19,7 @@ export interface PlayerState {
   level?: number;
   exp?: number;
   maxExp?: number;
+  gold?: number;
 }
 
 export interface Projectile {

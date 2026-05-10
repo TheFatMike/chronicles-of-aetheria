@@ -163,8 +163,8 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
               />
             ))}
 
-            {/* New Character Button / Limit reached state */}
-            {characters.length < 6 ? (
+            {/* New Character Button */}
+            {characters.length < 6 && (
               <motion.button
                 whileHover={{ y: -5 }}
                 onClick={onNew}
@@ -175,14 +175,6 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
                 </div>
                 <span className="text-xs font-fantasy font-bold uppercase tracking-[0.3em] text-center">Embody New Hero</span>
               </motion.button>
-            ) : (
-              <div className="border-2 border-dashed border-[#2d221a] rounded p-6 flex flex-col items-center justify-center text-[#4a3a2a] bg-black/10 opacity-60 h-full min-h-[200px]">
-                <div className="w-10 h-10 rounded-full border-2 border-dashed border-[#2d221a] flex items-center justify-center mb-4">
-                  <span className="text-xl">🚫</span>
-                </div>
-                <span className="text-xs font-fantasy font-bold uppercase tracking-[0.2em] text-center mb-1">Max Roster Reached</span>
-                <span className="text-[10px] font-serif italic text-[#4a3a2a] text-center">(Limit: 6 Heroes)</span>
-              </div>
             )}
           </div>
         </motion.div>

@@ -13,6 +13,7 @@ interface InventorySlotProps {
   onContextMenu: (e: React.MouseEvent, item: InventoryItem, index: number) => void;
   onHover: (item: InventoryItem, e: React.MouseEvent) => void;
   onMouseLeave: () => void;
+  onDragEnd?: () => void;
 }
 
 const getRarityColor = (rarity: ItemRarity | undefined) => {
@@ -47,7 +48,8 @@ export const InventorySlot = ({
   onClick,
   onContextMenu,
   onHover,
-  onMouseLeave
+  onMouseLeave,
+  onDragEnd
 }: InventorySlotProps) => {
   return (
     <div 
@@ -59,6 +61,7 @@ export const InventorySlot = ({
       onDragStart={(e) => item && onDragStart(e, item, index)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(index); }}
       onDrop={(e) => onDrop(e, index)}
+      onDragEnd={onDragEnd}
       draggable={!!item}
       onClick={() => item && onClick(item, index)}
       onContextMenu={(e) => item && onContextMenu(e, item, index)}

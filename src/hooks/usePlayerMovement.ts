@@ -22,7 +22,7 @@ export const usePlayerMovement = (
   socket: Socket | null,
   config = GAME_CONFIG.MOVEMENT
 ) => {
-  const { camera, scene } = useThree();
+  const { camera, scene, gl } = useThree();
   const store = useGameStore();
 
   // 1. Initialize Modular Systems
@@ -80,6 +80,9 @@ export const usePlayerMovement = (
     systems.input.setup();
 
     const onMouseDown = (e: MouseEvent) => {
+      // Ignore if clicking on UI
+      if (e.target !== gl.domElement) return;
+
       if (e.button === 0) cameraState.current.isLeftMouseDown = true;
       if (e.button === 2) cameraState.current.isRightMouseDown = true;
       cameraState.current.lastX = e.clientX;
@@ -94,6 +97,15 @@ export const usePlayerMovement = (
     const onMouseMove = (e: MouseEvent) => {
       const { isLeftMouseDown, isRightMouseDown, lastX, lastY } = cameraState.current;
       if (!isLeftMouseDown && !isRightMouseDown) return;
+      
+      // If we are dragging something over the window, e.target might change, 
+      // but the initial mousedown already filtered it. 
+      // However, to be extra safe during active drag-and-drop:
+      if (e.buttons === 0) { // Safety: buttons is 0 if no button is held
+        cameraState.current.isLeftMouseDown = false;
+        cameraState.current.isRightMouseDown = false;
+        return;
+      }
 
       const deltaX = e.clientX - lastX;
       const deltaY = e.clientY - lastY;

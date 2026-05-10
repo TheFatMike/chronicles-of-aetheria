@@ -33,7 +33,8 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         maxMp: confirmedState.maxMp,
         stats: confirmedState.stats,
         level: confirmedState.level,
-        quests: confirmedState.quests
+        quests: confirmedState.quests,
+        gold: confirmedState.gold
       } : null);
       
       useGameStore.getState().setActiveQuests(confirmedState.quests || {});
@@ -44,10 +45,20 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
     };
 
-    // 4. Player Stats (Health/Mana Regen)
+    // 4. Player Stats (Health/Mana/Gold)
     const handlePlayerStats = (data: any) => {
       if (data.id === socket.id) {
-        setSelectedCharacter(prev => prev ? { ...prev, hp: data.hp, mp: data.mp } : null);
+        setSelectedCharacter(prev => {
+          if (!prev) return null;
+          const updates: any = {};
+          if (data.hp !== undefined) updates.hp = data.hp;
+          if (data.mp !== undefined) updates.mp = data.mp;
+          if (data.gold !== undefined) updates.gold = data.gold;
+          if (data.level !== undefined) updates.level = data.level;
+          if (data.exp !== undefined) updates.exp = data.exp;
+          if (data.maxExp !== undefined) updates.maxExp = data.maxExp;
+          return { ...prev, ...updates };
+        });
       }
     };
 
@@ -72,7 +83,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
 
     // 8. Loot Updates
     const handleLootOpened = (data: any) => {
-      useGameStore.getState().setActiveLoot(data);
+      if (!data || (data.items.length === 0 && (data.gold || 0) <= 0)) {
+        useGameStore.getState().setActiveLoot(null);
+      } else {
+        useGameStore.getState().setActiveLoot(data);
+      }
     };
  
     // Register listeners

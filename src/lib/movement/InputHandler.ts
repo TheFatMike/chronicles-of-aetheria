@@ -25,6 +25,7 @@ export class InputHandler {
   }
 
   private onMouseDown = (e: MouseEvent) => {
+    if ((e.target as HTMLElement).tagName !== "CANVAS") return;
     if (e.button === 0) this.isLeftMouseDown = true;
     if (e.button === 2) this.isRightMouseDown = true;
   };

@@ -83,5 +83,31 @@ export const SAMPLE_QUESTS: Record<string, Quest> = {
       gold: 25,
       items: ["health-potion"]
     }
+  },
+  "starter_collect_goo": {
+    id: "starter_collect_goo",
+    title: "Sticky Business",
+    description: "Those slimes leave behind a useful residue. Bring me some Slime Goo so I can show you how to handle materials.",
+    giverName: "Instructor Kael",
+    giverId: "instructor_kael",
+    level: 1,
+    status: "available",
+    prerequisiteQuestId: "starter_equip",
+    objectives: [
+      {
+        id: "obj_goo",
+        type: "collect",
+        targetId: "slime_goo",
+        targetName: "Slime Goo",
+        count: 3,
+        currentCount: 0,
+        completed: false
+      }
+    ],
+    reward: {
+      exp: 100,
+      gold: 50,
+      items: ["mana-potion"]
+    }
   }
 };

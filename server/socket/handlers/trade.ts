@@ -3,6 +3,7 @@ import { players, activeTrades } from "../../state";
 import { serverLogger } from "../../logger";
 import { db } from "../../db";
 import crypto from "crypto";
+import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
 
 export const handleTradeRequest = (io: Server, socket: Socket, targetId: string) => {
   const player = players.get(socket.id);
@@ -184,9 +185,17 @@ export const handleTradeConfirm = (io: Server, socket: Socket, tradeId: string) 
           inventory: p.inventory
         }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Trade save failed", e.message));
       };
+      const s1 = io.sockets.sockets.get(trade.p1);
+      const s2 = io.sockets.sockets.get(trade.p2);
 
-      savePlayer(p1, io.sockets.sockets.get(trade.p1) as Socket);
-      savePlayer(p2, io.sockets.sockets.get(trade.p2) as Socket);
+      if (s1) {
+        savePlayer(p1, s1);
+        syncQuestInventory(s1, p1);
+      }
+      if (s2) {
+        savePlayer(p2, s2);
+        syncQuestInventory(s2, p2);
+      }
 
       io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: "Trade complete!", color: "#22c55e" });
       io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: "Trade complete!", color: "#22c55e" });

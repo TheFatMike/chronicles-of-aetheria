@@ -5,7 +5,7 @@ import { Book, CheckCircle2, Circle, X } from 'lucide-react';
 
 export const QuestLog = memo(({ onClose }: { onClose: () => void }) => {
   const activeQuests = useGameStore(state => state.activeQuests);
-  const questList = Object.values(activeQuests);
+  const questList = Object.values(activeQuests).filter(q => q.status === "active");
 
   return (
     <motion.div
@@ -51,6 +51,7 @@ export const QuestLog = memo(({ onClose }: { onClose: () => void }) => {
                         <span className={`text-[10px] font-bold ${obj.completed ? 'text-green-500/80 line-through' : 'text-[#e2d1b0]'}`}>
                           {obj.type === 'kill' ? `Slay ${obj.targetName}` : 
                            obj.type === 'equip' ? `Equip ${obj.targetName}` :
+                           obj.type === 'collect' ? `Collect ${obj.targetName}` :
                            `Talk to ${obj.targetName}`}
                         </span>
                         <span className="text-[9px] font-mono text-[#8b6b4d]">

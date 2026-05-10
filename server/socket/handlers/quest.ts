@@ -52,7 +52,39 @@ export const handleTurnInQuest = (io: any, socket: Socket, data: any) => {
   const allDone = quest.objectives.every((obj: any) => obj.completed);
   if (!allDone) return;
 
-  // 1. Mark as completed
+  // 1. Remove Quest Items (for 'collect' objectives)
+  const newInventory = [...player.inventory];
+  let inventoryChanged = false;
+
+  quest.objectives.forEach((obj: any) => {
+    if (obj.type === 'collect') {
+      let remainingToRemove = obj.count;
+      for (let i = 0; i < newInventory.length; i++) {
+        const slot = newInventory[i];
+        if (slot && slot.itemId === obj.targetId) {
+          const quantity = slot.quantity || 1;
+          const toRemove = Math.min(quantity, remainingToRemove);
+          
+          if (quantity > toRemove) {
+            newInventory[i] = { ...slot, quantity: quantity - toRemove };
+          } else {
+            newInventory[i] = null;
+          }
+          
+          remainingToRemove -= toRemove;
+          inventoryChanged = true;
+          if (remainingToRemove <= 0) break;
+        }
+      }
+    }
+  });
+
+  if (inventoryChanged) {
+    player.inventory = newInventory;
+    socket.emit("inventory_update", { inventory: newInventory });
+  }
+
+  // 2. Mark as completed
   quest.status = "completed";
   quest.completedAt = Date.now();
 

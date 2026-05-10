@@ -32,13 +32,16 @@ export const useCharacters = (user: User | null, socket: Socket | null) => {
       let accountRole = getAccountRole(user.email);
 
       const q = query(
-        collection(db, `users/${user.uid}/characters`),
-        orderBy("createdAt", "desc")
+        collection(db, `users/${user.uid}/characters`)
       );
       const snapshot = await getDocs(q);
       const fetched: Character[] = snapshot.docs.map(doc => 
         CharacterModel.fromFirestore(doc.id, doc.data(), accountRole)
       );
+      
+      // Sort in memory (fallback for missing createdAt)
+      fetched.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      
       setCharacters(fetched);
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/characters`);

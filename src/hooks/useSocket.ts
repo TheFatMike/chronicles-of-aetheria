@@ -80,7 +80,8 @@ export const useSocket = (token: string | null) => {
         maxMp: data.maxMp,
         level: data.level,
         exp: data.exp,
-        maxExp: data.maxExp
+        maxExp: data.maxExp,
+        gold: data.gold
       });
 
       // Show EXP notification if it increased

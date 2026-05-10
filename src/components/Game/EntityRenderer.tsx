@@ -29,26 +29,57 @@ export const EntityRenderer = memo(({ entities, onAttack, onLoot }: EntityRender
             hp={ent.hp}
             maxHp={ent.maxHp}
             onInteract={() => {
-              const quest = Object.values(SAMPLE_QUESTS).find(q => q.giverId === ent.id || q.giverName === ent.name);
-              const playerQuest = quest ? activeQuests[quest.id] : null;
+              const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => q.giverId === ent.id || q.giverName === ent.name);
               
-              if (playerQuest && playerQuest.objectives.every(o => o.completed) && playerQuest.status !== 'completed') {
+              // 1. Check for turn-in
+              const readyToTurnIn = npcQuests.find(q => {
+                const pq = activeQuests[q.id];
+                return pq && pq.status === 'active' && pq.objectives.every(o => o.completed);
+              });
+
+              if (readyToTurnIn) {
                 setActiveDialogue({
                   speaker: ent.name,
                   text: `Incredible! You've done it. Here is your reward as promised.`,
-                  quest: playerQuest
+                  quest: activeQuests[readyToTurnIn.id]
                 });
-              } else if (quest && !playerQuest) {
+                return;
+              }
+
+              // 2. Check for new quests
+              const availableQuest = npcQuests.find(q => {
+                const pq = activeQuests[q.id];
+                if (pq) return false; // Already taken or completed
+                
+                // Check prerequisite
+                if (q.prerequisiteQuestId) {
+                  const prereq = activeQuests[q.prerequisiteQuestId];
+                  return prereq && prereq.status === 'completed';
+                }
+                
+                return true;
+              });
+
+              if (availableQuest) {
                 setActiveDialogue({
                   speaker: ent.name,
-                  text: `Greetings traveler. ${quest.description}`,
-                  quest: quest
+                  text: `Greetings traveler. ${availableQuest.description}`,
+                  quest: availableQuest
                 });
               } else {
-                setActiveDialogue({
-                  speaker: ent.name,
-                  text: `The winds of Aetheria are cold today. Watch your step, explorer.`
-                });
+                // Check if currently working on a quest
+                const currentlyActive = npcQuests.find(q => activeQuests[q.id]?.status === 'active');
+                if (currentlyActive) {
+                  setActiveDialogue({
+                    speaker: ent.name,
+                    text: `How goes the task for ${currentlyActive.title}? Keep at it!`
+                  });
+                } else {
+                  setActiveDialogue({
+                    speaker: ent.name,
+                    text: `The winds of Aetheria are cold today. Watch your step, explorer.`
+                  });
+                }
               }
             }}
           />

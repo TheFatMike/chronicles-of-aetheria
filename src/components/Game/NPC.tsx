@@ -24,13 +24,28 @@ interface NPCProps {
 export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp }: NPCProps) => {
   const activeQuests = useGameStore(useShallow(state => state.activeQuests));
   
-  // Find quest associated with this NPC
-  const quest = Object.values(SAMPLE_QUESTS).find(q => q.giverId === id || q.giverName === name);
-  const playerQuest = quest ? activeQuests[quest.id] : null;
+  // Find quests associated with this NPC
+  const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => q.giverId === id || q.giverName === name);
   
-  const hasAvailableQuest = quest && !playerQuest;
-  const isQuestReady = playerQuest && playerQuest.objectives.every(o => o.completed) && playerQuest.status !== 'completed';
-  const isQuestActive = playerQuest && playerQuest.status === 'active' && !isQuestReady;
+  const readyQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    return pq && pq.status === 'active' && pq.objectives.every(o => o.completed);
+  });
+
+  const availableQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    if (pq) return false;
+    if (q.prerequisiteQuestId) {
+      const prereq = activeQuests[q.prerequisiteQuestId];
+      return prereq && prereq.status === 'completed';
+    }
+    return true;
+  });
+
+  const activeQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    return pq && pq.status === 'active' && !pq.objectives.every(o => o.completed);
+  });
 
   return (
     <BaseEntity
@@ -53,15 +68,15 @@ export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color
       
       {/* Quest Indicators */}
       <Html position={[0, 2.2, 0]} center distanceFactor={10}>
-        {isQuestReady ? (
+        {readyQuest ? (
           <div className="flex flex-col items-center animate-bounce">
-            <span className="text-yellow-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">!</span>
-          </div>
-        ) : hasAvailableQuest ? (
-          <div className="flex flex-col items-center">
             <span className="text-yellow-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">?</span>
           </div>
-        ) : isQuestActive ? (
+        ) : availableQuest ? (
+          <div className="flex flex-col items-center">
+            <span className="text-yellow-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">!</span>
+          </div>
+        ) : activeQuest ? (
           <div className="flex flex-col items-center opacity-60">
             <span className="text-gray-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">?</span>
           </div>

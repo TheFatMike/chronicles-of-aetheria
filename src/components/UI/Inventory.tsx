@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { InventoryItem } from "../../types";
 import * as Icons from "lucide-react";
-import { Briefcase, X, Scissors, Sword, Shield } from "lucide-react";
+import { Briefcase, X, Scissors, Sword, Shield, Eye } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useScaffold } from "./GameScaffold";
 import { formatGold, formatGoldDetailed } from "../../lib/currency";
@@ -10,6 +10,7 @@ import { ContextMenu } from "./ContextMenu";
 import { InventorySlot } from "./InventorySlot";
 import { ItemTooltip } from "./ItemTooltip";
 import { SplitStackModal } from "./SplitStackModal";
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface InventoryProps {
   items: (InventoryItem | null)[];
@@ -23,13 +24,15 @@ interface InventoryProps {
 export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplitStack, onEquip }: InventoryProps) => {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [splitModalItem, setSplitModalItem] = useState<InventoryItem | null>(null);
+  const [destroyModalItem, setDestroyModalItem] = useState<{item: InventoryItem, index: number} | null>(null);
   const [splitAmount, setSplitAmount] = useState<number>(1);
+  const [isDragging, setIsDragging] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<{item: InventoryItem, x: number, y: number} | null>(null);
   const [contextMenu, setContextMenu] = useState<{x: number, y: number, item: InventoryItem, index: number} | null>(null);
   const { toLogical } = useScaffold();
 
   const handleItemHover = (item: InventoryItem, e: React.MouseEvent) => {
-    if (contextMenu) return;
+    if (contextMenu || isDragging) return;
     const logical = toLogical(e.clientX, e.clientY);
     setHoveredItem({ item, x: logical.x, y: logical.y });
   };
@@ -42,6 +45,8 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
   }, [items]);
 
   const handleDragStart = (e: React.DragEvent, item: InventoryItem, index: number) => {
+    setHoveredItem(null);
+    setIsDragging(true);
     e.dataTransfer.setData("application/json", JSON.stringify({ item, fromIndex: index, type: "inventory" }));
     e.dataTransfer.effectAllowed = "move";
   };
@@ -111,9 +116,10 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
               onDragOver={setDragOverIndex}
               onDrop={handleDrop}
               onClick={handleItemClick}
-              onContextMenu={handleContextMenu}
+               onContextMenu={handleContextMenu}
               onHover={handleItemHover}
               onMouseLeave={() => setHoveredItem(null)}
+              onDragEnd={() => setIsDragging(false)}
             />
           ))}
         </div>
@@ -152,6 +158,20 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
               disabled: !contextMenu.item.stackable || (contextMenu.item.quantity || 1) <= 1
             },
             {
+              label: "Examine",
+              icon: <Eye size={14} />,
+              onClick: () => {
+                useGameStore.getState().addMessage({
+                  id: `examine-${Date.now()}`,
+                  sender: "SYSTEM",
+                  text: `${contextMenu.item.name}: ${contextMenu.item.description}`,
+                  timestamp: Date.now(),
+                  color: "#c2a472"
+                });
+                setContextMenu(null);
+              }
+            },
+            ...(useGameStore.getState().activeTrade ? [{
               label: "Add to Trade",
               icon: <Shield size={14} />,
               onClick: () => {
@@ -161,14 +181,16 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
                      inventoryIndex: contextMenu.index 
                    });
                  }
+                 setContextMenu(null);
               },
-              disabled: !useGameStore.getState().activeTrade || useGameStore.getState().activeTrade?.p1Locked || useGameStore.getState().activeTrade?.p2Locked
-            },
+              disabled: useGameStore.getState().activeTrade?.p1Locked || useGameStore.getState().activeTrade?.p2Locked
+            }] : []),
             {
-              label: "Drop",
-              icon: <X size={14} />,
+              label: "Destroy Item",
+              icon: <Icons.Trash2 size={14} />,
               onClick: () => {
-                // Future drop logic
+                setDestroyModalItem({ item: contextMenu.item, index: contextMenu.index });
+                setContextMenu(null);
               },
               variant: "danger"
             }
@@ -188,6 +210,27 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
               const idx = items.findIndex(i => i?.id === splitModalItem.id);
               onSplitStack(idx, amt);
               setSplitModalItem(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Destruction Confirmation Modal */}
+      <AnimatePresence>
+        {destroyModalItem && (
+          <ConfirmationModal
+            title="Destroy Item"
+            message={`Are you sure you want to PERMANENTLY DESTROY ${destroyModalItem.item.name}? This action cannot be undone.`}
+            confirmLabel="Destroy"
+            variant="danger"
+            onCancel={() => setDestroyModalItem(null)}
+            onConfirm={() => {
+              if ((window as any).socket) {
+                (window as any).socket.emit("destroy_item", { 
+                  inventoryIndex: destroyModalItem.index 
+                });
+              }
+              setDestroyModalItem(null);
             }}
           />
         )}

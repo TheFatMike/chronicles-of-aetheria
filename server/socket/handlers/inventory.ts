@@ -5,7 +5,8 @@ import { serverLogger } from "../../logger";
 import { generateItemInstance } from "../../data/items";
 import { decrementSpawnerCount } from "../../systems/spawners";
 import { CharacterModel } from "../../../src/models/CharacterModel";
-import { updateQuestProgress } from "../../logic/quest";
+import { InventoryItem } from "../../../src/types";
+import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
 
 export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
@@ -42,20 +43,45 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
   const item = target.lootInstances[data.lootIndex];
   if (!item) return;
 
-  // Check Inventory Space
-  const emptyIdx = player.inventory.findIndex(s => s === null);
-  if (emptyIdx === -1) {
+  // Move item (with stacking)
+  const newInventory = [...player.inventory];
+  let success = false;
+
+  if (item.stackable) {
+    for (let i = 0; i < newInventory.length; i++) {
+      const slot = newInventory[i];
+      if (slot && slot.itemId === item.itemId && (slot.quantity || 0) < (slot.maxStack || 99)) {
+        const space = (slot.maxStack || 99) - (slot.quantity || 0);
+        const toAdd = Math.min(space, item.quantity || 1);
+        newInventory[i] = { ...slot, quantity: (slot.quantity || 0) + toAdd };
+        
+        const remaining = (item.quantity || 1) - toAdd;
+        if (remaining <= 0) {
+          success = true;
+          break;
+        } else {
+          item.quantity = remaining;
+        }
+      }
+    }
+  }
+
+  if (!success) {
+    const emptyIdx = newInventory.findIndex((s: InventoryItem | null) => s === null);
+    if (emptyIdx !== -1) {
+      newInventory[emptyIdx] = item;
+      success = true;
+    }
+  }
+
+  if (!success) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "Your inventory is full!", color: "#ff4444" });
     return;
   }
 
-  // Move item
-  const newInventory = [...player.inventory];
-  newInventory[emptyIdx] = item;
   player.inventory = newInventory;
-
-  // Remove from loot
   target.lootInstances.splice(data.lootIndex, 1);
+
 
   // Sync
   socket.emit("inventory_update", { inventory: newInventory });
@@ -69,6 +95,9 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
   db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
     inventory: newInventory
   }, { merge: true });
+
+  // Update Quest Progress
+  syncQuestInventory(socket, player);
 
   // If empty, despawn
   if (target.lootInstances.length === 0 && (target.gold || 0) <= 0) {
@@ -98,19 +127,56 @@ export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
   }
 
   const newInventory = [...player.inventory];
-  const remainingLoot = [];
+  const itemsToRemove: number[] = [];
+  const takenItems: { itemId: string, quantity: number }[] = [];
 
-  for (const item of target.lootInstances) {
-    const emptyIdx = newInventory.findIndex(s => s === null);
-    if (emptyIdx !== -1) {
-      newInventory[emptyIdx] = item;
-    } else {
-      remainingLoot.push(item);
+  for (let i = 0; i < target.lootInstances.length; i++) {
+    const item = target.lootInstances[i];
+    const initialQuantity = item.quantity || 1;
+    let taken = false;
+
+    // Try stacking
+    if (item.stackable) {
+      for (let j = 0; j < newInventory.length; j++) {
+        const slot = newInventory[j];
+        if (slot && slot.itemId === item.itemId && (slot.quantity || 0) < (slot.maxStack || 99)) {
+          const space = (slot.maxStack || 99) - (slot.quantity || 0);
+          const toAdd = Math.min(space, item.quantity || 1);
+          newInventory[j] = { ...slot, quantity: (slot.quantity || 0) + toAdd };
+          
+          const remaining = (item.quantity || 1) - toAdd;
+          if (remaining <= 0) {
+            taken = true;
+            break;
+          } else {
+            item.quantity = remaining;
+          }
+        }
+      }
+    }
+
+    // Try empty slot
+    if (!taken) {
+      const emptyIdx = newInventory.findIndex((s: InventoryItem | null) => s === null);
+      if (emptyIdx !== -1) {
+        newInventory[emptyIdx] = item;
+        taken = true;
+      }
+    }
+
+    if (taken) {
+      itemsToRemove.push(i);
+      takenItems.push({ itemId: item.itemId, quantity: initialQuantity });
     }
   }
 
+  // Remove taken items from loot
+  target.lootInstances = target.lootInstances.filter((_: any, idx: number) => !itemsToRemove.includes(idx));
   player.inventory = newInventory;
-  target.lootInstances = remainingLoot;
+
+  // Update Quest Progress
+  syncQuestInventory(socket, player);
+
 
   // Sync & Save
   socket.emit("inventory_update", { inventory: newInventory });
@@ -129,6 +195,35 @@ export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
       gold: target.gold || 0
     });
     socket.emit("chat_message", { sender: "SYSTEM", text: "Inventory full, some items left behind.", color: "#ffaa00" });
+  }
+};
+
+export const handleTakeGold = (socket: Socket, data: any) => {
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  const target = entities.get(data.targetId);
+  if (!target || !target.isDead || !target.gold || target.gold <= 0) return;
+
+  player.gold = (player.gold || 0) + target.gold;
+  target.gold = 0;
+
+  socket.emit("player_stats", { id: player.id, gold: player.gold });
+  socket.emit("loot_update", {
+    targetId: target.id,
+    items: target.lootInstances || [],
+    gold: 0
+  });
+
+  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+    gold: player.gold
+  }, { merge: true });
+
+  // If empty, despawn
+  if ((target.lootInstances || []).length === 0) {
+    entities.delete(target.id);
+    socket.broadcast.emit("entity_despawn", target.id);
+    socket.emit("entity_despawn", target.id);
   }
 };
 
@@ -179,11 +274,43 @@ export const handleMoveItem = (socket: Socket, data: any) => {
 
   const { fromIndex, toIndex } = data;
   if (fromIndex < 0 || fromIndex >= 30 || toIndex < 0 || toIndex >= 30) return;
+  if (fromIndex === toIndex) return;
 
   const newInventory = [...player.inventory];
   const itemA = newInventory[fromIndex];
   const itemB = newInventory[toIndex];
 
+  if (!itemA) return;
+
+  // 1. Check for stacking
+  if (itemB && itemA.itemId === itemB.itemId && itemB.stackable) {
+    const maxStack = itemB.maxStack || 99;
+    const space = maxStack - (itemB.quantity || 1);
+    
+    if (space > 0) {
+      const toAdd = Math.min(space, itemA.quantity || 1);
+      const updatedB = { ...itemB, quantity: (itemB.quantity || 1) + toAdd };
+      const updatedA = { ...itemA, quantity: (itemA.quantity || 1) - toAdd };
+      
+      newInventory[toIndex] = updatedB;
+      if (updatedA.quantity <= 0) {
+        newInventory[fromIndex] = null;
+      } else {
+        newInventory[fromIndex] = updatedA;
+      }
+      
+      player.inventory = newInventory;
+      socket.emit("inventory_update", { inventory: newInventory });
+      
+      db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+        inventory: newInventory
+      }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+      
+      return;
+    }
+  }
+
+  // 2. Default: Just Swap
   newInventory[toIndex] = itemA;
   newInventory[fromIndex] = itemB;
   
@@ -224,3 +351,28 @@ export const handleSplitStack = (socket: Socket, data: any) => {
     inventory: newInventory
   }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
 };
+
+export const handleDestroyItem = (socket: Socket, data: any) => {
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  const { inventoryIndex } = data;
+  if (inventoryIndex < 0 || inventoryIndex >= 30) return;
+
+  const item = player.inventory[inventoryIndex];
+  if (!item) return;
+
+  const newInventory = [...player.inventory];
+  newInventory[inventoryIndex] = null;
+  
+  player.inventory = newInventory;
+  socket.emit("inventory_update", { inventory: newInventory });
+  syncQuestInventory(socket, player);
+
+  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).set({
+    inventory: newInventory
+  }, { merge: true }).catch((e: any) => serverLogger.error("firestore", "Inventory save failed", e.message));
+  
+  serverLogger.info("inventory", `Player ${player.characterName} destroyed item: ${item.name}`);
+};
+

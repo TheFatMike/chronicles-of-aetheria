@@ -81,6 +81,7 @@ export interface Quest {
   objectives: QuestObjective[];
   reward: QuestReward;
   status: 'available' | 'active' | 'completed';
+  prerequisiteQuestId?: string;
 }
 
 export type ItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";

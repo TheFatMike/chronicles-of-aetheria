@@ -12,7 +12,6 @@ import { useSocket } from "./hooks/useSocket";
 import { useGameStore } from "./store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { LoadingScreen } from "./components/UI/LoadingScreen";
-import { DebugOverlay } from "./components/UI/DebugOverlay";
 import { useCharacters } from "./hooks/useCharacters";
 import { useInventory } from "./hooks/useInventory";
 import { useKeybindings } from "./hooks/useKeybindings";
@@ -210,7 +209,6 @@ export default function App() {
       )}
 
       <GameScaffold>
-        <DebugOverlay socket={socket} />
         <AnimatePresence mode="wait">
           {showDisconnected ? (
             <motion.div
