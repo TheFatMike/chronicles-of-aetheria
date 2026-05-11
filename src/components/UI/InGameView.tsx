@@ -134,7 +134,7 @@ export const InGameView = ({
           unequipItem={unequipItem}
         />
 
-        <NavigationMenu />
+        <NavigationMenu onOpenSettings={() => setShowEscapeMenu(true)} />
         <DebugOverlay socket={socket} />
       </div>
     </motion.div>

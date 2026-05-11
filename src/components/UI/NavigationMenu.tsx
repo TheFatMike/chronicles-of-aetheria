@@ -10,7 +10,11 @@ import { Briefcase, User, Scroll, Shield, Map as MapIcon, Settings } from "lucid
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 
-export const NavigationMenu = () => {
+interface NavigationMenuProps {
+  onOpenSettings?: () => void;
+}
+
+export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
   const { 
     activeMenu, 
     setActiveMenu, 
@@ -79,7 +83,7 @@ export const NavigationMenu = () => {
       <div className="w-px h-6 bg-[#4a3a2a] mx-1" />
       
       <button
-        onClick={() => {}} // Could open system menu
+        onClick={onOpenSettings}
         className="p-2 text-[#8b6b4d] hover:text-[#f4e4bc] hover:bg-white/5 rounded-full transition-all"
       >
         <Settings size={20} />
