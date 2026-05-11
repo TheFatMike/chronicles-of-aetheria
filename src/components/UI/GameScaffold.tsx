@@ -5,8 +5,8 @@
  * @importance Essential: Vital for cross-platform and multi-resolution support, ensuring the UI is always usable and visually consistent.
  */
 import React, { useLayoutEffect, useState, ReactNode, createContext, useContext } from 'react';
-
-export const DESIGN_RES = { width: 1920, height: 1080 };
+import { useGameStore } from '../../store/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface ScaffoldContextType {
   scale: number;
@@ -27,56 +27,44 @@ interface GameScaffoldProps {
 }
 
 export const GameScaffold: React.FC<GameScaffoldProps> = ({ children }) => {
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const { uiScale } = useGameStore(useShallow(s => ({ uiScale: s.uiScale })));
+  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   useLayoutEffect(() => {
     const handleResize = () => {
-      const baseScale = Math.min(
-        window.innerWidth / DESIGN_RES.width,
-        window.innerHeight / DESIGN_RES.height
-      );
-      // Apply a global scale factor (0.9x) to make the UI feel less cramped
-      const s = baseScale * 0.9;
-      setScale(s);
-
-      const actualWidth = DESIGN_RES.width * s;
-      const actualHeight = DESIGN_RES.height * s;
-      
-      const off = {
-        x: (window.innerWidth - actualWidth) / 2,
-        y: (window.innerHeight - actualHeight) / 2
-      };
-      setOffset(off);
+      setDimensions({
+        width: window.innerWidth / uiScale,
+        height: window.innerHeight / uiScale
+      });
     };
 
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [uiScale]);
 
   const toLogical = (screenX: number, screenY: number) => {
     return {
-      x: (screenX - offset.x) / scale,
-      y: (screenY - offset.y) / scale
+      x: screenX / uiScale,
+      y: screenY / uiScale
     };
   };
 
   return (
-    <ScaffoldContext.Provider value={{ scale, offset, toLogical }}>
+    <ScaffoldContext.Provider value={{ scale: uiScale, offset: { x: 0, y: 0 }, toLogical }}>
       <div 
         id="game-viewport-wrapper" 
-        className="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-50"
+        className="fixed inset-0 pointer-events-none overflow-hidden z-50"
       >
         <div 
           id="game-viewport" 
           style={{
-            width: DESIGN_RES.width,
-            height: DESIGN_RES.height,
+            width: `${dimensions.width}px`,
+            height: `${dimensions.height}px`,
             position: 'absolute',
-            left: offset.x,
-            top: offset.y,
-            transform: `scale(${scale})`,
+            left: 0,
+            top: 0,
+            transform: `scale(${uiScale})`,
             transformOrigin: 'top left',
             overflow: 'hidden',
             pointerEvents: 'none',

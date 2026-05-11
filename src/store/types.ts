@@ -122,6 +122,7 @@ export interface UISlice {
   isQuestsOpen: boolean;
   isSkillsOpen: boolean;
   isWorldLoading: boolean;
+  uiScale: number;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
   addMessage: (message: Message) => void;
@@ -132,6 +133,7 @@ export interface UISlice {
   setQuestsOpen: (isOpen: boolean) => void;
   setSkillsOpen: (isOpen: boolean) => void;
   setWorldLoading: (isLoading: boolean) => void;
+  setUIScale: (scale: number) => void;
   setDevMode: (enabled: boolean) => void;
   setEditorOpen: (isOpen: boolean) => void;
   setTransforming: (val: boolean) => void;

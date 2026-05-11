@@ -4,8 +4,9 @@
  * Provides access to settings, character selection, logout, and world editing tools.
  * @importance Essential: The main hub for meta-actions and navigating out of the active gameplay state.
  */
+import { useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain } from "lucide-react";
+import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain, ArrowLeft, Maximize } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -16,12 +17,15 @@ interface GameMenuProps {
 }
 
 export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps) => {
-  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players } = useGameStore(useShallow(state => ({
+  const [view, setView] = useState<'menu' | 'settings'>('menu');
+  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players, uiScale, setUIScale } = useGameStore(useShallow(state => ({
     setActiveMenu: state.setActiveMenu,
     devMode: state.devMode,
     setDevMode: state.setDevMode,
     id: state.id,
-    players: state.players
+    players: state.players,
+    uiScale: state.uiScale,
+    setUIScale: state.setUIScale
   })));
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
@@ -35,7 +39,7 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-100 flex items-center justify-center p-6"
+      className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div 
@@ -45,64 +49,112 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 bg-[#1a1410] border-b-2 border-[#4a3a2a] flex justify-between items-center">
-          <span className="font-fantasy text-xs text-[#8b6b4d] uppercase tracking-[0.2em]">Game Menu</span>
+          <div className="flex items-center gap-2">
+            {view === 'settings' && (
+              <button 
+                onClick={() => setView('menu')}
+                className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <span className="font-fantasy text-xs text-[#8b6b4d] uppercase tracking-[0.2em]">
+              {view === 'menu' ? 'Game Menu' : 'Settings'}
+            </span>
+          </div>
           <button onClick={onClose} className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors">
             <X size={18} />
           </button>
         </div>
 
         <div className="p-8 space-y-4">
-          <MenuButton 
-            icon={<Play size={18} />} 
-            label="Return to Game" 
-            onClick={onClose} 
-            primary
-          />
-          
-          {isDev && (
+          {view === 'menu' ? (
             <>
               <MenuButton 
-                icon={<Mountain size={18} />} 
-                label={devMode ? "Disable World Editor" : "Enable World Editor"} 
-                onClick={() => {
-                  setDevMode(!devMode);
-                  onClose();
-                }} 
+                icon={<Play size={18} />} 
+                label="Return to Game" 
+                onClick={onClose} 
+                primary
+              />
+              
+              {isDev && (
+                <>
+                  <MenuButton 
+                    icon={<Mountain size={18} />} 
+                    label={devMode ? "Disable World Editor" : "Enable World Editor"} 
+                    onClick={() => {
+                      setDevMode(!devMode);
+                      onClose();
+                    }} 
+                  />
+                  <MenuButton 
+                    icon={<Target size={18} />} 
+                    label="Spawner Management" 
+                    onClick={() => {
+                      setActiveMenu('spawners');
+                      onClose();
+                    }} 
+                  />
+                </>
+              )}
+
+              <MenuButton 
+                icon={<LayoutGrid size={18} />} 
+                label="Character Select" 
+                onClick={onSelectCharacter} 
               />
               <MenuButton 
-                icon={<Target size={18} />} 
-                label="Spawner Management" 
-                onClick={() => {
-                  setActiveMenu('spawners');
-                  onClose();
-                }} 
+                icon={<Settings size={18} />} 
+                label="Settings" 
+                onClick={() => setView('settings')} 
               />
+              
+              <div className="pt-4 mt-4 border-t-2 border-[#4a3a2a]">
+                <MenuButton 
+                  icon={<LogOut size={18} />} 
+                  label="Log Out" 
+                  onClick={onLogout} 
+                  danger
+                />
+              </div>
             </>
-          )}
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <Maximize size={12} />
+                    <span>UI Scale</span>
+                  </div>
+                  <span>{(uiScale * 100).toFixed(0)}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="1.5" 
+                  step="0.05"
+                  value={uiScale}
+                  onChange={(e) => setUIScale(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-[#c2a472]"
+                />
+                <div className="flex justify-between text-[8px] text-[#6d5540] font-serif italic">
+                  <span>Small</span>
+                  <span>Standard</span>
+                  <span>Large</span>
+                </div>
+              </div>
 
-          <MenuButton 
-            icon={<LayoutGrid size={18} />} 
-            label="Character Select" 
-            onClick={onSelectCharacter} 
-          />
-          <MenuButton 
-            icon={<Settings size={18} />} 
-            label="Settings" 
-            onClick={() => alert("Settings coming soon...")} 
-          />
-          
-          <div className="pt-4 mt-4 border-t-2 border-[#4a3a2a]">
-            <MenuButton 
-              icon={<LogOut size={18} />} 
-              label="Log Out" 
-              onClick={onLogout} 
-              danger
-            />
-          </div>
+              <div className="p-3 bg-black/20 rounded border border-[#4a3a2a]/50">
+                <p className="text-[9px] text-[#8b6b4d] leading-relaxed">
+                  Adjusting the UI scale helps visibility on smaller displays or high-resolution monitors.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="p-3 bg-black/20 text-center font-serif italic text-[10px] text-[#6d5540]">
-          Thy journey persists in the ether...
+          {view === 'menu' ? 'Thy journey persists in the ether...' : 'Calibrating the vision of the realm...'}
         </div>
       </motion.div>
     </motion.div>
