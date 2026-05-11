@@ -24,10 +24,13 @@ interface NPCProps {
   onAttack?: () => void;
   hp?: number;
   maxHp?: number;
+  isMoving?: boolean;
+  isAttacking?: boolean;
 }
 
 
-export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp }: NPCProps) => {
+
+export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false }: NPCProps) => {
   const activeQuests = useGameStore(useShallow(state => state.activeQuests));
   
   // Find quests associated with this NPC
@@ -70,7 +73,7 @@ export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color
     >
 
 
-      <Humanoid color={color} isMoving={false} isGrounded={true} />
+      <Humanoid color={color} isMoving={isMoving} isGrounded={true} isAttacking={isAttacking} />
       
       {/* Quest Indicators */}
       <Html position={[0, 2.2, 0]} center distanceFactor={10}>

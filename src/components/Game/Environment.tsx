@@ -5,6 +5,8 @@
  * @importance Essential: Provides the visual foundation and atmosphere of the game world.
  */
 import { memo } from "react";
+import { GLBModel } from "./GLBModel";
+
 
 interface EnvironmentProps {
   position?: [number, number, number];
@@ -62,32 +64,19 @@ export const House = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick,
 });
 
 export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
-  const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
-    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
-      <mesh position={[-0.7, 0.65, 0]} rotation={[0, 0, Math.PI / 4]} castShadow={!isGhost} receiveShadow={!isGhost}>
-        <boxGeometry args={[1.9, 0.08, 2.4]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.8} {...matProps} />
-      </mesh>
-      <mesh position={[0.7, 0.65, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow={!isGhost} receiveShadow={!isGhost}>
-        <boxGeometry args={[1.9, 0.08, 2.4]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.8} {...matProps} />
-      </mesh>
-      <mesh position={[0, 0.65, -1.15]} rotation={[0, 0, 0]} castShadow={!isGhost} receiveShadow={!isGhost}>
-        <coneGeometry args={[1.35, 1.3, 4]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.9} {...matProps} />
-      </mesh>
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow={!isGhost}>
-        <planeGeometry args={[1.8, 2.2]} />
-        <meshStandardMaterial color="#334155" roughness={1} {...matProps} />
-      </mesh>
-      <mesh position={[0, 1.35, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow={!isGhost}>
-        <cylinderGeometry args={[0.06, 0.06, 2.5, 8]} />
-        <meshStandardMaterial color="#2d1a0a" roughness={0.7} {...matProps} />
-      </mesh>
-    </group>
+    <GLBModel 
+      url="assets/models/tent.glb"
+      position={position}
+      rotation={rotation}
+      scale={scale * 0.01}
+      onClick={onClick}
+      isGhost={isGhost}
+    />
   );
 });
+
+
 
 export const Bush = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
@@ -144,25 +133,21 @@ export const Waypoint = memo(({ position, rotation = [0, 0, 0], scale = 1, onCli
 ));
 
 export const Campfire = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
-  const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
-    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
-      <mesh position={[0, 0.1, 0]} rotation={[0, 0, Math.PI / 2]} castShadow={!isGhost}>
-        <cylinderGeometry args={[0.1, 0.1, 0.8, 6]} />
-        <meshStandardMaterial color="#451a03" {...matProps} />
-      </mesh>
-      <mesh position={[0, 0.1, 0]} rotation={[0, Math.PI / 2, Math.PI / 2]} castShadow={!isGhost}>
-        <cylinderGeometry args={[0.1, 0.1, 0.8, 6]} />
-        <meshStandardMaterial color="#451a03" {...matProps} />
-      </mesh>
-      <mesh position={[0, 0.4, 0]}>
-        <coneGeometry args={[0.3, 0.6, 6]} />
-        <meshStandardMaterial color="#f97316" emissive="#f97316" emissiveIntensity={isGhost ? 1 : 2} transparent={isGhost} opacity={isGhost ? 0.5 : 1} depthWrite={!isGhost} />
-      </mesh>
+    <group position={position} rotation={rotation} scale={scale}>
+      <GLBModel 
+        url="assets/models/campfire.glb"
+        position={[0, 0.05, 0]}
+        rotation={[0, 0, 0]}
+        scale={1}
+        onClick={onClick}
+        isGhost={isGhost}
+      />
       {!isGhost && <pointLight position={[0, 0.5, 0]} intensity={1.5} color="#fb923c" distance={10} />}
     </group>
   );
 });
+
 
 export const Barrel = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};

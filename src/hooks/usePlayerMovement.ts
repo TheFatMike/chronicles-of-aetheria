@@ -276,8 +276,8 @@ export const usePlayerMovement = (
         socket.emit("move", {
           pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z],
           rot: [0, meshRef.current.rotation.y, 0],
-          vel: [velocity.current.x, velocity.current.y, velocity.current.z],
-          ground: isGrounded.current
+          isMoving: isMoving.current,
+          isGrounded: isGrounded.current
         });
         
         // Update local store for distance checks and UI

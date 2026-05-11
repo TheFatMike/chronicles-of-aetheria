@@ -32,12 +32,13 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   },
   tent: {
     type: 'tent',
-    scale: 1.2,
+    scale: 0.01,
+    modelUrl: 'assets/models/tent.glb'
   },
   tower_base: {
     type: 'tower_base',
     scale: 1,
-    modelUrl: '/assets/models/tower_base.glb'
+    modelUrl: 'assets/models/tower_base.glb'
   },
   fence: {
     type: 'fence',
@@ -46,6 +47,7 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   campfire: {
     type: 'campfire',
     scale: 1,
+    modelUrl: 'assets/models/campfire.glb'
   },
   barrel: {
     type: 'barrel',

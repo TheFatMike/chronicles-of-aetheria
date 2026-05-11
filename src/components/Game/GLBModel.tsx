@@ -68,14 +68,15 @@ const ModelInner = ({ url, castShadow, receiveShadow, isGhost }: any) => {
 
 const LoadingFallback = () => (
   <group>
-    {/* Tall blue pillar so you can't miss it */}
-    <mesh position={[0, 5, 0]}>
-      <cylinderGeometry args={[0.5, 0.5, 10, 8]} />
+    {/* Small pulsing sphere instead of a giant cylinder */}
+    <mesh position={[0, 1, 0]}>
+      <sphereGeometry args={[0.3, 16, 16]} />
       <meshStandardMaterial color="#3b82f6" wireframe transparent opacity={0.5} />
     </mesh>
-    <pointLight position={[0, 2, 0]} intensity={2} color="#3b82f6" />
+    <pointLight position={[0, 1, 0]} intensity={1} color="#3b82f6" />
   </group>
 );
+
 
 export const GLBModel = memo(({ 
   url, 

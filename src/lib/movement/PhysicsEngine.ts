@@ -42,8 +42,8 @@ export class PhysicsEngine {
         if (Math.abs(velocity.z) < 0.1) velocity.z = 0;
       }
     } else {
-      // Air control
-      const airAccel = 25;
+      // Air control (Increased for WoW-like responsiveness)
+      const airAccel = 75;
       velocity.x += moveVec.x * airAccel * delta;
       velocity.z += moveVec.z * airAccel * delta;
       

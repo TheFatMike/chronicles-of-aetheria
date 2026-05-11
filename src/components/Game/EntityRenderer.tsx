@@ -34,6 +34,8 @@ export const EntityRenderer = memo(({ entities, onAttack, onLoot }: EntityRender
             color={ent.color || "#facc15"} 
             hp={ent.hp}
             maxHp={ent.maxHp}
+            isMoving={ent.isMoving}
+            isAttacking={ent.isAttacking}
             onInteract={() => {
               const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => q.giverId === ent.id || q.giverName === ent.name);
               
