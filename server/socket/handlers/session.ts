@@ -6,7 +6,7 @@
  */
 import { Server, Socket } from "socket.io";
 import admin from "firebase-admin";
-import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerLastGridCell } from "../../state";
+import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerLastGridCell, lastSkillUse, lastChatMessage, dirtyPlayers, activeTrades } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { CharacterModel } from "../../../src/models/CharacterModel";
@@ -14,6 +14,9 @@ import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../system
 import { getUserRole } from "../../lib/auth";
 import { handleRequestTerrainSync } from "./terrain";
 import { removePlayerRedis } from "../../redis";
+import { handlePartyLeave } from "./party";
+import { handleTradeCancel } from "./trade";
+import { loadTerrainRegion } from "../../systems/persistence";
 
 export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
   try {
@@ -98,7 +101,6 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     socket.emit("spawners_sync", Array.from(spawners.values()));
     
     // 5. Regional Terrain & Sync
-    const { loadTerrainRegion } = await import("../../systems/persistence");
     await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
     handleRequestTerrainSync(socket);
   } catch (e: any) {
@@ -115,8 +117,21 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
       logoutTimers.delete(socket.id);
       if (!players.has(socket.id)) return;
 
+      const p = players.get(socket.id);
+
+      // Handle Party Leave
+      if (p.partyId) {
+        handlePartyLeave(io, socket);
+      }
+
+      // Handle Trade Cancellation
+      for (const [tradeId, trade] of activeTrades.entries()) {
+        if (trade.p1 === socket.id || trade.p2 === socket.id) {
+          handleTradeCancel(io, socket, tradeId);
+        }
+      }
+
       try {
-        const p = players.get(socket.id);
         const charRef = db.collection("users").doc(p.userId).collection("characters").doc(p.characterId);
         await charRef.set({ 
           pos: p.pos, 
@@ -145,9 +160,13 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
         entityGrid.get(key)?.delete(socket.id);
       }
 
+      // Final Cleanup of all session-related maps
       players.delete(socket.id);
       playerKnownEntities.delete(socket.id);
       playerLastGridCell.delete(socket.id);
+      lastSkillUse.delete(socket.id);
+      lastChatMessage.delete(socket.id);
+      dirtyPlayers.delete(socket.id);
       
       // Redis Cleanup: Remove from spatial index and clear hash
       removePlayerRedis(socket.id);
@@ -157,7 +176,13 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
 
     logoutTimers.set(socket.id, timer);
   } else {
+    // Cleanup even for unauthenticated sockets
     players.delete(socket.id);
+    playerKnownEntities.delete(socket.id);
+    playerLastGridCell.delete(socket.id);
+    lastSkillUse.delete(socket.id);
+    lastChatMessage.delete(socket.id);
+    dirtyPlayers.delete(socket.id);
     io.emit("player_leave", socket.id);
   }
 };

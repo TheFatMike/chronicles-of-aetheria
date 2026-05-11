@@ -5,7 +5,7 @@ import { handleMove } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
 import { handleCreateCharacter } from "./handlers/character";
 import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem } from "./handlers/inventory";
-import { handleSaveWorldObject, handleRemoveWorldObject, handleSpawnerReload } from "./handlers/editor";
+import { handleSaveWorldObject, handleRemoveWorldObject, handleBatchSaveWorldObjects, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleChatMessage } from "./handlers/chat";
 import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handlers/party";
@@ -53,6 +53,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   // World Editor
   socket.on("save_world_object", (data) => handleSaveWorldObject(io, socket, data));
   socket.on("remove_world_object", (data) => handleRemoveWorldObject(io, socket, data));
+  socket.on("batch_save_world_objects", (data) => handleBatchSaveWorldObjects(io, socket, data));
   socket.on("request_spawner_reload", () => handleSpawnerReload(io, socket));
   socket.on("request_world_sync", () => {
     const player = players.get(socket.id);

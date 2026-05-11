@@ -26,16 +26,22 @@ export const EditorCamera = () => {
     isMouseDown: false
   });
 
+  // Scratch objects for zero-GC frame updates
+  const scratchVec1 = useRef(new THREE.Vector3());
+  const scratchVec2 = useRef(new THREE.Vector3());
+  const scratchEuler = useRef(new THREE.Euler());
+  const scratchQuat = useRef(new THREE.Quaternion());
+
   // Initial setup when opening editor
   useEffect(() => {
     if (isEditorOpen) {
       currentPos.current.copy(camera.position);
       // Try to find a reasonable look-at point (ground in front of player)
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const forward = scratchVec1.current.set(0, 0, -1).applyQuaternion(camera.quaternion);
       lookAtTarget.current.copy(camera.position).add(forward.multiplyScalar(10));
       
       // Calculate initial theta/phi from current rotation
-      const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+      const euler = scratchEuler.current.setFromQuaternion(camera.quaternion, 'YXZ');
       mouseState.current.theta = euler.y;
       mouseState.current.phi = Math.PI/2 - euler.x;
     }
@@ -69,7 +75,7 @@ export const EditorCamera = () => {
 
     const handleWheel = (e: WheelEvent) => {
       const zoomSpeed = keys.current["ShiftLeft"] ? 5 : 2;
-      const zoomDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const zoomDir = scratchVec1.current.set(0, 0, -1).applyQuaternion(camera.quaternion);
       currentPos.current.add(zoomDir.multiplyScalar(-e.deltaY * 0.01 * zoomSpeed));
     };
 
@@ -93,19 +99,15 @@ export const EditorCamera = () => {
   useFrame((_state, delta) => {
     if (!isEditorOpen) return;
 
-    // We allow camera rotation/movement even if isTransforming is true,
-    // because right-click (camera) and left-click (gizmo) are separate.
-    // However, we might want to slow down or lock movement if desired.
-    
     const speed = keys.current["ShiftLeft"] ? 40 : 15;
-    const moveDir = new THREE.Vector3();
+    const moveDir = scratchVec1.current.set(0, 0, 0);
     
-    if (keys.current["KeyW"]) moveDir.z += 1; // Forward
-    if (keys.current["KeyS"]) moveDir.z -= 1; // Backward
-    if (keys.current["KeyA"]) moveDir.x += 1; // Left
-    if (keys.current["KeyD"]) moveDir.x -= 1; // Right
-    if (keys.current["KeyE"]) moveDir.y += 1; // Up
-    if (keys.current["KeyQ"]) moveDir.y -= 1; // Down
+    if (keys.current["KeyW"]) moveDir.z += 1;
+    if (keys.current["KeyS"]) moveDir.z -= 1;
+    if (keys.current["KeyA"]) moveDir.x += 1;
+    if (keys.current["KeyD"]) moveDir.x -= 1;
+    if (keys.current["KeyE"]) moveDir.y += 1;
+    if (keys.current["KeyQ"]) moveDir.y -= 1;
 
     // Focus feature: Press 'F' to snap camera to selected object
     if (keys.current["KeyF"]) {
@@ -113,38 +115,37 @@ export const EditorCamera = () => {
       const worldObjects = useGameStore.getState().worldObjects;
       if (selectedId && worldObjects[selectedId]) {
         const obj = worldObjects[selectedId];
-        const targetPos = new THREE.Vector3(...obj.pos);
-        // Move camera to a nice viewing distance
-        const offset = new THREE.Vector3(5, 5, 5);
+        const targetPos = scratchVec2.current.set(...obj.pos);
+        const offset = scratchVec1.current.set(5, 5, 5);
         currentPos.current.copy(targetPos).add(offset);
         camera.position.copy(currentPos.current);
         camera.lookAt(targetPos);
         
-        // Update mouse state to match new orientation
-        const lookDir = targetPos.clone().sub(currentPos.current).normalize();
+        const lookDir = targetPos.sub(currentPos.current).normalize();
         mouseState.current.theta = Math.atan2(lookDir.x, lookDir.z);
         mouseState.current.phi = Math.acos(lookDir.y);
         
-        keys.current["KeyF"] = false; // Trigger once
+        keys.current["KeyF"] = false;
+        return; // Skip rest of frame to avoid double movement
       }
     }
 
     // Move relative to camera orientation
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, mouseState.current.theta, 0));
+    const q = scratchQuat.current.setFromEuler(scratchEuler.current.set(0, mouseState.current.theta, 0));
     moveDir.applyQuaternion(q);
     
     velocity.current.lerp(moveDir.multiplyScalar(speed), 1 - Math.exp(-10 * delta));
-    currentPos.current.add(velocity.current.clone().multiplyScalar(delta));
+    currentPos.current.add(scratchVec2.current.copy(velocity.current).multiplyScalar(delta));
 
     camera.position.copy(currentPos.current);
     
-    const target = new THREE.Vector3(
+    const target = scratchVec2.current.set(
       Math.sin(mouseState.current.phi) * Math.sin(mouseState.current.theta),
       Math.cos(mouseState.current.phi),
       Math.sin(mouseState.current.phi) * Math.cos(mouseState.current.theta)
     );
     
-    camera.lookAt(currentPos.current.clone().add(target));
+    camera.lookAt(scratchVec1.current.copy(currentPos.current).add(target));
   });
 
   return null;

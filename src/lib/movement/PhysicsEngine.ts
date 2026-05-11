@@ -55,24 +55,35 @@ export class PhysicsEngine {
       }
     }
 
-    // 2. Gravity
-    velocity.y -= GRAVITY * delta;
-    if (velocity.y < -50) velocity.y = -50;
+    // 2. Gravity (Disabled in Editor for "Fly" mode)
+    if (!config.isEditorOpen) {
+      velocity.y -= GRAVITY * delta;
+      if (velocity.y < -50) velocity.y = -50;
+    } else {
+      // Vertical Movement in Editor
+      if (moveVec.y !== 0) {
+        velocity.y = moveVec.y * MOVE_SPEED;
+      } else {
+        velocity.y -= velocity.y * FRICTION * 5 * delta;
+        if (Math.abs(velocity.y) < 0.1) velocity.y = 0;
+      }
+    }
 
     // 3. Move Position with Collision Check
     const nextX = pos.x + velocity.x * delta;
     const nextZ = pos.z + velocity.z * delta;
     const nextY = pos.y + velocity.y * delta;
 
-    // We keep the old position in case we need to revert
-    const oldX = pos.x;
-    const oldZ = pos.z;
-
     pos.x = nextX;
     pos.z = nextZ;
     pos.y = nextY;
 
     // 4. Ground Detection
+    if (config.isEditorOpen) {
+      isGrounded.current = false;
+      return;
+    }
+
     let groundHeight = -100;
     
     // A. Terrain Height

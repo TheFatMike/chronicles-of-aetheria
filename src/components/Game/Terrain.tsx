@@ -83,6 +83,8 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
     return map;
   }, [segments, size, resolution]);
 
+  const normalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const updateGeometry = (dirtyPoints: { x: number, z: number, y: number, type: string }[]) => {
       if (!meshRef.current || !dirtyPoints || dirtyPoints.length === 0) return;
@@ -115,12 +117,13 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
           lastNormalCompute.current = now;
         } else if (!pendingUpdates.current) {
           pendingUpdates.current = true;
-          setTimeout(() => {
+          normalTimeoutRef.current = setTimeout(() => {
             if (meshRef.current) {
               meshRef.current.geometry.computeVertexNormals();
               lastNormalCompute.current = performance.now();
             }
             pendingUpdates.current = false;
+            normalTimeoutRef.current = null;
           }, 100);
         }
       }
@@ -142,7 +145,10 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (normalTimeoutRef.current) clearTimeout(normalTimeoutRef.current);
+    };
   }, [vertexMap]);
 
   // Custom shader for texture splatting

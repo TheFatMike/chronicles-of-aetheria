@@ -4,12 +4,14 @@
  * Decides whether to render a procedural object (like a tree) or an external GLB model.
  * @importance Essential: Simplifies object management by providing a uniform interface for all environmental props.
  */
-import { memo, useRef, useEffect } from "react";
+import { memo, useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";
 import { GLBModel } from "./GLBModel";
+import { useGameStore } from "../../store/useGameStore";
 
-export const ProceduralModel = memo(({ type, modelProps }: { type: string, modelProps: any }) => {
+export const ProceduralModel = memo(({ type, modelProps, isSelected, editorSelectedType }: { type: string, modelProps: any, isSelected: boolean, editorSelectedType: string | null }) => {
   switch (type) {
     case 'tree': return <Tree {...modelProps} />;
     case 'rock': return <Rock {...modelProps} />;
@@ -23,12 +25,31 @@ export const ProceduralModel = memo(({ type, modelProps }: { type: string, model
     case 'chest': return <Chest {...modelProps} />;
     case 'well': return <Well {...modelProps} />;
     case 'signpost': return <SignPost {...modelProps} />;
-    case 'waypoint': return <Waypoint {...modelProps} />;
+    case 'waypoint': 
+      if (!isSelected && editorSelectedType !== 'waypoint') return null;
+      return <Waypoint {...modelProps} />;
     default: return null;
   }
 });
 
 ProceduralModel.displayName = "ProceduralModel";
+
+const PopIn = memo(({ children, targetScale }: { children: React.ReactNode, targetScale: any }) => {
+  const ref = useRef<THREE.Group>(null);
+  const target = useMemo(() => {
+    if (Array.isArray(targetScale)) return new THREE.Vector3(...targetScale);
+    if (typeof targetScale === 'object') return new THREE.Vector3(targetScale.x || 1, targetScale.y || 1, targetScale.z || 1);
+    return new THREE.Vector3(targetScale, targetScale, targetScale);
+  }, [targetScale]);
+
+  useFrame((_, delta) => {
+    if (ref.current && ref.current.scale.distanceToSquared(target) > 0.001) {
+      ref.current.scale.lerp(target, 1 - Math.exp(-8 * delta));
+    }
+  });
+
+  return <group ref={ref} scale={[0, 0, 0]}>{children}</group>;
+});
 
 export const WorldObjectItem = memo(({ 
   obj, 
@@ -66,12 +87,15 @@ export const WorldObjectItem = memo(({
 
       e.stopPropagation();
       if (e.shiftKey || editorSelectedType === 'delete') {
-        if (socket) socket.emit("remove_world_object", { id: obj.id });
+        useGameStore.getState().markObjectDeleted(obj.id);
       } else if (editorSelectedType === 'edit' || !editorSelectedType) {
         setSelectedWorldObjectId(obj.id);
       }
     }
   };
+
+  const isWaypoint = obj.type === 'waypoint';
+  const isWaypointActive = isWaypoint && (isSelected || editorSelectedType === 'waypoint');
 
   return (
     <group 
@@ -81,14 +105,26 @@ export const WorldObjectItem = memo(({
       userData={{ isCollidable: true }}
       {...({ isWorldObject: true } as any)}
     >
-      {/* Model Group - Scaled */}
-      <group scale={obj.scale}>
+      {/* Invisible Selection Hitbox: Makes small/thin objects easier to click */}
+      {isEditorOpen && (!isWaypoint || isWaypointActive) && (
+        <mesh 
+          position={[0, 1, 0]} 
+          visible={false} 
+          onClick={modelProps.onClick}
+        >
+          <boxGeometry args={[2, 4, 2]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+      )}
+
+      {/* Model Group - Scaled with Pop-In Animation */}
+      <PopIn targetScale={obj.scale}>
         {/* Priority 1: Custom GLB Model */}
         {obj.modelUrl ? (
           <GLBModel url={obj.modelUrl} {...modelProps} />
         ) : (
           /* Priority 2: Built-in Procedural Models */
-          <ProceduralModel type={obj.type} modelProps={modelProps} />
+          <ProceduralModel type={obj.type} modelProps={modelProps} isSelected={isSelected} editorSelectedType={editorSelectedType} />
         )}
 
         {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
@@ -100,13 +136,15 @@ export const WorldObjectItem = memo(({
             />
           </mesh>
         )}
-      </group>
+      </PopIn>
 
       {/* Permanent visual indicator so we know it's there even if model is missing */}
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
-        <ringGeometry args={[0.8, 1, 32]} />
-        <meshBasicMaterial color={obj.modelUrl ? "#3b82f6" : "#ffffff"} transparent opacity={0.3} depthWrite={false} />
-      </mesh>
+      {(!isWaypoint || isWaypointActive) && (
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
+          <ringGeometry args={[0.8, 1, 32]} />
+          <meshBasicMaterial color={obj.modelUrl ? "#3b82f6" : "#ffffff"} transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+      )}
 
       {isSelected && (
         <group>

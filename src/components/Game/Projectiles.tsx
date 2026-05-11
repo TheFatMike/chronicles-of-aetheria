@@ -19,9 +19,17 @@ const ProjectileMesh = ({ data }: { data: Projectile }) => {
   // Create a start position vector once
   const startVec = useMemo(() => new THREE.Vector3(...data.startPos), [data.startPos]);
   
+  const tempVec = useRef(new THREE.Vector3());
+  
   useFrame((state, delta) => {
     if (!meshRef.current) return;
     
+    // Safety: Remove if too old (leak prevention)
+    if (Date.now() - data.createdAt > 5000) {
+      removeProjectile(data.id);
+      return;
+    }
+
     // Get latest target position if it's still alive/moving
     const gameStore = useGameStore.getState();
     const targetEntity = gameStore.entities[data.targetId] || (gameStore.players[data.targetId] as any);
@@ -32,7 +40,8 @@ const ProjectileMesh = ({ data }: { data: Projectile }) => {
 
     // Move towards target
     const currentPos = meshRef.current.position;
-    const dir = new THREE.Vector3().subVectors(targetPos.current, currentPos);
+    // Reuse tempVec instead of creating new Vector3 every frame
+    const dir = tempVec.current.subVectors(targetPos.current, currentPos);
     const dist = dir.length();
     
     if (dist < 0.5) {

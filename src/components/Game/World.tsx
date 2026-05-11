@@ -91,7 +91,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
     if (isHoveringOther) return;
 
     // Clear target when clicking ground (if not in editor placement mode)
-    if (!editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') {
+    if (!isEditorOpen || !editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') {
       useGameStore.getState().setTarget(null);
       return;
     }
@@ -131,9 +131,8 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
         }
       }
 
-      if (socket && points.length > 0) {
-        socket.emit("update_terrain", { points });
-        // Client-side prediction: Update local store immediately for instant feedback
+      if (points.length > 0) {
+        // Client-side prediction & Local Buffer: Update local store immediately for instant feedback
         useGameStore.getState().updateTerrainData(points);
       }
       return;
@@ -154,12 +153,12 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
     });
     window.dispatchEvent(placeEvent);
 
-    if (socket && editorSelectedType !== 'waypoint') {
+    if (editorSelectedType !== 'waypoint') {
       const template = OBJECT_TEMPLATES[editorSelectedType];
       const isSpawner = editorSelectedType.startsWith('spawner_');
       const spawnerClass = isSpawner ? editorSelectedType.replace('spawner_', '') : undefined;
       
-      socket.emit("save_world_object", {
+      useGameStore.getState().addWorldObject({
         id: crypto.randomUUID(),
         type: editorSelectedType,
         pos: [point.x, point.y, point.z],

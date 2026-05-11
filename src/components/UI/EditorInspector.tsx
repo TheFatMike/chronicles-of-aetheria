@@ -7,6 +7,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Save, Target, X, Copy, Trash2, MapPin, Box, Layers, Settings, ChevronRight, Activity } from 'lucide-react';
+import { useGameStore } from '../../store/useGameStore';
 
 export const EditorInspector = ({
   selectedObject,
@@ -15,12 +16,16 @@ export const EditorInspector = ({
   updateSelected,
   socket
 }: any) => {
+  const worldBufferCount = useGameStore(s => Object.keys(s.worldEditorBuffer).length);
+  const terrainBufferCount = useGameStore(s => Object.keys(s.terrainEditorBuffer).length);
+  const totalBuffered = worldBufferCount + terrainBufferCount;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 50, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.95 }}
-      className="pointer-events-auto fixed right-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/98 border border-slate-800/60 rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/5"
+      className="pointer-events-auto fixed right-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/95 border border-white/10 rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/10"
     >
       {/* Header */}
       <div className="bg-linear-to-b from-slate-900/80 to-transparent p-5 border-b border-white/5">
@@ -88,7 +93,10 @@ export const EditorInspector = ({
                 <button onClick={duplicateSelected} className="flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-white/5 text-white py-3 rounded-xl text-[9px] font-black border border-white/5 transition-all uppercase tracking-widest group">
                   <Copy size={12} className="group-hover:text-blue-400" /> Duplicate
                 </button>
-                <button onClick={() => socket?.emit("remove_world_object", { id: selectedObject.id })} className="flex items-center justify-center gap-2 bg-rose-500/5 hover:bg-rose-500/20 text-rose-500 py-3 rounded-xl text-[9px] font-black border border-rose-500/20 transition-all uppercase tracking-widest">
+                <button onClick={() => {
+                  useGameStore.getState().markObjectDeleted(selectedObject.id);
+                  setSelectedWorldObjectId(null);
+                }} className="flex items-center justify-center gap-2 bg-rose-500/5 hover:bg-rose-500/20 text-rose-500 py-3 rounded-xl text-[9px] font-black border border-rose-500/20 transition-all uppercase tracking-widest">
                   <Trash2 size={12} /> Delete
                 </button>
               </div>
@@ -297,12 +305,19 @@ export const EditorInspector = ({
       </div>
 
       {/* Footer Info */}
-      <div className="bg-slate-900/50 p-4 border-t border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
-          <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em]">{socket?.connected ? 'Realtime Sync' : 'Offline Mode'}</span>
+      <div className="bg-black/40 p-5 border-t border-white/5 flex items-center justify-between shadow-inner">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className={`w-2 h-2 rounded-full ${totalBuffered > 0 ? 'bg-amber-500' : 'bg-slate-700'}`} />
+            {totalBuffered > 0 && (
+              <div className="absolute inset-0 w-2 h-2 rounded-full bg-amber-500 animate-ping opacity-50" />
+            )}
+          </div>
+          <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.15em]">
+            {totalBuffered} Buffered Changes
+          </span>
         </div>
-        <div className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">v1.2.0-STABLE</div>
+        <div className="text-[7px] text-slate-600 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md">v1.2.0-STABLE</div>
       </div>
     </motion.div>
   );

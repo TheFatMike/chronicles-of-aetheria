@@ -59,18 +59,7 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
 
   const onTransformMouseUp = useCallback(() => {
     setTransforming(false);
-    if (!selectedWorldObjectId || !transformRef) return;
-    
-    const obj = useGameStore.getState().worldObjects[selectedWorldObjectId];
-    if (!obj || !socket) return;
-
-    socket.emit("save_world_object", {
-      ...obj,
-      pos: [transformRef.position.x, transformRef.position.y, transformRef.position.z],
-      rot: [transformRef.rotation.x, transformRef.rotation.y, transformRef.rotation.z],
-      scale: transformRef.scale.x
-    });
-  }, [selectedWorldObjectId, transformRef, socket, setTransforming]);
+  }, [setTransforming]);
 
   const onTransformStart = useCallback(() => {
     setTransforming(true);

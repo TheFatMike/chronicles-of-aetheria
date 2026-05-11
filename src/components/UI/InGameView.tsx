@@ -54,6 +54,7 @@ export const InGameView = ({
   unequipItem,
   handleSendMessage
 }: InGameViewProps) => {
+const isEditorOpen = useGameStore(s => s.isEditorOpen);
   const activeMenu = useGameStore(s => s.activeMenu);
   const setActiveMenu = useGameStore(s => s.setActiveMenu);
   const devMode = useGameStore(s => s.devMode);
@@ -93,7 +94,28 @@ export const InGameView = ({
       </AnimatePresence>
 
       <div className="pointer-events-auto">
-        <PlayerHUD character={selectedCharacter} userEmail={userEmail} />
+        {!isEditorOpen && (
+          <>
+            <PlayerHUD character={selectedCharacter} userEmail={userEmail} />
+            <TargetFrame />
+            <PartyFrames />
+            <CastBar />
+            <Hotbar
+              slots={selectedCharacter.hotbar || Array(10).fill(null)}
+              onSlotAction={(index, data) => {
+                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                newHotbar[index] = data;
+                updateHotbar(newHotbar);
+              }}
+              onClearSlot={(index) => {
+                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                newHotbar[index] = null;
+                updateHotbar(newHotbar);
+              }}
+            />
+            <NavigationMenu onOpenSettings={() => setShowEscapeMenu(true)} />
+          </>
+        )}
 
         {devMode && (
           <div className="fixed top-6 right-6 z-40 bg-red-900/80 backdrop-blur-md p-3 rounded-xl border-2 border-red-500 text-white text-[10px] font-mono shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse flex items-center gap-2">
@@ -103,28 +125,11 @@ export const InGameView = ({
         )}
 
         <Chat onSendMessage={handleSendMessage} />
-        <TargetFrame />
-        <PartyFrames />
         <NotificationManager />
         <TradeWindow />
-        <CastBar />
         <LootWindow socket={socket} />
         <WorldEditor socket={socket} userEmail={userEmail} />
         
-        <Hotbar
-          slots={selectedCharacter.hotbar || Array(10).fill(null)}
-          onSlotAction={(index, data) => {
-            const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
-            newHotbar[index] = data;
-            updateHotbar(newHotbar);
-          }}
-          onClearSlot={(index) => {
-            const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
-            newHotbar[index] = null;
-            updateHotbar(newHotbar);
-          }}
-        />
-
         <MenuManager 
           selectedCharacter={selectedCharacter}
           socket={socket}
@@ -134,7 +139,6 @@ export const InGameView = ({
           unequipItem={unequipItem}
         />
 
-        <NavigationMenu onOpenSettings={() => setShowEscapeMenu(true)} />
         <DebugOverlay socket={socket} />
       </div>
     </motion.div>

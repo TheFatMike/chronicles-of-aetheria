@@ -10,6 +10,8 @@ import { Spawner, WorldObject } from '../../types';
 export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (set) => ({
   spawners: {},
   worldObjects: {},
+  worldEditorBuffer: {},
+  worldEditorDeleted: [],
   terrainData: {},
   terrainDirtyPoints: [],
 
@@ -28,6 +30,14 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     });
     set({ worldObjects: objectsObj });
   },
+
+  addWorldObjects: (objectsArray) => set((state) => {
+    const newObjects = { ...state.worldObjects };
+    objectsArray.forEach(o => {
+      newObjects[o.id] = o;
+    });
+    return { worldObjects: newObjects };
+  }),
 
   setTerrainData: (dataArray) => set((state) => {
     const terrainObj: Record<string, { y: number; type: string }> = {};
@@ -80,6 +90,21 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     });
 
     if (!hasChanges) return state;
+    
+    // Only buffer changes if the editor is open (to avoid buffering initial load or syncs)
+    if (state.isEditorOpen) {
+      const bufferedChanges: Record<string, { y: number; type: string }> = { ...state.terrainEditorBuffer };
+      dirty.forEach(p => {
+        bufferedChanges[`${p.x}_${p.z}`] = { y: p.y, type: p.type };
+      });
+
+      return { 
+        terrainData: newTerrain,
+        terrainDirtyPoints: dirty,
+        terrainEditorBuffer: bufferedChanges
+      };
+    }
+
     return { 
       terrainData: newTerrain,
       terrainDirtyPoints: dirty
@@ -87,16 +112,34 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   }),
 
   addWorldObject: (obj) => set((state) => ({
-    worldObjects: { ...state.worldObjects, [obj.id]: obj }
+    worldObjects: { ...state.worldObjects, [obj.id]: obj },
+    worldEditorBuffer: state.isEditorOpen 
+      ? { ...state.worldEditorBuffer, [obj.id]: obj }
+      : state.worldEditorBuffer
   })),
 
   updateWorldObject: (id, data) => set((state) => {
     if (!state.worldObjects[id]) return state;
+    
+    // Update main state for real-time feedback
+    const updatedObject = { ...state.worldObjects[id], ...data };
+    
+    // Update buffer for batch save (only if editor is open)
+    const updatedBuffer = state.isEditorOpen 
+      ? { ...(state.worldEditorBuffer[id] || {}), ...data }
+      : null;
+
     return {
       worldObjects: {
         ...state.worldObjects,
-        [id]: { ...state.worldObjects[id], ...data }
-      }
+        [id]: updatedObject
+      },
+      ...(updatedBuffer ? {
+        worldEditorBuffer: {
+          ...state.worldEditorBuffer,
+          [id]: updatedBuffer
+        }
+      } : {})
     };
   }),
 
@@ -104,5 +147,35 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     const newObjects = { ...state.worldObjects };
     delete newObjects[id];
     return { worldObjects: newObjects };
+  }),
+
+  addToEditorBuffer: (id, data) => set((state) => ({
+    worldEditorBuffer: {
+      ...state.worldEditorBuffer,
+      [id]: { ...(state.worldEditorBuffer[id] || {}), ...data }
+    }
+  })),
+
+  markObjectDeleted: (id) => set((state) => {
+    const newObjects = { ...state.worldObjects };
+    delete newObjects[id];
+    
+    return { 
+      worldObjects: newObjects,
+      worldEditorDeleted: [...state.worldEditorDeleted, id],
+      // If it was in the buffer to be saved, remove it since it's now deleted
+      worldEditorBuffer: (() => {
+        const newBuffer = { ...state.worldEditorBuffer };
+        delete newBuffer[id];
+        return newBuffer;
+      })()
+    };
+  }),
+
+  terrainEditorBuffer: {},
+  clearEditorBuffer: () => set({ 
+    worldEditorBuffer: {}, 
+    worldEditorDeleted: [],
+    terrainEditorBuffer: {}
   }),
 });

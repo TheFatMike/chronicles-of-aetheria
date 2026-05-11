@@ -45,7 +45,7 @@ export const EditorPalette = ({
       initial={{ opacity: 0, x: -50, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: -50, scale: 0.95 }}
-      className="pointer-events-auto fixed left-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/98 border border-slate-800/60 rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-white/5"
+      className="pointer-events-auto fixed left-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/95 border border-white/10 rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/10"
     >
       {/* Header */}
       <div className="bg-linear-to-b from-slate-900/80 to-transparent p-5 border-b border-white/5 space-y-4">
@@ -104,59 +104,59 @@ export const EditorPalette = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Category Tabs */}
-        <div className="px-4 py-3 bg-slate-900/20 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
+        <div className="px-4 py-4 bg-white/2 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5 shadow-inner">
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all duration-300 ring-1 ${
+              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 ring-1 ${
                 activeCategory === cat.id 
-                  ? 'bg-white/10 text-white ring-white/20 shadow-xl' 
-                  : 'bg-transparent text-slate-500 hover:text-slate-300 ring-transparent'
+                  ? 'bg-amber-500 text-white ring-amber-400 shadow-[0_4px_15px_rgba(245,158,11,0.3)]' 
+                  : 'bg-white/5 text-slate-500 hover:text-slate-300 ring-white/5'
               }`}
             >
-              <span className={activeCategory === cat.id ? 'text-amber-500' : ''}>{cat.icon}</span>
+              <span className={activeCategory === cat.id ? 'text-white' : 'text-slate-600'}>{cat.icon}</span>
               {cat.label}
             </button>
           ))}
         </div>
 
         {/* Search & Stats */}
-        <div className="p-4 space-y-4">
+        <div className="p-5 space-y-5">
           <div className="relative group">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 transition-colors group-focus-within:text-blue-400" />
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 transition-colors group-focus-within:text-amber-500" />
             <input 
               type="text"
               placeholder="SEARCH ASSETS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-slate-900 transition-all"
+              className="w-full bg-black/40 border border-white/5 rounded-2xl py-3 pl-11 pr-5 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:bg-black/60 transition-all shadow-inner"
             />
           </div>
 
           {/* Transform Modes (Contextual) */}
           {editorSelectedType === 'edit' && (
-            <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-900/50 rounded-xl border border-white/5">
+            <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
               <button 
                 onClick={() => setEditorTransformMode('translate')}
-                className={`py-2 rounded-lg text-[9px] font-black transition-all ${
-                  editorTransformMode === 'translate' ? 'bg-blue-500 text-white' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
+                  editorTransformMode === 'translate' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 MOVE
               </button>
               <button 
                 onClick={() => setEditorTransformMode('rotate')}
-                className={`py-2 rounded-lg text-[9px] font-black transition-all ${
-                  editorTransformMode === 'rotate' ? 'bg-emerald-500 text-white' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
+                  editorTransformMode === 'rotate' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 ROT
               </button>
               <button 
                 onClick={() => setEditorTransformMode('scale')}
-                className={`py-2 rounded-lg text-[9px] font-black transition-all ${
-                  editorTransformMode === 'scale' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
+                  editorTransformMode === 'scale' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 SCALE

@@ -35,6 +35,7 @@ export interface Projectile {
   targetPos: [number, number, number];
   speed: number;
   color: string;
+  createdAt: number;
 }
 
 export interface Message {
@@ -68,15 +69,22 @@ export interface EntitySlice {
 export interface WorldSlice {
   spawners: Record<string, Spawner>;
   worldObjects: Record<string, WorldObject>;
+  worldEditorBuffer: Record<string, Partial<WorldObject>>;
+  worldEditorDeleted: string[];
   terrainData: Record<string, { y: number; type: string }>;
   terrainDirtyPoints: { x: number; z: number; y: number; type: string }[];
   setSpawners: (spawners: Spawner[]) => void;
   setWorldObjects: (objects: WorldObject[]) => void;
+  addWorldObjects: (objects: WorldObject[]) => void;
   setTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
   updateTerrainData: (data: { x: number; z: number; y?: number; deltaY?: number; type?: string }[]) => void;
   addWorldObject: (obj: WorldObject) => void;
   updateWorldObject: (id: string, data: Partial<WorldObject>) => void;
   removeWorldObject: (id: string) => void;
+  addToEditorBuffer: (id: string, data: Partial<WorldObject>) => void;
+  markObjectDeleted: (id: string) => void;
+  terrainEditorBuffer: Record<string, { y: number; type: string }>;
+  clearEditorBuffer: () => void;
 }
 
 export interface CombatSlice {
@@ -110,6 +118,7 @@ export interface UISlice {
   devMode: boolean;
   isEditorOpen: boolean;
   isTransforming: boolean;
+  editorShowOutliner: boolean;
   gridSnap: boolean;
   editorTransformMode: 'translate' | 'rotate' | 'scale';
   editorSelectedType: import('../types').WorldObjectType | null;
@@ -124,6 +133,7 @@ export interface UISlice {
   isWorldLoading: boolean;
   uiScale: number;
   brightness: number;
+  editorStartPosition: [number, number, number] | null;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
   addMessage: (message: Message) => void;
@@ -144,6 +154,8 @@ export interface UISlice {
   setEditorSelectedType: (type: import('../types').WorldObjectType | null) => void;
   setEditorBrushSize: (size: number) => void;
   setEditorBrushStrength: (strength: number) => void;
+  setEditorShowOutliner: (val: boolean) => void;
+  setEditorStartPosition: (pos: [number, number, number] | null) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
   setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;

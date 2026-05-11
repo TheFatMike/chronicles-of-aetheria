@@ -14,6 +14,7 @@ export interface MovementConfig {
   SENSITIVITY: number;
   MIN_RADIUS: number;
   MAX_RADIUS: number;
+  isEditorOpen?: boolean;
 }
 
 export interface CameraState {

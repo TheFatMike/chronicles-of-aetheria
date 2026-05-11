@@ -71,7 +71,7 @@ export class InputHandler {
     const direction = new THREE.Vector3();
     let turn = 0;
 
-    if (!this.isTyping && !isEditorOpen && !isWorldLoading) {
+    if (!this.isTyping && !isWorldLoading) {
       // 1. Forward / Backward (S is 64% speed)
       if (this.keys["KeyW"] || this.keys["ArrowUp"]) direction.z -= 1;
       if (this.keys["KeyS"] || this.keys["ArrowDown"]) direction.z += 0.64; 
@@ -89,6 +89,12 @@ export class InputHandler {
       if (this.keys["KeyD"] || this.keys["ArrowRight"]) {
         if (this.isRightMouseDown) direction.x += 1;
         else turn -= 1;
+      }
+
+      // 4. Vertical Movement (Editor Only)
+      if (isEditorOpen) {
+        if (this.keys["Space"]) direction.y += 1;
+        if (this.keys["ShiftLeft"] || this.keys["ShiftRight"]) direction.y -= 1;
       }
     }
 

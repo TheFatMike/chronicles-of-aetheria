@@ -9,7 +9,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WorldObject } from '../../types';
 import { AnimatePresence, motion } from 'motion/react';
-import { Save, Settings2, Activity } from 'lucide-react';
+import { Save, Settings2, Activity, List } from 'lucide-react';
 import { EditorPalette } from './EditorPalette';
 import { EditorInspector } from './EditorInspector';
 import { EditorOutliner } from './EditorOutliner';
@@ -36,7 +36,12 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     editorBrushStrength,
     setEditorBrushStrength,
     activeMenu,
-    setActiveMenu
+    setActiveMenu,
+    editorShowOutliner,
+    setEditorShowOutliner,
+    editorStartPosition,
+    setEditorStartPosition,
+    requestTeleport
   } = useGameStore(useShallow(s => ({
     devMode: s.devMode,
     worldObjects: s.worldObjects,
@@ -57,7 +62,17 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     editorBrushStrength: s.editorBrushStrength,
     setEditorBrushStrength: s.setEditorBrushStrength,
     activeMenu: s.activeMenu,
-    setActiveMenu: s.setActiveMenu
+    setActiveMenu: s.setActiveMenu,
+    editorShowOutliner: s.editorShowOutliner,
+    setEditorShowOutliner: s.setEditorShowOutliner,
+    editorStartPosition: s.editorStartPosition,
+    setEditorStartPosition: s.setEditorStartPosition,
+    requestTeleport: s.requestTeleport,
+    worldEditorBuffer: s.worldEditorBuffer,
+    worldEditorDeleted: s.worldEditorDeleted,
+    clearEditorBuffer: s.clearEditorBuffer,
+    updateWorldObject: s.updateWorldObject,
+    addWorldObject: s.addWorldObject
   })));
 
   const [activeCategory, setActiveCategory] = useState('nature');
@@ -65,6 +80,16 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
   // Pathing Defaults
   const [activePathId, setActivePathId] = useState('new_path');
   const [nextWaypointOrder, setNextWaypointOrder] = useState(1);
+
+  // Capture start position when entering editor
+  useEffect(() => {
+    if (isEditorOpen && !editorStartPosition) {
+      const me = players[currentPlayerId || ""];
+      if (me?.pos) {
+        setEditorStartPosition([...me.pos]);
+      }
+    }
+  }, [isEditorOpen, currentPlayerId, players, editorStartPosition, setEditorStartPosition]);
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
   
@@ -78,17 +103,60 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
   const selectedObject = selectedWorldObjectId ? worldObjects[selectedWorldObjectId] : null;
 
   const updateSelected = (data: Partial<WorldObject>) => {
-    if (selectedWorldObjectId && selectedObject && socket) {
+    if (selectedWorldObjectId && selectedObject) {
       let finalData = { ...data };
       if (gridSnap && data.pos) {
         finalData.pos = snapVectorToGrid(data.pos as [number, number, number]);
       }
-      socket.emit("save_world_object", { ...selectedObject, ...finalData });
+      useGameStore.getState().updateWorldObject(selectedWorldObjectId, finalData);
     }
   };
 
+  const handleSaveSession = () => {
+    if (!socket) return;
+    
+    const saves = Object.entries(useGameStore.getState().worldEditorBuffer).map(([id, data]) => ({
+      id,
+      ...data
+    }));
+    
+    const deletes = useGameStore.getState().worldEditorDeleted;
+    const terrain = Object.entries(useGameStore.getState().terrainEditorBuffer).map(([key, val]) => {
+      const [x, z] = key.split('_').map(Number);
+      return { x, z, ...val };
+    });
+
+    if (saves.length > 0 || deletes.length > 0 || terrain.length > 0) {
+      socket.emit("batch_save_world_objects", { saves, deletes, terrain });
+    }
+
+    if (editorStartPosition) {
+      requestTeleport([...editorStartPosition]);
+      setEditorStartPosition(null);
+    }
+
+    useGameStore.getState().clearEditorBuffer();
+    setEditorSelectedType(null);
+    setSelectedWorldObjectId(null);
+    setEditorOpen(false);
+  };
+
+  const handleCancelSession = () => {
+    if (editorStartPosition) {
+      requestTeleport([...editorStartPosition]);
+      setEditorStartPosition(null);
+    }
+
+    useGameStore.getState().clearEditorBuffer();
+    setEditorSelectedType(null);
+    setSelectedWorldObjectId(null);
+    setEditorOpen(false);
+    // Request a sync to revert local changes
+    socket.emit("request_world_sync");
+  };
+
   const duplicateSelected = () => {
-    if (selectedObject && socket) {
+    if (selectedObject) {
       const newId = crypto.randomUUID();
       const newData: any = {
         ...selectedObject,
@@ -101,7 +169,7 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
         newData.waypointId = (Number(selectedObject.waypointId) + 1).toString();
       }
 
-      socket.emit("save_world_object", newData);
+      useGameStore.getState().addWorldObject(newData);
       setSelectedWorldObjectId(newId);
     }
   };
@@ -111,20 +179,27 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     if (!socket) return;
     
     const handlePlace = (e: any) => {
-      const { point, type } = e.detail;
+      const { point, type, modelUrl } = e.detail;
+      const newId = crypto.randomUUID();
+      
+      const newObj: any = {
+        id: newId,
+        type: type,
+        pos: [point.x, point.y || 0, point.z],
+        rot: [0, 0, 0],
+        scale: 1,
+        modelUrl: modelUrl
+      };
+
       if (type === 'waypoint') {
-        socket.emit("save_world_object", {
-          id: crypto.randomUUID(),
-          type: 'waypoint',
-          pos: [point.x, 0, point.z],
-          rot: [0, 0, 0],
-          scale: 1,
-          pathId: activePathId,
-          waypointId: nextWaypointOrder.toString(),
-          nextWaypointId: (nextWaypointOrder + 1).toString()
-        });
+        newObj.pathId = activePathId;
+        newObj.waypointId = nextWaypointOrder.toString();
+        newObj.nextWaypointId = (nextWaypointOrder + 1).toString();
         setNextWaypointOrder(prev => prev + 1);
       }
+
+      useGameStore.getState().addWorldObject(newObj);
+      setSelectedWorldObjectId(newId);
     };
 
     window.addEventListener('editor_place_object', handlePlace);
@@ -137,36 +212,66 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     <div className="fixed bottom-24 right-8 z-50 flex flex-col items-end gap-5 pointer-events-none">
       <div className="flex items-center gap-3">
         {isEditorOpen && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveMenu(activeMenu === 'spawners' ? null : 'spawners')}
-            className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
-              activeMenu === 'spawners'
-                ? 'bg-red-500 text-white shadow-red-500/20'
-                : 'bg-slate-900/80 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Activity size={16} />
-            {activeMenu === 'spawners' ? 'Hide Spawners' : 'Manage Spawners'}
-          </motion.button>
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setEditorShowOutliner(!editorShowOutliner)}
+              className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
+                editorShowOutliner
+                  ? 'bg-blue-500 text-white shadow-blue-500/20'
+                  : 'bg-slate-900/80 text-slate-300 hover:text-white'
+              }`}
+            >
+              <List size={16} />
+              {editorShowOutliner ? 'Hide Outliner' : 'Show Outliner'}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveMenu(activeMenu === 'spawners' ? null : 'spawners')}
+              className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
+                activeMenu === 'spawners'
+                  ? 'bg-red-500 text-white shadow-red-500/20'
+                  : 'bg-slate-900/80 text-slate-300 hover:text-white'
+              }`}
+            >
+              <Activity size={16} />
+              {activeMenu === 'spawners' ? 'Hide Spawners' : 'Manage Spawners'}
+            </motion.button>
+          </div>
         )}
 
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setEditorOpen(!isEditorOpen)}
+          onClick={isEditorOpen ? handleSaveSession : () => setEditorOpen(true)}
           className={`pointer-events-auto px-8 h-14 rounded-2xl flex items-center gap-4 transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl font-black uppercase tracking-[0.2em] text-[10px] ring-1 ring-white/5 ${
             isEditorOpen 
-              ? 'bg-amber-500 text-white shadow-amber-500/20' 
+              ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
               : 'bg-slate-950/90 text-slate-400 hover:text-white hover:bg-slate-900'
           }`}
         >
-          <div className={`transition-transform duration-500 ${isEditorOpen ? 'rotate-180' : ''}`}>
-            <Settings2 size={18} strokeWidth={2.5} />
+          <div className={`transition-transform duration-500 ${isEditorOpen ? 'rotate-0' : ''}`}>
+            {isEditorOpen ? <Save size={18} strokeWidth={2.5} /> : <Settings2 size={18} strokeWidth={2.5} />}
           </div>
-          {isEditorOpen ? 'Exit Studio' : 'Launch Studio'}
+          {isEditorOpen ? 'Save & Exit' : 'Launch Studio'}
         </motion.button>
+
+        {isEditorOpen && (
+          <motion.button 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleCancelSession}
+            className="pointer-events-auto px-6 h-14 rounded-2xl flex items-center gap-4 transition-all duration-500 bg-slate-950/90 text-red-400 hover:text-red-300 border border-white/10 backdrop-blur-xl font-black uppercase tracking-[0.2em] text-[10px] ring-1 ring-white/5 shadow-xl"
+          >
+            Cancel
+          </motion.button>
+        )}
       </div>
 
       <AnimatePresence>
@@ -191,7 +296,7 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
               setEditorBrushStrength={setEditorBrushStrength}
             />
 
-            <EditorOutliner socket={socket} />
+            {editorShowOutliner && <EditorOutliner socket={socket} />}
 
             <EditorInspector 
               selectedObject={selectedObject}

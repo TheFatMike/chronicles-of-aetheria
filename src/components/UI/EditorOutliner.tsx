@@ -105,7 +105,7 @@ export const EditorOutliner = ({ socket }: { socket: any }) => {
                   <Target size={12} />
                 </button>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); socket.emit("remove_world_object", { id: obj.id }); }}
+                  onClick={(e) => { e.stopPropagation(); useGameStore.getState().markObjectDeleted(obj.id); }}
                   className="p-1 hover:text-red-400 text-slate-500"
                 >
                   <Trash2 size={12} />

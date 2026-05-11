@@ -10,6 +10,7 @@ import { OrbitControls, ContactShadows, Environment, Float } from "@react-three/
 import * as THREE from "three";
 import { Humanoid } from "../Game/Humanoid";
 import { Character } from "../../types";
+import { useGameStore } from "../../store/useGameStore";
 
 interface CharacterPreviewProps {
   character: Character;
@@ -24,17 +25,24 @@ export const CharacterPreview = ({
   zoom = 1, 
   interactive = false 
 }: CharacterPreviewProps) => {
+  const brightness = useGameStore(state => state.brightness);
+
   return (
     <div className="w-full h-full">
       <Canvas
         shadows={{ type: THREE.PCFShadowMap }}
         camera={{ position: [0, 1.2, 3], fov: 40 / zoom }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ 
+          antialias: true, 
+          alpha: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace
+        }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={1.5} />
-          <spotLight position={[5, 5, 5]} angle={0.15} penumbra={1} intensity={2} castShadow />
-          <pointLight position={[-5, 5, -5]} intensity={1} />
+          <ambientLight intensity={1.5 * brightness} />
+          <spotLight position={[5, 5, 5]} angle={0.15} penumbra={1} intensity={2 * brightness} castShadow />
+          <pointLight position={[-5, 5, -5]} intensity={1 * brightness} />
           
           <Float
             speed={rotation ? 1.5 : 0}

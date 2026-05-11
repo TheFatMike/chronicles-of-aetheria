@@ -10,8 +10,10 @@ import { serverLogger } from "../../logger";
 import { resolveWorldCollision, updateInGrid, entityGrid, getNearbyGridKeys } from "../../systems/spatial";
 import { getInterpolatedHeight } from "../../lib/terrainUtils";
 import { markPlayerDirty } from "../../lib/stateUtils";
+import { loadTerrainRegion } from "../../systems/persistence";
+import { updatePlayerPositionRedis } from "../../redis";
 
-export const handleMove = (socket: Socket, data: any, io: Server) => {
+export const handleMove = async (socket: Socket, data: any, io: Server) => {
   const player = players.get(socket.id);
   if (!player) return;
 
@@ -70,14 +72,33 @@ export const handleMove = (socket: Socket, data: any, io: Server) => {
   const newChunkZ = Math.floor(finalPos[2] / 100);
 
   if (oldChunkX !== newChunkX || oldChunkZ !== newChunkZ) {
-    import("../../systems/persistence").then(m => m.loadTerrainRegion(finalPos[0], finalPos[2]));
+    loadTerrainRegion(finalPos[0], finalPos[2]);
+
+    // Incremental World Object Sync (AoI)
+    // Only send objects the player hasn't seen yet to save bandwidth
+    const { filterNearby } = await import("../../systems/spatial");
+    const { worldObjects, playerKnownObjects } = await import("../../state");
+    
+    const nearbyObjects = filterNearby(Array.from(worldObjects.values()), finalPos, 150, 'object');
+    let known = playerKnownObjects.get(socket.id);
+    if (!known) {
+      known = new Set();
+      playerKnownObjects.set(socket.id, known);
+    }
+
+    const newObjects = nearbyObjects.filter((obj: any) => !known!.has(obj.id));
+    
+    if (newObjects.length > 0) {
+      newObjects.forEach((obj: any) => known!.add(obj.id));
+      socket.emit("world_sync", newObjects);
+    }
   }
 
   // 2. Mark as dirty for eventual persistence (Selective Fields)
   markPlayerDirty(socket.id, ["pos", "rot"]);
 
   // 3. Update Redis Cache (Asynchronous)
-  import("../../redis").then(m => m.updatePlayerPositionRedis(socket.id, finalPos));
+  updatePlayerPositionRedis(socket.id, finalPos);
 
   // 2. Targeted Broadcast (AoI)
   const nearbyKeys = getNearbyGridKeys(finalPos, 100);

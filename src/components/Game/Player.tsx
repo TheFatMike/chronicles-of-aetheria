@@ -21,6 +21,7 @@ interface PlayerProps {
 
 export const Player = memo(({ onMove, color, socket, initialPos, initialRot }: PlayerProps) => {
   const meshRef = useRef<THREE.Group>(null);
+  const isEditorOpen = useGameStore(state => state.isEditorOpen);
   const teleportRequest = useGameStore(state => state.teleportRequest);
   const requestTeleport = useGameStore(state => state.requestTeleport);
   const isAttacking = useGameStore(state => state.isAttacking);
@@ -58,7 +59,9 @@ export const Player = memo(({ onMove, color, socket, initialPos, initialRot }: P
 
   return (
     <group ref={meshRef} raycast={() => null}>
-      <Humanoid color={color} isMoving={isMoving.current} isGrounded={isGrounded.current} isAttacking={isAttacking} />
+      {!isEditorOpen && (
+        <Humanoid color={color} isMoving={isMoving.current} isGrounded={isGrounded.current} isAttacking={isAttacking} />
+      )}
     </group>
   );
 });

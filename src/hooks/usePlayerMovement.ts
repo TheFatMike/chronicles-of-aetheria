@@ -188,14 +188,14 @@ export const usePlayerMovement = (
     // 2. INPUT & ROTATION
     const { direction: inputDir, turn } = systems.input.getMovementInput(store.isEditorOpen, store.isWorldLoading);
     
-    // Sync mouse states from InputHandler
-    cameraState.current.isLeftMouseDown = systems.input.isLeftMouseDown;
-    cameraState.current.isRightMouseDown = systems.input.isRightMouseDown;
-    
     const isRMB = cameraState.current.isRightMouseDown;
     const isLMB = cameraState.current.isLeftMouseDown;
 
-    if (turn !== 0) {
+    if (store.isEditorOpen) {
+      // First Person Fly Mode
+      cameraState.current.radius = 0;
+      meshRef.current.rotation.y = cameraState.current.theta;
+    } else if (turn !== 0) {
       const turnSpeed = 3.5;
       meshRef.current.rotation.y += turn * turnSpeed * clampedDelta;
       // In WoW, camera follows character rotation unless orbiting (LMB) or steering (RMB)
@@ -205,7 +205,7 @@ export const usePlayerMovement = (
     }
 
     // Steering: Character faces where camera looks when RMB is held
-    if (isRMB) {
+    if (isRMB && !store.isEditorOpen) {
       meshRef.current.rotation.y = cameraState.current.theta;
     }
 
@@ -223,7 +223,7 @@ export const usePlayerMovement = (
         worldMoveVec.current,
         groundingObj,
         PHYSICS_STEP,
-        GAME_CONFIG.MOVEMENT,
+        { ...GAME_CONFIG.MOVEMENT, isEditorOpen: store.isEditorOpen },
         store.terrainData,
         filteredCollidablesRef.current,
         playerMeshesRef.current
@@ -231,13 +231,15 @@ export const usePlayerMovement = (
 
       isGrounded.current = groundingObj.current;
       
-      // 3.1 Horizontal Collision Resolution (Wall Sliding)
-      systems.collision.resolveSliding(
-        physicsPosition.current,
-        velocity.current,
-        filteredCollidablesRef.current,
-        playerMeshesRef.current
-      );
+      // 3.1 Horizontal Collision Resolution (Wall Sliding) - Disabled in Editor
+      if (!store.isEditorOpen) {
+        systems.collision.resolveSliding(
+          physicsPosition.current,
+          velocity.current,
+          filteredCollidablesRef.current,
+          playerMeshesRef.current
+        );
+      }
 
       if (systems.input.isJumpPressed() && isGrounded.current) {
         velocity.current.y = GAME_CONFIG.MOVEMENT.JUMP_FORCE;
@@ -248,24 +250,22 @@ export const usePlayerMovement = (
     }
 
     // 4. VISUAL INTERPOLATION
-    const followSpeed = 40;
+    const followSpeed = store.isEditorOpen ? 60 : 40; // Snappier in editor
     if (meshRef.current.position.distanceToSquared(physicsPosition.current) > 100) {
       meshRef.current.position.copy(physicsPosition.current);
     } else {
       meshRef.current.position.lerp(physicsPosition.current, 1 - Math.exp(-followSpeed * clampedDelta));
     }
 
-    // 5. CAMERA UPDATE (Disabled in Editor Mode)
-    if (!store.isEditorOpen) {
-      systems.camera.update(
-        camera,
-        cameraState.current,
-        meshRef.current.position,
-        clampedDelta,
-        filteredCollidablesRef.current,
-        playerMeshesRef.current
-      );
-    }
+    // 5. CAMERA UPDATE
+    systems.camera.update(
+      camera,
+      cameraState.current,
+      meshRef.current.position,
+      clampedDelta,
+      filteredCollidablesRef.current,
+      playerMeshesRef.current
+    );
 
     // 6. NETWORK SYNC (15Hz)
     const now = performance.now();

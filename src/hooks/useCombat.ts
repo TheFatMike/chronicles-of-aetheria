@@ -154,20 +154,21 @@ export const useCombat = (
     const finishTime = Date.now();
     setSkillCooldown(skill.id, finishTime);
 
-    if (skill.id === 'fireball' && currentTarget && self) {
-       useGameStore.getState().addProjectile({
-         id: Math.random().toString(),
-         startPos: [self.pos[0], self.pos[1] + 1, self.pos[2]],
-         targetId: currentTarget.id,
-         targetPos: (() => {
-           const freshState = useGameStore.getState();
-           const t = freshState.entities[currentTarget.id] || (freshState.players[currentTarget.id] as any);
-           return t && t.pos ? [t.pos[0], t.pos[1], t.pos[2]] : [0,0,0];
-         })(),
-         speed: 15,
-         color: "#ef4444"
-       });
-    }
+     if (skill.id === 'fireball' && currentTarget && self) {
+        useGameStore.getState().addProjectile({
+          id: Math.random().toString(),
+          startPos: [self.pos[0], self.pos[1] + 1, self.pos[2]],
+          targetId: currentTarget.id,
+          targetPos: (() => {
+            const freshState = useGameStore.getState();
+            const t = freshState.entities[currentTarget.id] || (freshState.players[currentTarget.id] as any);
+            return t && t.pos ? [t.pos[0], t.pos[1], t.pos[2]] : [0,0,0];
+          })(),
+          speed: 15,
+          color: "#ef4444",
+          createdAt: Date.now()
+        });
+     }
     
     // 5. Send Intent to Server
     socket.emit("cast_skill", {
