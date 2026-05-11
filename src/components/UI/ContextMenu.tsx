@@ -6,7 +6,7 @@
  */
 import React, { memo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { DESIGN_RES } from "./GameScaffold";
+import { useScaffold } from "./GameScaffold";
 
 interface ContextMenuProps {
   x: number;
@@ -35,6 +35,8 @@ export const ContextMenu = memo(({ x, y, title, options, onClose }: ContextMenuP
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const { dimensions } = useScaffold();
+  
   // Adjust position if menu goes off screen (using logical coordinates)
   const menuWidth = 180;
   const menuHeight = options.length * 40 + 60;
@@ -42,8 +44,8 @@ export const ContextMenu = memo(({ x, y, title, options, onClose }: ContextMenuP
   let finalX = x;
   let finalY = y;
 
-  if (x + menuWidth > DESIGN_RES.width) finalX = x - menuWidth;
-  if (y + menuHeight > DESIGN_RES.height) finalY = y - menuHeight;
+  if (x + menuWidth > dimensions.width) finalX = x - menuWidth;
+  if (y + menuHeight > dimensions.height) finalY = y - menuHeight;
 
   return (
     <div 

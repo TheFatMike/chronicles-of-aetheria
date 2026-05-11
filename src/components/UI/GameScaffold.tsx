@@ -11,6 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 interface ScaffoldContextType {
   scale: number;
   offset: { x: number; y: number };
+  dimensions: { width: number; height: number };
   toLogical: (screenX: number, screenY: number) => { x: number; y: number };
 }
 
@@ -51,7 +52,7 @@ export const GameScaffold: React.FC<GameScaffoldProps> = ({ children }) => {
   };
 
   return (
-    <ScaffoldContext.Provider value={{ scale: uiScale, offset: { x: 0, y: 0 }, toLogical }}>
+    <ScaffoldContext.Provider value={{ scale: uiScale, offset: { x: 0, y: 0 }, dimensions, toLogical }}>
       <div 
         id="game-viewport-wrapper" 
         className="fixed inset-0 pointer-events-none overflow-hidden z-50"
