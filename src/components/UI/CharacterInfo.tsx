@@ -115,7 +115,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className="fixed top-24 left-8 z-50 pointer-events-none"
     >
-      <div className="bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-[680px] h-[520px] flex flex-col relative border-t-[#c2a472]/20">
+      <div className="bg-[#1a140f]/95 border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-[680px] h-[520px] flex flex-col relative border-t-[#c2a472]/20">
         
         {/* Header Overlay */}
         <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-[#c2a472]/10 to-transparent pointer-events-none" />

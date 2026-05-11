@@ -47,7 +47,6 @@ export const Map = memo(({ localPlayerId, worldSize = 400 }: MapProps) => {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-12 pointer-events-none"
     >
-      <div className="absolute inset-0 bg-[#0a0806]/90 backdrop-blur-2xl pointer-events-auto" onClick={() => setActiveMenu(null)} />
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 30 }}

@@ -189,16 +189,6 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       <group name="collidables_root">
         <Terrain socket={socket} onClick={onFloorClick} />
         
-        <Plane 
-          args={[GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE, GAME_CONFIG.WORLD.STARTING_PLAZA_SIZE]} 
-          rotation={[-Math.PI / 2, 0, 0]} 
-          position={[0, 0.02, 0]} 
-          receiveShadow
-          onClick={onFloorClick}
-          name="starting_plaza"
-        >
-          <meshStandardMaterial color="#44403c" roughness={1} />
-        </Plane>
 
         <WorldObjectsRenderer socket={socket} />
       </group>

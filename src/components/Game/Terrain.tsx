@@ -6,14 +6,19 @@
  */
 import React, { useRef, useEffect, useMemo, memo } from "react";
 import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
 import { GAME_CONFIG } from "../../config";
 import { useGameStore } from "../../store/useGameStore";
- 
+
+// Use vertex colors as weights for texture blending (Splatting)
+// R = Grass, G = Stone, B = Dirt/Sand tint
+// Use vertex colors as weights for texture blending (Splatting)
+// R = Grass, G = Stone, B = Dirt, (0,0,0) = Sand
 const TERRAIN_COLORS = {
-  grass: new THREE.Color("#14532d"),
-  dirt: new THREE.Color("#78350f"),
-  stone: new THREE.Color("#4b5563"),
-  sand: new THREE.Color("#fde047"),
+  grass: new THREE.Color(1, 0, 0),
+  dirt: new THREE.Color(0, 0, 1),
+  stone: new THREE.Color(0, 1, 0),
+  sand: new THREE.Color(0, 0, 0),
 };
 
 interface TerrainProps {
@@ -26,6 +31,23 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
   const size = GAME_CONFIG.WORLD.SIZE;
   const resolution = 4; // 4 meters per vertex
   const segments = Math.floor(size / resolution);
+
+  // Load and configure textures
+  const grassTexture = useTexture("/assets/textures/grass.png");
+  const stoneTexture = useTexture("/assets/textures/stone.png");
+  const dirtTexture = useTexture("/assets/textures/dirt.png");
+  const sandTexture = useTexture("/assets/textures/sand.png");
+
+  useMemo(() => {
+    [grassTexture, stoneTexture, dirtTexture, sandTexture].forEach(tex => {
+      if (tex) {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        const textureRepeat = size / 4; 
+        tex.repeat.set(textureRepeat, textureRepeat);
+        tex.anisotropy = 16;
+      }
+    });
+  }, [grassTexture, stoneTexture, dirtTexture, sandTexture, size]);
   
   // Local track of applied points to avoid redundant updates
   const appliedData = useRef<Record<string, { y: number, type: string }>>({});
@@ -123,6 +145,49 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
     return () => unsubscribe();
   }, [vertexMap]);
 
+  // Custom shader for texture splatting
+  const onBeforeCompile = (shader: any) => {
+    shader.uniforms.uGrassMap = { value: grassTexture };
+    shader.uniforms.uStoneMap = { value: stoneTexture };
+    shader.uniforms.uDirtMap = { value: dirtTexture };
+    shader.uniforms.uSandMap = { value: sandTexture };
+    
+    shader.fragmentShader = `
+      uniform sampler2D uGrassMap;
+      uniform sampler2D uStoneMap;
+      uniform sampler2D uDirtMap;
+      uniform sampler2D uSandMap;
+    ` + shader.fragmentShader;
+
+    // 1. Remove the automatic vertex color multiplication
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <color_fragment>',
+      ''
+    );
+
+    // 2. Implement our own texture blending logic
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `
+      vec4 grassCol = texture2D(uGrassMap, vMapUv);
+      vec4 stoneCol = texture2D(uStoneMap, vMapUv);
+      vec4 dirtCol = texture2D(uDirtMap, vMapUv);
+      vec4 sandCol = texture2D(uSandMap, vMapUv);
+      
+      // Calculate sand weight as the "leftover" weight from the RGB channels
+      float sandWeight = clamp(1.0 - (vColor.r + vColor.g + vColor.b), 0.0, 1.0);
+      
+      // Blend all 4 textures based on weights
+      vec3 mixedRGB = grassCol.rgb * vColor.r + 
+                      stoneCol.rgb * vColor.g + 
+                      dirtCol.rgb * vColor.b + 
+                      sandCol.rgb * sandWeight;
+      
+      diffuseColor.rgb *= mixedRGB;
+      `
+    );
+  };
+
   return (
     <mesh 
       ref={meshRef} 
@@ -139,6 +204,8 @@ export const Terrain = memo(({ socket, onClick }: TerrainProps) => {
         />
       </planeGeometry>
         <meshStandardMaterial 
+          map={grassTexture}
+          onBeforeCompile={onBeforeCompile}
           vertexColors 
           roughness={1} 
           metalness={0} 

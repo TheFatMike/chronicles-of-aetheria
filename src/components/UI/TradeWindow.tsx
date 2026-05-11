@@ -90,7 +90,7 @@ export const TradeWindow = () => {
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
-      className="fixed inset-0 z-150 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm pointer-events-none"
+      className="fixed inset-0 z-150 flex items-center justify-center p-4 pointer-events-none"
     >
       <div className="bg-[#1a1410] border-4 border-[#4a3a2a] p-6 rounded-xl shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-2xl pointer-events-auto relative">
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
