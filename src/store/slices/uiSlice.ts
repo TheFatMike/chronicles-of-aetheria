@@ -27,6 +27,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   isSkillsOpen: false,
   isWorldLoading: false,
   uiScale: parseFloat(localStorage.getItem('ui_scale') || '1.0'),
+  brightness: parseFloat(localStorage.getItem('game_brightness') || '1.0'),
   contextMenu: null,
 
   addMessage: (message) => set((state) => ({
@@ -54,6 +55,10 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setUIScale: (uiScale) => {
     localStorage.setItem('ui_scale', uiScale.toString());
     set({ uiScale });
+  },
+  setBrightness: (brightness) => {
+    localStorage.setItem('game_brightness', brightness.toString());
+    set({ brightness });
   },
   setDevMode: (devMode) => set({ devMode }),
   

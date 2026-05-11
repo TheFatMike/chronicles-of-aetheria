@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { motion } from "motion/react";
-import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain, ArrowLeft, Maximize } from "lucide-react";
+import { LogOut, LayoutGrid, Play, X, Settings, Target, Mountain, ArrowLeft, Maximize, Sun } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -18,14 +18,16 @@ interface GameMenuProps {
 
 export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps) => {
   const [view, setView] = useState<'menu' | 'settings'>('menu');
-  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players, uiScale, setUIScale } = useGameStore(useShallow(state => ({
+  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players, uiScale, setUIScale, brightness, setBrightness } = useGameStore(useShallow(state => ({
     setActiveMenu: state.setActiveMenu,
     devMode: state.devMode,
     setDevMode: state.setDevMode,
     id: state.id,
     players: state.players,
     uiScale: state.uiScale,
-    setUIScale: state.setUIScale
+    setUIScale: state.setUIScale,
+    brightness: state.brightness,
+    setBrightness: state.setBrightness
   })));
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
@@ -141,6 +143,30 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
                   <span>Small</span>
                   <span>Standard</span>
                   <span>Large</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <Sun size={12} />
+                    <span>Brightness</span>
+                  </div>
+                  <span>{(brightness * 100).toFixed(0)}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="2.0" 
+                  step="0.1"
+                  value={brightness}
+                  onChange={(e) => setBrightness(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-[#c2a472]"
+                />
+                <div className="flex justify-between text-[8px] text-[#6d5540] font-serif italic">
+                  <span>Dim</span>
+                  <span>Normal</span>
+                  <span>Brilliant</span>
                 </div>
               </div>
 

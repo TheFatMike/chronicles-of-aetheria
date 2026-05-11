@@ -41,7 +41,9 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
           preserveDrawingBuffer: true,
           alpha: false,
           stencil: false,
-          depth: true
+          depth: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace
         }}
         onPointerMissed={() => {
           // Handled explicitly by World and entities now to avoid conflicts

@@ -27,6 +27,7 @@ interface WorldProps {
 const MovingShadowLight = memo(() => {
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const { camera } = useThree();
+  const brightness = useGameStore(state => state.brightness);
 
   useFrame(() => {
     if (lightRef.current) {
@@ -48,7 +49,7 @@ const MovingShadowLight = memo(() => {
   return (
     <directionalLight 
       ref={lightRef}
-      intensity={1.5} 
+      intensity={1.5 * brightness} 
       castShadow 
       shadow-mapSize={[128, 128]}
       shadow-camera-left={-20}
@@ -73,6 +74,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
   const devMode = useGameStore(state => state.devMode);
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
   const gridSnap = useGameStore(state => state.gridSnap);
+  const brightness = useGameStore(state => state.brightness);
 
   const onFloorClick = (e: any) => {
     // Only place/interact on left click (button 0)
@@ -182,7 +184,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       
       <Sky sunPosition={[10, 5, 20]} turbidity={0.05} rayleigh={2} />
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.6 * brightness} />
       <MovingShadowLight />
       <pointLight position={[-10, 5, -10]} intensity={1} color="#fcd34d" />
       
