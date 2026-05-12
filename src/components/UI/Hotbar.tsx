@@ -215,7 +215,7 @@ export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarPr
       : Array(10).fill(null);
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-70 flex flex-col items-center gap-2">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-70 flex flex-col items-center gap-2 pointer-events-auto">
       {/* Experience Bar above Hotbar */}
       {localPlayer && (
         <div className="w-full max-w-[400px] h-1.5 sm:h-2 bg-black/40 rounded-full overflow-hidden border border-[#4a3a2a]/30 shadow-inner group relative" title={`Experience: ${localPlayer.exp || 0}/${localPlayer.maxExp || 100}`}>
