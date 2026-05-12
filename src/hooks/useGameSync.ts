@@ -40,7 +40,8 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         stats: confirmedState.stats,
         level: confirmedState.level,
         quests: confirmedState.quests,
-        gold: confirmedState.gold
+        gold: confirmedState.gold,
+        role: confirmedState.role
       } : null);
       
       useGameStore.getState().setActiveQuests(confirmedState.quests || {});
@@ -113,6 +114,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         useGameStore.getState().setActiveLoot(data);
       }
     };
+
+    // 9. Role Updates
+    const handleRoleUpdate = (data: { role: string }) => {
+      setSelectedCharacter(prev => prev ? { ...prev, role: data.role } : null);
+    };
  
     // Register listeners
     socket.on("quest_update", handleQuestUpdate);
@@ -132,6 +138,7 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
     socket.on("world_object_removed", handleWorldObjectRemoved);
     socket.on("loot_opened", handleLootOpened);
     socket.on("loot_update", handleLootOpened);
+    socket.on("role_update", handleRoleUpdate);
 
     logger.info("system", "Socket listeners registered via useGameSync");
 
@@ -150,6 +157,7 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       socket.off("world_object_removed", handleWorldObjectRemoved);
       socket.off("loot_opened", handleLootOpened);
       socket.off("loot_update", handleLootOpened);
+      socket.off("role_update");
     };
   }, [socket, connected, setSelectedCharacter]);
 };

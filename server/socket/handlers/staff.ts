@@ -66,6 +66,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
       const p = players.get(onlineSocketId);
       if (p) {
         p.role = role;
+        io.to(onlineSocketId).emit("role_update", { role });
         io.to(onlineSocketId).emit("chat_message", { 
           sender: "SYSTEM", 
           text: `You have been promoted to ${role.toUpperCase()} by ${sender.characterName}!`, 
