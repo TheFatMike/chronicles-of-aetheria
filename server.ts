@@ -15,7 +15,7 @@ import admin from "firebase-admin";
 import { initDb } from "./server/db";
 import { redis } from "./server/redis";
 import { serverLogger, logBuffer } from "./server/logger";
-import { startHeartbeat, initializeSpawners, initializeWorld } from "./server/systems/gameEngine";
+import { startHeartbeat, initializeWorld } from "./server/systems/gameEngine";
 import { registerHandlers } from "./server/socket/handlers";
 import { players, entities, spawners, terrainData } from "./server/state";
 
@@ -135,7 +135,6 @@ async function bootstrap() {
 
   // 5. Game Engine
   await initializeWorld();
-  await initializeSpawners();
   startHeartbeat(io);
 
   // 7. MMO Global Services (Redis Pub/Sub)

@@ -4,7 +4,7 @@
  */
 import { db } from "../../db";
 import { 
-  worldObjects, entities, terrainData, loadedChunksLocal, 
+  worldObjects, entities, spawners, spawnerEntityCounts, terrainData, loadedChunksLocal, 
   chunkLastAccess, chunkToObjects, chunkToTerrain, players 
 } from "../../state";
 import { serverLogger } from "../../logger";
@@ -153,6 +153,24 @@ export const unloadInactiveChunks = async (maxAgeMs: number = 1000 * 60 * 10) =>
         if (obj) {
           const gridKey = Math.floor(obj.pos[0] / 50) + "," + Math.floor(obj.pos[2] / 50);
           objectGrid.get(gridKey)?.delete(objId);
+          
+          // Cleanup Spawner
+          if (obj.type?.startsWith("spawner_")) {
+            spawners.delete(objId);
+            spawnerEntityCounts.delete(objId);
+            
+            // Cleanup entities belonging to this spawner
+            for (const [eid, ent] of entities.entries()) {
+              if (ent.spawnerId === objId) {
+                if (ent.pos) {
+                  const eKey = Math.floor(ent.pos[0] / 50) + "," + Math.floor(ent.pos[2] / 50);
+                  entityGrid.get(eKey)?.delete(eid);
+                }
+                entities.delete(eid);
+              }
+            }
+          }
+
           worldObjects.delete(objId);
           
           const entityId = `npc-${objId}`;

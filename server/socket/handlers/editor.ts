@@ -7,10 +7,10 @@
 import { Socket, Server } from "socket.io";
 import { z } from "zod";
 import admin from "firebase-admin";
-import { players, worldObjects, spawners, entities, terrainData } from "../../state";
+import { players, worldObjects, spawners, spawnerEntityCounts, entities, terrainData } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
-import { initializeSpawners } from "../../systems/persistence";
+import { loadTerrainRegion } from "../../systems/persistence";
 import { createNPCEntity } from "../../lib/entities";
 import { updateInGrid, objectGrid, entityGrid } from "../../systems/spatial";
 import { clearAICache } from "../../systems/ai";
@@ -41,10 +41,7 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
   const worldObj = { id, type, pos, rot, scale, modelUrl, name, role, color };
 
   try {
-    // 1. Save to legacy global collection
-    await db.collection("world").doc(id).set(worldObj, { merge: true });
-    
-    // 2. Save to chunked storage
+    // 1. Save to chunked storage
     const oldObj = worldObjects.get(id);
     const chunkX = Math.floor(pos[0] / 100);
     const chunkZ = Math.floor(pos[2] / 100);
@@ -76,7 +73,8 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
     if (type === 'waypoint') clearAICache();
 
     if (type.startsWith("spawner_")) {
-      await initializeSpawners();
+      const { registerSpawnerFromObject } = await import("../../systems/spawners");
+      registerSpawnerFromObject(worldObj);
       io.emit("spawners_sync", Array.from(spawners.values()));
     }
 
@@ -117,9 +115,6 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
   const existing = worldObjects.get(id);
 
   try {
-    // Aggressive cleanup: Try to delete from both legacy global and new chunked system
-    await db.collection("world").doc(id).delete();
-    
     // Use the object's position to find the correct chunk, NOT the player's position
     const pos = existing?.pos;
     if (pos) {
@@ -145,7 +140,8 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
     if (existing?.type === 'waypoint') clearAICache();
 
     if (existing?.type.startsWith("spawner_")) {
-      await initializeSpawners();
+      // Spawners are automatically managed by chunks now. 
+      // Deleting the world object is enough as long as we sync the client.
       io.emit("spawners_sync", Array.from(spawners.values()));
     } else if (existing?.type.startsWith("npc_")) {
       const entityId = `npc-${id}`;
@@ -225,9 +221,6 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
             const gridKey = Math.floor(pos[0] / 50) + "," + Math.floor(pos[2] / 50);
             objectGrid.get(gridKey)?.delete(id);
           }
-
-          // ALWAYS try to delete from legacy global collection if it exists there
-          batch.delete(db.collection("world").doc(id));
 
           // Handle Entity Despawn for NPCs/Spawners
           if (existing?.type.startsWith("npc_") || existing?.type.startsWith("spawner_")) {
@@ -345,7 +338,7 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
 
     // 3. Post-save Sync
     if (saves.some(s => s.type?.startsWith("spawner_")) || deletes.some(d => worldObjects.get(d.id)?.type.startsWith("spawner_"))) {
-      await initializeSpawners();
+      // Re-register all local spawners in modified chunks if needed, or just sync
       io.emit("spawners_sync", Array.from(spawners.values()));
     }
 
@@ -402,16 +395,28 @@ export const handleSpawnerReload = async (io: Server, socket: Socket) => {
   if (!isEditorAuthorized(socket, player)) return;
   
   spawners.clear();
+  spawnerEntityCounts.clear();
   for (const [eid, ent] of entities.entries()) {
-    if (ent.spawnerId) entities.delete(eid);
+    if (ent.spawnerId) {
+      if (ent.pos) {
+        const key = Math.floor(ent.pos[0] / 50) + "," + Math.floor(ent.pos[2] / 50);
+        entityGrid.get(key)?.delete(eid);
+      }
+      entities.delete(eid);
+    }
   }
   
-  await initializeSpawners();
+  // Force reload current player region to repopulate spawners
+  if (player?.pos) {
+    const { loadTerrainRegion } = await import("../../systems/persistence");
+    await loadTerrainRegion(player.pos[0], player.pos[2]);
+  }
+
   io.emit("spawners_sync", Array.from(spawners.values()));
   socket.emit("chat_message", {
     id: "sys-" + Date.now(),
     sender: "System",
-    text: "Spawners reloaded from database.",
+    text: "Spawners cleared and local region re-synced.",
     timestamp: Date.now(),
     color: "#f59e0b"
   });

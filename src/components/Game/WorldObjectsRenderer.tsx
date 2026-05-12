@@ -19,7 +19,6 @@ const PROJ_SCREEN_MATRIX = new THREE.Matrix4();
 
 export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   // Use shallow selector for objects list to avoid re-renders if content doesn't change
-  const worldObjects = useGameStore(useShallow(state => Object.values(state.worldObjects)));
   const editorSelectedType = useGameStore(state => state.editorSelectedType);
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
   const selectedWorldObjectId = useGameStore(state => state.selectedWorldObjectId);
@@ -33,22 +32,25 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
 
   const [nearbyObjects, setNearbyObjects] = useState<any[]>([]);
   const { camera } = useThree();
+  const lastCullPos = useRef(new THREE.Vector3());
 
-  const worldObjectsRef = useRef(worldObjects);
-  useEffect(() => {
-    worldObjectsRef.current = worldObjects;
-  }, [worldObjects]);
-
-  // 1. Spatial Culling (Throttled): Find objects within 120m
+  // 1. Spatial Culling (Reactive): Only update when player moves > 5m or objects change
   useEffect(() => {
     const updateNearby = () => {
-      const CULL_DISTANCE_SQ = 120 * 120;
-      const currentObjects = worldObjectsRef.current;
-      const camPos = camera.position;
-
       const state = useGameStore.getState();
       const localPlayer = state.players[state.id || ""];
       if (!localPlayer) return;
+
+      const playerPos = new THREE.Vector3(localPlayer.pos[0], localPlayer.pos[1], localPlayer.pos[2]);
+      
+      // If we haven't moved much and we have objects, skip (unless worldObjects changed)
+      const distMoved = playerPos.distanceTo(lastCullPos.current);
+      if (distMoved < 5 && nearbyObjects.length > 0) return;
+
+      lastCullPos.current.copy(playerPos);
+      
+      const CULL_DISTANCE_SQ = 120 * 120;
+      const currentObjects = Object.values(state.worldObjects);
 
       const filtered = currentObjects.filter(obj => {
         if (selectedWorldObjectId === obj.id) return true;
@@ -60,9 +62,20 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
       setNearbyObjects(filtered);
     };
 
-    const interval = setInterval(updateNearby, 1000); 
+    // Subscribing to worldObjects changes OR moving enough
+    const unsubscribe = useGameStore.subscribe(
+      (state) => state.worldObjects,
+      () => updateNearby()
+    );
+
+    // Also check on camera/player movement via interval (but with a move threshold)
+    const interval = setInterval(updateNearby, 500);
+    
     updateNearby();
-    return () => clearInterval(interval);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    }
   }, [selectedWorldObjectId, camera]); 
 
   // 2. High-Speed Frustum Update (Every Frame): Updates shared frustum for children

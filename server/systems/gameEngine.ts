@@ -161,5 +161,5 @@ export const startHeartbeat = (io: Server) => {
 };
 
 // Re-export initialization functions from persistence for convenience
-export { initializeWorld, initializeSpawners } from "./persistence";
+export { initializeWorld } from "./persistence";
 

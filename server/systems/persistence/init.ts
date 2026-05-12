@@ -20,33 +20,10 @@ export const initializeWorld = async () => {
     objectGrid.clear();
     entityGrid.clear();
     
-    serverLogger.info("system", "Starting world initialization from Firestore...");
+    serverLogger.info("system", "Initializing World (Lazy Loading Enabled)...");
     
-    // 2. Load from authoritative 'world' collection
-    const snapshot = await db.collection("world").get();
-    
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      const id = doc.id;
-      
-      const worldObj = { id, ...data };
-      
-      worldObjects.set(id, worldObj);
-      updateInGrid(objectGrid, id, null, data.pos);
-
-      // 3. Handle Special Types (NPCs & Spawners)
-      if (data.type.startsWith("npc_")) {
-        const entityId = `npc-${id}`;
-        const npcEntity = createNPCEntity(entityId, id, data.type, data.pos, data.rot, data);
-        entities.set(entityId, npcEntity as any);
-        updateInGrid(entityGrid, entityId, null, data.pos);
-      } else if (data.type.startsWith("spawner_")) {
-        const { registerSpawnerFromObject } = await import("../spawners");
-        registerSpawnerFromObject(worldObj);
-      }
-    }
-
-    // 4. Warm up the Interest Registry
+    // 2. Warm up the Interest Registry
+    // This tells the server which chunks actually have data in Firestore
     if (redis.status === 'ready') {
       const terrainChunks = await db.collection("terrain_chunks").listDocuments();
       const objectChunks = await db.collection("object_chunks").listDocuments();
@@ -58,10 +35,9 @@ export const initializeWorld = async () => {
       }
     }
 
-    await initializeSpawners();
     await initializeTerrain();
     
-    serverLogger.info("system", `INITIAL LOAD COMPLETE: ${worldObjects.size} objects (Global), ${entities.size} NPCs.`);
+    serverLogger.info("system", `INITIAL LOAD COMPLETE: Lazy system ready.`);
   } catch (e: any) {
     serverLogger.error("system", "CRITICAL: World initialization failed", e.message);
   }
@@ -81,29 +57,3 @@ export const initializeTerrain = async () => {
   serverLogger.info("system", "Terrain Engine Initialized (Lazy Loading Enabled)");
 };
 
-export const initializeSpawners = async () => {
-  try {
-    serverLogger.info("system", "Loading spawners from Firestore...");
-    const snapshot = await db.collection("world").where("type", ">=", "spawner_").where("type", "<=", "spawner_\uf8ff").get();
-    
-    snapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
-      const data = doc.data();
-      const id = doc.id;
-      const s = data.scale;
-      const scaleX = Array.isArray(s) ? s[0] : (s?.x ?? 1);
-      
-      const spawnerData = {
-        id,
-        entityType: data.type.replace("spawner_", ""),
-        pos: data.pos,
-        spawnRadius: scaleX * 5,
-        maxEntities: 3,
-        respawnTime: 10,
-        ...data
-      };
-      spawners.set(id, spawnerData);
-    });
-  } catch (e: any) {
-    serverLogger.error("system", "Failed to load spawners", e.message);
-  }
-};

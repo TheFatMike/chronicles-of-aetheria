@@ -4,7 +4,7 @@
  * Dynamically selects and renders the appropriate component based on entity type.
  * @importance Essential: Simplifies the main scene logic by abstracting the rendering of diverse entities.
  */
-import { memo, useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { NPC } from "./NPC";
 import { SlimeEnemy, SkeletonEnemy, GoblinEnemy } from "./Enemy";
@@ -21,32 +21,52 @@ interface EntityRendererProps {
 }
 
 export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) => {
-  const entities = useGameStore(useShallow(state => Object.values(state.entities)));
   const { camera } = useThree();
   const [nearbyEntities, setNearbyEntities] = useState<any[]>([]);
+  const lastCullPos = useRef(new THREE.Vector3());
 
-  // Spatial Culling for Entities: Find entities within 250m
-  // Note: The server already filters to ~80m, so this is just a secondary safety.
-  // We use a much larger radius here to avoid any race conditions with server discovery.
+  // Spatial Culling (Reactive): Only update when player moves > 2m or entities list changes
   useEffect(() => {
     const updateNearby = () => {
-      const CULL_DISTANCE_SQ = 250 * 250;
       const state = useGameStore.getState();
       const localPlayer = state.players[state.id || ""];
       if (!localPlayer) return;
 
-      const filtered = entities.filter(ent => {
+      const playerPos = new THREE.Vector3(localPlayer.pos[0], localPlayer.pos[1], localPlayer.pos[2]);
+      
+      // If we haven't moved much and we have entities, skip (unless list size changed)
+      const distMoved = playerPos.distanceTo(lastCullPos.current);
+      const currentEntities = Object.values(state.entities);
+      
+      if (distMoved < 2 && nearbyEntities.length === currentEntities.length && nearbyEntities.length > 0) return;
+
+      lastCullPos.current.copy(playerPos);
+      
+      const CULL_DISTANCE_SQ = 180 * 180;
+      const filtered = currentEntities.filter(ent => {
         const dx = ent.pos[0] - localPlayer.pos[0];
         const dz = ent.pos[2] - localPlayer.pos[2];
         return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
       });
+      
       setNearbyEntities(filtered);
     };
 
-    const interval = setInterval(updateNearby, 200); 
+    // Subscribing to entities count changes (add/remove)
+    const unsubscribe = useGameStore.subscribe(
+      (state) => Object.keys(state.entities).length,
+      () => updateNearby()
+    );
+
+    // Frequent check for movement, but thresholded internally
+    const interval = setInterval(updateNearby, 300);
+    
     updateNearby();
-    return () => clearInterval(interval);
-  }, [entities]); 
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    }
+  }, [camera]); 
 
   const setActiveDialogue = useGameStore(state => state.setActiveDialogue);
   const activeQuests = useGameStore(state => state.activeQuests);

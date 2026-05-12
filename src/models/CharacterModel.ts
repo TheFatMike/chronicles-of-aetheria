@@ -28,6 +28,7 @@ export class CharacterModel {
       maxMp,
       inventory,
       hotbar: data.hotbar || Array(10).fill(null),
+      bank: this.ensureValidBank(data.bank),
       equipment,
       quests: data.quests || {},
       skills: data.skills || [],
@@ -49,6 +50,18 @@ export class CharacterModel {
       return padded;
     }
     return inv;
+  }
+
+  static ensureValidBank(bank?: (InventoryItem | null)[]): (InventoryItem | null)[] {
+    const b = bank || [];
+    if (b.length < 50) {
+      const padded = Array(50).fill(null);
+      b.forEach((item, i) => {
+        if (i < 50) padded[i] = item;
+      });
+      return padded;
+    }
+    return b;
   }
 
   static ensureValidEquipment(equipment?: Partial<EquipmentSlots>): EquipmentSlots {

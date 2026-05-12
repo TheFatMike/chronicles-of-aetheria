@@ -11,7 +11,7 @@ import { GLBModel } from "./GLBModel";
 import { useGameStore } from "../../store/useGameStore";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { useShallow } from "zustand/react/shallow";
-import { Html } from "@react-three/drei";
+import { Text, Billboard } from "@react-three/drei";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
 
 interface NPCProps {
@@ -87,22 +87,43 @@ export const NPC = memo(({ id, name, role, entityClass, position, rotation = [0,
           <Humanoid color={color} isMoving={isMoving} isGrounded={true} isAttacking={isAttacking} />
         )}
       
-      {/* Quest Indicators */}
-      <Html position={[0, 2.2, 0]} center distanceFactor={10}>
+      <Billboard position={[0, 2.4, 0]}>
         {readyQuest ? (
-          <div className="flex flex-col items-center animate-bounce">
-            <span className="text-yellow-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">?</span>
-          </div>
+          <Text
+            fontSize={0.6}
+            color="#facc15"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.05}
+            outlineColor="black"
+          >
+            ?
+          </Text>
         ) : availableQuest ? (
-          <div className="flex flex-col items-center">
-            <span className="text-yellow-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">!</span>
-          </div>
+          <Text
+            fontSize={0.6}
+            color="#facc15"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.05}
+            outlineColor="black"
+          >
+            !
+          </Text>
         ) : activeQuest ? (
-          <div className="flex flex-col items-center opacity-60">
-            <span className="text-gray-400 text-4xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">?</span>
-          </div>
+          <Text
+            fontSize={0.6}
+            color="#9ca3af"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.05}
+            outlineColor="black"
+            fillOpacity={0.6}
+          >
+            ?
+          </Text>
         ) : null}
-      </Html>
+      </Billboard>
     </BaseEntity>
   );
 });
