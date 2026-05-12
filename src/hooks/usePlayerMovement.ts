@@ -198,6 +198,9 @@ export const usePlayerMovement = (
     
     const isRMB = cameraState.current.isRightMouseDown;
     const isLMB = cameraState.current.isLeftMouseDown;
+    
+    // Determine movement state early for camera logic
+    isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
     if (store.isEditorOpen) {
       // First Person Fly Mode
@@ -215,6 +218,20 @@ export const usePlayerMovement = (
     // Steering: Character faces where camera looks when RMB is held
     if (isRMB && !store.isEditorOpen) {
       meshRef.current.rotation.y = cameraState.current.theta;
+    }
+
+    // WoW-style Auto-centering:
+    // If not orbiting (LMB) or steering (RMB), and the player is moving, lerp camera behind character.
+    if (!isLMB && !isRMB && !store.isEditorOpen && isMoving.current) {
+      const targetTheta = meshRef.current.rotation.y;
+      
+      // Normalize angles to prevent 360-degree spins during lerp
+      let diff = targetTheta - cameraState.current.theta;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      
+      const snapSpeed = 5.0; // Higher = faster centering
+      cameraState.current.theta += diff * snapSpeed * clampedDelta;
     }
 
     // Zero-GC World Move Calculation
@@ -279,7 +296,6 @@ export const usePlayerMovement = (
 
     // 6. NETWORK SYNC (15Hz)
     const now = performance.now();
-    isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
     if (now - lastTime.current > 66) {
       if (socket && (isMoving.current || frameCount.current % 10 === 0)) {
