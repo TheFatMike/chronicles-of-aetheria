@@ -21,10 +21,15 @@ export const useChatCommands = (
   const { devMode, setDevMode, requestTeleport, addMessage, setActiveMenu } = useGameStore();
 
   const getRoleLevel = (role?: string) => {
-    // If we passed a role string, use that level
-    if (role) return getPermissionLevel(role);
-    // Otherwise check the current account email
-    return getPermissionLevel(getAccountRole(user?.email));
+    // 1. Check character role (authoritative from server)
+    const charLevel = getPermissionLevel(role);
+    
+    // 2. Fallback to hardcoded account role (mapping in permissions.ts)
+    const accountRole = getAccountRole(user?.email);
+    const accountLevel = getPermissionLevel(accountRole);
+
+    // Use whichever is higher (prevents lockout if sync is slow)
+    return Math.max(charLevel, accountLevel);
   };
 
   const executeCommand = useCallback(async (text: string) => {
@@ -45,7 +50,7 @@ export const useChatCommands = (
     if (command !== "help") {
       if (['tp', 'spawners'].includes(command) && !isMod) return false;
       if (command === 'dev' && !isDev) return false;
-      if (['give', 'promote'].includes(command) && !isAdmin) return false;
+      if (['give', 'promote', 'demote'].includes(command) && !isAdmin) return false;
       if (!isMod && !isAdmin) return false;
     }
 
@@ -87,48 +92,114 @@ export const useChatCommands = (
           }
         }
 
-        if (!targetId && !targetEmail) {
+        if (!args[1]) {
           addMessage({
             id: `sys-${Date.now()}`,
             sender: "System",
-            text: "No valid target or email for promotion found.",
+            text: "Usage: /promote [name|email] [role]",
             timestamp: Date.now(),
             color: "#ff4444",
           });
           return true;
         }
 
-        const newRole = (targetEmail ? args[2] : (args[2] || args[1])) as string;
-        const requestedLevel = getRoleLevel(newRole);
-        
-        // Promotion Rules:
-        // Rank 4 (Owner) -> can promote to any (up to level 3/dev)
-        // Rank 3 (Dev) -> can promote up to Admin (level 2)
-        // Rank 2 (Admin) -> can promote up to Mod (level 1)
-        
-        let canPromote = false;
-        if (roleLevel === 4) canPromote = true; // Owner is all-powerful
-        else if (roleLevel === 3 && requestedLevel <= 2) canPromote = true;
-        else if (roleLevel === 2 && requestedLevel <= 1) canPromote = true;
+        const newRole = (targetEmail ? args[2] : args[2]) as string;
+        const action = 'promote';
 
-        if (canPromote && ['owner', 'dev', 'admin', 'mod', 'player'].includes(newRole)) {
-          socket.emit("promote_player", { targetId, email: targetEmail, role: newRole });
+        if (newRole) {
+          const requestedLevel = getPermissionLevel(newRole);
+          
+          let canPromote = false;
+          if (roleLevel === 4) canPromote = true; 
+          else if (roleLevel === 3 && requestedLevel <= 2) canPromote = true;
+          else if (roleLevel === 2 && requestedLevel <= 1) canPromote = true;
+
+          if (!canPromote) {
+            addMessage({
+              id: `sys-err-${Date.now()}`,
+              sender: "System",
+              text: "You do not have permission to grant that rank.",
+              timestamp: Date.now(),
+              color: "#ff4444",
+            });
+            return true;
+          }
+
+          if (['owner', 'dev', 'admin', 'mod', 'player'].includes(newRole)) {
+            socket.emit("promote_player", { targetId, email: targetEmail, role: newRole, action });
+            addMessage({
+              id: `sys-${Date.now()}`,
+              sender: "System",
+              text: `Requesting ${newRole.toUpperCase()} rank for ${targetName}...`,
+              timestamp: Date.now(),
+              color: "#ffd700",
+            });
+          } else {
+            addMessage({
+              id: `sys-err-${Date.now()}`,
+              sender: "System",
+              text: `Invalid role: ${newRole}. Valid: owner, dev, admin, mod, player`,
+              timestamp: Date.now(),
+              color: "#ff4444",
+            });
+          }
+        } else {
+          // No role specified, just increment
+          socket.emit("promote_player", { targetId, email: targetEmail, action });
           addMessage({
             id: `sys-${Date.now()}`,
             sender: "System",
-            text: `Granted ${newRole.toUpperCase()} rank to ${targetName}.`,
+            text: `Promoting ${targetName} to the next rank...`,
             timestamp: Date.now(),
             color: "#ffd700",
           });
-        } else {
+        }
+        return true;
+      }
+
+      case "demote": {
+        if (!isAdmin) return true;
+        
+        let targetId = "";
+        let targetEmail = "";
+        let targetName = "";
+
+        if (args[1]?.includes("@")) {
+          targetEmail = args[1];
+          targetName = args[1];
+        } 
+        else if (currentTarget && currentTarget.type === 'player') {
+          targetId = currentTarget.id;
+          targetName = currentTarget.name;
+        } 
+        else if (args[1]) {
+          const pName = args[1].toLowerCase();
+          const pEntry = Object.values(players).find(p => p.characterName.toLowerCase() === pName);
+          if (pEntry) {
+            targetId = pEntry.id;
+            targetName = pEntry.characterName;
+          }
+        }
+
+        if (!args[1] && !targetId) {
           addMessage({
-            id: `sys-err-${Date.now()}`,
+            id: `sys-${Date.now()}`,
             sender: "System",
-            text: "You do not have permission to grant that rank.",
+            text: "Usage: /demote [name|email]",
             timestamp: Date.now(),
             color: "#ff4444",
           });
+          return true;
         }
+
+        socket.emit("promote_player", { targetId, email: targetEmail, action: 'demote' });
+        addMessage({
+          id: `sys-${Date.now()}`,
+          sender: "System",
+          text: `Demoting ${targetName} to the lower rank...`,
+          timestamp: Date.now(),
+          color: "#ffd700",
+        });
         return true;
       }
 
@@ -170,7 +241,8 @@ export const useChatCommands = (
           { name: "/spawners", desc: "Open spawner management tool", level: 3 },
           { name: "/tp [x] [y] [z]", desc: "Teleport to coordinates", level: 1 },
           { name: "/give [itemName]", desc: "Spawn an item into your inventory", level: 2 },
-          { name: "/promote [name] [role]", desc: "Change another player's role", level: 2 },
+          { name: "/promote [name] [role?]", desc: "Increase rank or set specific role", level: 2 },
+          { name: "/demote [name]", desc: "Decrease rank by 1", level: 2 },
         ];
 
         const available = commands.filter(c => roleLevel >= c.level);

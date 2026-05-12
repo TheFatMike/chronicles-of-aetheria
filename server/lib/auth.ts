@@ -8,12 +8,6 @@ import { db } from "../db";
 
 export async function getUserRole(userId: string, email: string): Promise<string> {
   let userRole = "player";
-  
-  // 1. Check environment variables for Owner status
-  const ownerEmails = (process.env.OWNER_EMAILS || "").toLowerCase().split(",");
-  const isOwner = email && ownerEmails.includes(email.toLowerCase());
-  
-  if (isOwner) userRole = "owner";
 
   // Check DB for specific role override
   try {
@@ -25,7 +19,26 @@ export async function getUserRole(userId: string, email: string): Promise<string
     // Fallback to default
   }
 
+  // 1. Check environment variables for Owner status - ALWAYS takes priority
+  const ownerEmails = (process.env.OWNER_EMAILS || "").toLowerCase().split(",");
+  const isOwner = email && ownerEmails.includes(email.toLowerCase());
+  
+  if (isOwner) userRole = "owner";
+
   return userRole;
+}
+
+/**
+ * Gets numerical level for a role to allow hierarchy checks.
+ */
+export function getRoleLevel(role: string | null | undefined): number {
+  switch (role) {
+    case 'owner': return 4;
+    case 'dev': return 3;
+    case 'admin': return 2;
+    case 'mod': return 1;
+    default: return 0;
+  }
 }
 
 export function hasPermission(role: string, requiredRoles: string[]): boolean {
