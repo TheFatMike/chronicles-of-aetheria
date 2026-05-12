@@ -14,12 +14,17 @@ import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { CharacterModel } from "../../src/models/CharacterModel";
 import { markPlayerDirty } from "../lib/stateUtils";
 import { decrementSpawnerCount } from "../systems/spawners";
+import { CastSkillSchema } from "../lib/schemas";
+import { validatePayload } from "../lib/validation";
 
 export const handleCastSkill = (socket: any, io: any, data: any) => {
+  const validated = validatePayload(socket, CastSkillSchema, data, "cast_skill");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const skill = ALL_SKILLS.find(s => s.id === data.skillId);
+  const skill = ALL_SKILLS.find(s => s.id === validated.skillId);
   if (!skill) return;
 
   // Level Check
@@ -45,14 +50,32 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   // 2. Mana Check
   if (player.mp < skill.manaCost) return;
 
-  // Range check
-  let targetEntity = data.targetId ? entities.get(data.targetId) : null;
+  // Range check (Offensive)
+  let targetEntity = validated.targetId ? entities.get(validated.targetId) : null;
   if (targetEntity && skill.targetType === 'target') {
     const dist = Math.sqrt(
       Math.pow(player.pos[0] - targetEntity.pos[0], 2) +
       Math.pow(player.pos[2] - targetEntity.pos[2], 2)
     );
-    if (skill.range && dist > skill.range + 1.5) return;
+    if (skill.range && dist > skill.range + 1.5) {
+      socket.emit("chat_message", { id: "sys-range", sender: "SYSTEM", text: "Target is out of range!", timestamp: Date.now(), color: "#ffaa00" });
+      return;
+    }
+  }
+
+  // Range check (Friendly/Healing)
+  if (skill.healingMultiplier && validated.targetId && validated.targetId !== socket.id) {
+    const targetPlayer = players.get(validated.targetId);
+    if (targetPlayer) {
+      const dist = Math.sqrt(
+        Math.pow(player.pos[0] - targetPlayer.pos[0], 2) +
+        Math.pow(player.pos[2] - targetPlayer.pos[2], 2)
+      );
+      if (skill.range && dist > skill.range + 1.5) {
+        socket.emit("chat_message", { id: "sys-range-heal", sender: "SYSTEM", text: "Target is too far to heal!", timestamp: Date.now(), color: "#ffaa00" });
+        return;
+      }
+    }
   }
 
   player.mp -= skill.manaCost;
@@ -88,7 +111,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
 
   // Healing
   if (skill.healingMultiplier) {
-    let target = players.get(data.targetId || socket.id);
+    let target = players.get(validated.targetId || socket.id);
     if (target) {
       target.hp = Math.min(target.maxHp || 100, target.hp + amount);
       markPlayerDirty(target.id, ["hp"]);
@@ -109,8 +132,8 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   }
 
   // Damage
-  if (data.targetId) {
-    const target = entities.get(data.targetId);
+  if (validated.targetId) {
+    const target = entities.get(validated.targetId);
     if (target && !target.isDead) {
       // PREVENT NPC DAMAGE
       if (target.type === 'npc') {

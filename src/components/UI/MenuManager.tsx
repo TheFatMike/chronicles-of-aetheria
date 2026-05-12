@@ -1,10 +1,5 @@
-/**
- * @file src/components/UI/MenuManager.tsx
- * @description Coordinates the visibility and layering of major UI windows.
- * Ensures that only one primary menu is active at a time or manages their concurrent display.
- * @importance Essential: Simplifies window management and prevents UI clutter by centralizing the menu state.
- */
 import { AnimatePresence } from "motion/react";
+import { useEffect } from "react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { Map } from "./Map";
@@ -64,9 +59,13 @@ export const MenuManager = ({
     setShopOpen,
     activeShop,
     setActiveShop,
+    activeShopNPCId,
     isBankOpen,
     setBankOpen,
-    setAutoAttackTarget
+    activeBankNPCId,
+    setAutoAttackTarget,
+    playerId,
+    entities
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -91,10 +90,61 @@ export const MenuManager = ({
     setShopOpen: s.setShopOpen,
     activeShop: s.activeShop,
     setActiveShop: s.setActiveShop,
+    activeShopNPCId: s.activeShopNPCId,
     isBankOpen: s.isBankOpen,
     setBankOpen: s.setBankOpen,
-    setAutoAttackTarget: s.setAutoAttackTarget
+    activeBankNPCId: s.activeBankNPCId,
+    setAutoAttackTarget: s.setAutoAttackTarget,
+    playerId: s.id,
+    entities: s.entities
   })));
+
+  // Auto-close logic for distance-based windows
+  const localPlayer = players[playerId || ""];
+  
+  // Bank Distance check
+  useEffect(() => {
+    if (isBankOpen && activeBankNPCId && localPlayer) {
+      const npc = entities[activeBankNPCId];
+      if (npc) {
+        const dx = localPlayer.pos[0] - npc.pos[0];
+        const dz = localPlayer.pos[2] - npc.pos[2];
+        const distSq = dx*dx + dz*dz;
+        if (distSq > 64) { // 8 meters
+          setBankOpen(false);
+          addMessage({
+            id: "sys-bank-close",
+            sender: "SYSTEM",
+            text: "Bank closed: You walked too far away.",
+            timestamp: Date.now(),
+            color: "#fbbf24"
+          });
+        }
+      }
+    }
+  }, [isBankOpen, activeBankNPCId, localPlayer?.pos, entities, setBankOpen, addMessage]);
+
+  // Shop Distance check
+  useEffect(() => {
+    if (isShopOpen && activeShopNPCId && localPlayer) {
+      const npc = entities[activeShopNPCId];
+      if (npc) {
+        const dx = localPlayer.pos[0] - npc.pos[0];
+        const dz = localPlayer.pos[2] - npc.pos[2];
+        const distSq = dx*dx + dz*dz;
+        if (distSq > 64) { // 8 meters
+          setShopOpen(false);
+          addMessage({
+            id: "sys-shop-close",
+            sender: "SYSTEM",
+            text: "Shop closed: You walked too far away.",
+            timestamp: Date.now(),
+            color: "#fbbf24"
+          });
+        }
+      }
+    }
+  }, [isShopOpen, activeShopNPCId, localPlayer?.pos, entities, setShopOpen, addMessage]);
 
   return (
     <AnimatePresence>
@@ -202,11 +252,11 @@ export const MenuManager = ({
             } else if (option.action === 'shop') {
               if (option.targetId && SHOPS[option.targetId]) {
                 setActiveShop(SHOPS[option.targetId]);
-                setShopOpen(true);
+                setShopOpen(true, npcId);
                 setActiveDialogue(null);
               }
             } else if (option.action === 'bank') {
-              setBankOpen(true);
+              setBankOpen(true, npcId);
               setInventoryOpen(true);
               setActiveDialogue(null);
             }

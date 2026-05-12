@@ -24,6 +24,14 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   if (!player) return;
 
   const now = Date.now();
+  
+  // 0. Packet Rate Limiting: 20 packets per second max (50ms interval)
+  const lastPacketTime = player.lastMovePacketTime || 0;
+  if (now - lastPacketTime < 30) { // 30ms floor to account for some jitter, but 20fps is normal
+    return; 
+  }
+  player.lastMovePacketTime = now;
+
   const lastTime = player.lastMoveTime || (now - 50);
   const dt = (now - lastTime) / 1000;
   
@@ -44,13 +52,33 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
       socket.emit("session_start", player);
       return;
     }
+
+    // 1. Fly Detection: Check if player is suspended in air for too long
+    // Get ground height at current position
+    const groundY = getInterpolatedHeight(validated.pos[0], validated.pos[2], terrainData, 4);
+    const heightAboveGround = validated.pos[1] - groundY;
+
+    if (heightAboveGround > 5.0 && !validated.isGrounded) {
+      player.airTime = (player.airTime || 0) + dt;
+      if (player.airTime > 3.0) { // Suspended for more than 3 seconds
+        serverLogger.warn("anti-cheat", `Fly/Hover detected for ${player.characterName} (Height: ${heightAboveGround.toFixed(1)}m). Resetting.`);
+        socket.emit("move_sync", { pos: [validated.pos[0], groundY, validated.pos[2]], rot: validated.rot });
+        player.airTime = 0;
+        return;
+      }
+    } else {
+      player.airTime = 0;
+    }
   }
   
   const oldPos = [...player.pos] as [number, number, number];
   let finalPos = resolveWorldCollision(oldPos, validated.pos);
   
   // Terrain Height Enforcement: Keep players from falling THROUGH the ground
-  const groundY = getInterpolatedHeight(finalPos[0], finalPos[2], terrainData, 4);
+  const currentGroundY = getInterpolatedHeight(finalPos[0], finalPos[2], terrainData, 4);
+  if (finalPos[1] < currentGroundY - 0.5) {
+    finalPos[1] = currentGroundY;
+  }
   
   const driftX = Math.abs(finalPos[0] - validated.pos[0]);
   const driftZ = Math.abs(finalPos[2] - validated.pos[2]);

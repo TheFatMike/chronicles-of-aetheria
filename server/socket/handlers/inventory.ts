@@ -16,6 +16,9 @@ import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
 import { markPlayerDirty } from "../../lib/stateUtils";
 import { LootEntitySchema, TakeLootItemSchema, EquipItemSchema, UnequipItemSchema, MoveItemSchema, SplitStackSchema, DestroyItemSchema, BankDepositSchema, BankWithdrawSchema, BankMoveSchema } from "../../lib/schemas";
 import { validatePayload } from "../../lib/validation";
+import { addItemToItems, removeItemFromItems } from "../../lib/inventoryUtils";
+import { isWithinRange } from "../../lib/math";
+import { giveGold } from "../../lib/playerUtils";
 
 export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   const validated = validatePayload(socket, LootEntitySchema, data, "loot_entity");
@@ -26,11 +29,7 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   
   const target = entities.get(validated.targetId);
   if (target && target.isDead) {
-    const dx = player.pos[0] - target.pos[0];
-    const dz = player.pos[2] - target.pos[2];
-    const distSq = dx*dx + dz*dz;
-
-    if (distSq < 25) { 
+    if (isWithinRange(player.pos, target.pos, 5)) { 
       // If the target doesn't have instantiated loot yet, generate it
       if (!target.lootInstances) {
         target.lootInstances = (target.loot || []).map((id: string) => generateItemInstance(id)).filter(Boolean);
@@ -58,35 +57,7 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
   const item = target.lootInstances[validated.lootIndex];
   if (!item) return;
 
-  const newInventory = [...player.inventory];
-  let success = false;
-
-  if (item.stackable) {
-    for (let i = 0; i < newInventory.length; i++) {
-      const slot = newInventory[i];
-      if (slot && slot.itemId === item.itemId && (slot.quantity || 0) < (slot.maxStack || 99)) {
-        const space = (slot.maxStack || 99) - (slot.quantity || 0);
-        const toAdd = Math.min(space, item.quantity || 1);
-        newInventory[i] = { ...slot, quantity: (slot.quantity || 0) + toAdd };
-        
-        const remaining = (item.quantity || 1) - toAdd;
-        if (remaining <= 0) {
-          success = true;
-          break;
-        } else {
-          item.quantity = remaining;
-        }
-      }
-    }
-  }
-
-  if (!success) {
-    const emptyIdx = newInventory.findIndex((s: InventoryItem | null) => s === null);
-    if (emptyIdx !== -1) {
-      newInventory[emptyIdx] = item;
-      success = true;
-    }
-  }
+  const { success, newItems: newInventory } = addItemToItems(player.inventory, item);
 
   if (!success) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "Your inventory is full!", color: "#ff4444" });
@@ -202,17 +173,15 @@ export const handleTakeGold = (socket: Socket, data: any) => {
   const target = entities.get(validated.targetId);
   if (!target || !target.isDead || !target.gold || target.gold <= 0) return;
 
-  player.gold = (player.gold || 0) + target.gold;
+  giveGold(socket, player, target.gold);
+  const goldTaken = target.gold;
   target.gold = 0;
 
-  socket.emit("player_stats", { id: player.id, gold: player.gold });
   socket.emit("loot_update", {
     targetId: target.id,
     items: target.lootInstances || [],
     gold: 0
   });
-
-  markPlayerDirty(socket.id, ["gold"]);
 
   if ((target.lootInstances || []).length === 0) {
     entities.delete(target.id);
@@ -356,56 +325,33 @@ export const handleBankDeposit = (socket: Socket, data: any) => {
   let item = player.inventory[inventoryIndex];
   if (!item) return;
 
-  if (!player.bank) player.bank = Array(50).fill(null);
-  const newBank = [...player.bank];
-  const newInventory = [...player.inventory];
+  // Proximity Check
+  const nearbyBanker = Array.from(entities.values()).find(e => 
+    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
+  );
 
-  // Determine amount to deposit
-  let depositAmount = amount || (item.quantity || 1);
-  if (all) {
-    // If 'all', find all items of this type and sum their quantities
-    // For simplicity, we just take the full stack from this slot first
-    depositAmount = item.quantity || 1;
+  if (!nearbyBanker) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to deposit items!", color: "#ff4444" });
+    return;
   }
+
+  if (!player.bank) player.bank = Array(50).fill(null);
   
+  let depositAmount = amount || (item.quantity || 1);
+  if (all) depositAmount = item.quantity || 1;
   depositAmount = Math.min(depositAmount, item.quantity || 1);
 
-  // 1. Try to stack in existing bank slots first
-  if (item.stackable) {
-    for (let i = 0; i < newBank.length; i++) {
-      const slot = newBank[i];
-      if (slot && slot.itemId === item.itemId && (slot.quantity || 0) < (slot.maxStack || 99)) {
-        const space = (slot.maxStack || 99) - (slot.quantity || 0);
-        const toAdd = Math.min(space, depositAmount);
-        newBank[i] = { ...slot, quantity: (slot.quantity || 0) + toAdd };
-        depositAmount -= toAdd;
-        if (depositAmount <= 0) break;
-      }
-    }
+  // 1. Try to add to bank
+  const { success, newItems: newBank, remaining } = addItemToItems(player.bank, { ...item, quantity: depositAmount }, 50);
+
+  if (remaining === depositAmount) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "Your bank is full!", color: "#ff4444" });
+    return;
   }
 
-  // 2. If amount remains, put in a new slot (specified or first empty)
-  if (depositAmount > 0) {
-    let targetIdx = bankIndex;
-    if (targetIdx === undefined || targetIdx < 0 || targetIdx >= 50 || newBank[targetIdx] !== null) {
-      targetIdx = newBank.findIndex(s => s === null);
-    }
-
-    if (targetIdx === -1) {
-      socket.emit("chat_message", { sender: "SYSTEM", text: "Your bank is full!", color: "#ff4444" });
-    } else {
-      newBank[targetIdx] = { ...item, quantity: depositAmount };
-      depositAmount = 0;
-    }
-  }
-
-  // Update inventory based on what was actually deposited
-  const actualDeposited = (item.quantity || 1) - depositAmount;
-  if (actualDeposited >= (item.quantity || 1)) {
-    newInventory[inventoryIndex] = null;
-  } else if (actualDeposited > 0) {
-    newInventory[inventoryIndex] = { ...item, quantity: (item.quantity || 1) - actualDeposited };
-  }
+  // 2. Remove from inventory based on what was actually added to bank
+  const actuallyAdded = depositAmount - remaining;
+  const { newItems: newInventory } = removeItemFromItems(player.inventory, inventoryIndex, actuallyAdded);
 
   player.bank = newBank;
   player.inventory = newInventory;
@@ -426,49 +372,31 @@ export const handleBankWithdraw = (socket: Socket, data: any) => {
   let item = player.bank[bankIndex];
   if (!item) return;
 
-  const newBank = [...player.bank];
-  const newInventory = [...player.inventory];
+  // Proximity Check
+  const nearbyBanker = Array.from(entities.values()).find(e => 
+    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
+  );
+
+  if (!nearbyBanker) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to withdraw items!", color: "#ff4444" });
+    return;
+  }
 
   let withdrawAmount = amount || (item.quantity || 1);
   if (all) withdrawAmount = item.quantity || 1;
   withdrawAmount = Math.min(withdrawAmount, item.quantity || 1);
 
-  // 1. Try to stack in existing inventory slots
-  if (item.stackable) {
-    for (let i = 0; i < newInventory.length; i++) {
-      const slot = newInventory[i];
-      if (slot && slot.itemId === item.itemId && (slot.quantity || 0) < (slot.maxStack || 99)) {
-        const space = (slot.maxStack || 99) - (slot.quantity || 0);
-        const toAdd = Math.min(space, withdrawAmount);
-        newInventory[i] = { ...slot, quantity: (slot.quantity || 0) + toAdd };
-        withdrawAmount -= toAdd;
-        if (withdrawAmount <= 0) break;
-      }
-    }
+  // 1. Try to add to inventory
+  const { success, newItems: newInventory, remaining } = addItemToItems(player.inventory, { ...item, quantity: withdrawAmount }, 30);
+
+  if (remaining === withdrawAmount) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "Your inventory is full!", color: "#ff4444" });
+    return;
   }
 
-  // 2. If amount remains, put in new inventory slot
-  if (withdrawAmount > 0) {
-    let targetIdx = inventoryIndex;
-    if (targetIdx === undefined || targetIdx < 0 || targetIdx >= 30 || newInventory[targetIdx] !== null) {
-      targetIdx = newInventory.findIndex(s => s === null);
-    }
-
-    if (targetIdx === -1) {
-      socket.emit("chat_message", { sender: "SYSTEM", text: "Your inventory is full!", color: "#ff4444" });
-    } else {
-      newInventory[targetIdx] = { ...item, quantity: withdrawAmount };
-      withdrawAmount = 0;
-    }
-  }
-
-  // Update bank based on what was actually withdrawn
-  const actualWithdrawn = (item.quantity || 1) - withdrawAmount;
-  if (actualWithdrawn >= (item.quantity || 1)) {
-    newBank[bankIndex] = null;
-  } else if (actualWithdrawn > 0) {
-    newBank[bankIndex] = { ...item, quantity: (item.quantity || 1) - actualWithdrawn };
-  }
+  // 2. Remove from bank based on what was actually added to inventory
+  const actuallyWithdrawn = withdrawAmount - remaining;
+  const { newItems: newBank } = removeItemFromItems(player.bank, bankIndex, actuallyWithdrawn);
 
   player.bank = newBank;
   player.inventory = newInventory;
@@ -487,6 +415,16 @@ export const handleBankMove = (socket: Socket, data: any) => {
 
   const { fromIndex, toIndex } = validated;
   if (fromIndex === toIndex) return;
+
+  // Proximity Check
+  const nearbyBanker = Array.from(entities.values()).find(e => 
+    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
+  );
+
+  if (!nearbyBanker) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to organize your bank!", color: "#ff4444" });
+    return;
+  }
 
   const newBank = [...player.bank];
   const itemA = newBank[fromIndex];

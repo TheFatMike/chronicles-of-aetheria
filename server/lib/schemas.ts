@@ -111,3 +111,39 @@ export const BankMoveSchema = z.object({
   fromIndex: z.number().int().min(0).max(49),
   toIndex: z.number().int().min(0).max(49)
 });
+
+// --- Shop ---
+export const BuyItemSchema = z.object({
+  itemId: z.string(),
+  shopId: z.string(),
+});
+
+export const SellItemSchema = z.object({
+  inventoryIndex: z.number().int().min(0).max(29),
+});
+
+// --- Combat ---
+export const CastSkillSchema = z.object({
+  skillId: z.string(),
+  targetId: z.string().optional(),
+});
+
+// --- Trade ---
+export const TradeRequestSchema = z.object({
+  targetId: z.string()
+});
+
+export const TradeAcceptSchema = z.object({
+  requesterId: z.string()
+});
+
+export const TradeLockSchema = z.object({
+  tradeId: z.string(),
+  gold: z.number().int().min(0)
+});
+
+export const TradeItemSchema = z.object({
+  tradeId: z.string(),
+  inventoryIndex: z.number().int().min(0).max(29).optional(),
+  tradeIndex: z.number().int().min(0).max(7).optional()
+});
