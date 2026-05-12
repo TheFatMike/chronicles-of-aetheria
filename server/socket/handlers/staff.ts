@@ -9,9 +9,15 @@ import { serverLogger } from "../../logger";
 
 import { getUserRole, getRoleLevel } from "../../lib/auth";
 
-const VALID_ROLES = ["player", "mod", "admin", "dev", "owner"];
+import { PromotePayloadSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
+
+const VALID_ROLES = ["player", "mod", "admin", "dev", "owner"] as const;
 
 export const handlePromotePlayer = async (io: Server, socket: Socket, data: { targetId?: string, email?: string, role?: string, action?: 'promote' | 'demote' }) => {
+  const validated = validatePayload(socket, PromotePayloadSchema, data, "promote_player");
+  if (!validated) return;
+
   const sender = players.get(socket.id);
   const senderLevel = getRoleLevel(sender?.role);
 
@@ -20,8 +26,8 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
     return;
   }
 
-  const { targetId, email, action = 'promote' } = data;
-  let role = data.role;
+  const { targetId, email, action = 'promote' } = validated;
+  let role = validated.role;
   
   try {
     let targetUserId = "";
@@ -62,7 +68,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
 
     // 2. Determine New Role if not specified
     if (!role) {
-      const currentIndex = VALID_ROLES.indexOf(currentRole);
+      const currentIndex = VALID_ROLES.indexOf(currentRole as any);
       if (action === 'promote') {
         role = VALID_ROLES[Math.min(currentIndex + 1, VALID_ROLES.length - 1)];
       } else {

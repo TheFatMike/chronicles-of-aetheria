@@ -21,3 +21,7 @@ export const terrainData = new Map<string, { y: number, type: string }>(); // "x
 export const loadedChunksLocal = new Set<string>(); // "tx,tz"
 export const spawnerEntityCounts = new Map<string, number>(); // spawnerId -> count
 export const playerKnownObjects = new Map<string, Set<string>>(); // socketId -> Set<objectId>
+export const characterNameToId = new Map<string, string>(); // characterName.toLowerCase() -> socketId
+export const chunkLastAccess = new Map<string, number>(); // "tx,tz" -> timestamp
+export const chunkToObjects = new Map<string, Set<string>>(); // "tx,tz" -> Set<objectId>
+export const chunkToTerrain = new Map<string, Set<string>>(); // "tx,tz" -> Set<"x_z">

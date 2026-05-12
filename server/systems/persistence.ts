@@ -95,7 +95,11 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
       const localKey = `${tx},${tz}`;
 
       loadPromises.push((async () => {
-        const { loadedChunksLocal } = await import("../state");
+        const { loadedChunksLocal, chunkLastAccess, chunkToObjects, chunkToTerrain } = await import("../state");
+        
+        // Track access time regardless of if it's already loaded locally
+        chunkLastAccess.set(localKey, Date.now());
+        
         if (loadedChunksLocal.has(localKey)) return;
 
         try {
@@ -112,8 +116,12 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
           const terrainDoc = await db.collection("terrain_chunks").doc(terrainId).get();
           if (terrainDoc.exists) {
             const chunkData = terrainDoc.data()?.data || {};
+            if (!chunkToTerrain.has(localKey)) chunkToTerrain.set(localKey, new Set());
+            const terrainSet = chunkToTerrain.get(localKey)!;
+
             Object.entries(chunkData).forEach(([key, val]: [string, any]) => {
               terrainData.set(key, { y: val.y, type: val.type || 'grass' });
+              terrainSet.add(key);
             });
           }
 
@@ -142,6 +150,10 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
               
               worldObjects.set(id, mergedObj);
               updateInGrid(objectGrid, id, null, mergedObj.pos);
+              
+              // Register object to chunk for efficient unloading
+              if (!chunkToObjects.has(localKey)) chunkToObjects.set(localKey, new Set());
+              chunkToObjects.get(localKey)!.add(id);
 
               // Initialize NPCs & Spawners if they are part of this chunk
               if (mergedObj.type.startsWith("npc_")) {
@@ -251,15 +263,29 @@ export const autosavePlayers = async () => {
 
 export const flushRedisToFirestore = async () => {
   try {
-    const keys = await redis.keys("player:session:*");
+    let cursor = "0";
+    let keys: string[] = [];
+    
+    // 1. Safe discovery of keys using SCAN
+    do {
+      const [newCursor, foundKeys] = await redis.scan(cursor, "MATCH", "player:session:*", "COUNT", "100");
+      cursor = newCursor;
+      keys.push(...foundKeys);
+    } while (cursor !== "0" && keys.length < 1000); // Safety cap
+
     if (keys.length === 0) return;
+
+    // 2. Fetch all data in one pipelined pass
+    const pipeline = redis.pipeline();
+    keys.forEach(k => pipeline.hgetall(k));
+    const results = await pipeline.exec();
 
     const batch = db.batch();
     let count = 0;
 
-    for (const key of keys) {
-      const data = await redis.hgetall(key);
-      if (!data.userId || !data.characterId) continue;
+    for (let i = 0; i < (results?.length || 0); i++) {
+      const [err, data] = results![i] as [any, any];
+      if (err || !data || !data.userId || !data.characterId) continue;
 
       const charRef = db.collection("users").doc(data.userId).collection("characters").doc(data.characterId);
       
@@ -327,4 +353,93 @@ export const startPeriodicTasks = () => {
     const { cleanupGhostPlayers } = await import("../redis");
     await cleanupGhostPlayers();
   }, 1000 * 60 * 10);
+
+  // 4. Chunk Unloading (Every 5 minutes)
+  setInterval(async () => {
+    await unloadInactiveChunks();
+  }, 1000 * 60 * 5);
+};
+
+/**
+ * Unloads chunks that have not been accessed recently and have no players nearby.
+ * This prevents infinite memory growth on long-running servers.
+ */
+export const unloadInactiveChunks = async (maxAgeMs: number = 1000 * 60 * 10) => {
+  const { 
+    loadedChunksLocal, chunkLastAccess, chunkToObjects, chunkToTerrain,
+    terrainData, worldObjects, entities, players 
+  } = await import("../state");
+  const { objectGrid, entityGrid } = await import("./spatial");
+  
+  const now = Date.now();
+  const activeChunks = new Set<string>();
+  
+  // 1. Identify chunks with players (cannot unload)
+  for (const p of players.values()) {
+    const tx = Math.floor(p.pos[0] / 100);
+    const tz = Math.floor(p.pos[2] / 100);
+    // Mark 3x3 as active to prevent flickering at borders
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        activeChunks.add(`${tx+dx},${tz+dz}`);
+      }
+    }
+  }
+  
+  let unloadCount = 0;
+  const chunksToUnload = [];
+  
+  for (const chunkKey of loadedChunksLocal) {
+    if (activeChunks.has(chunkKey)) continue;
+    
+    const lastAccess = chunkLastAccess.get(chunkKey) || 0;
+    if (now - lastAccess > maxAgeMs) {
+      chunksToUnload.push(chunkKey);
+    }
+  }
+  
+  for (const chunkKey of chunksToUnload) {
+    // A. Unload Terrain
+    const terrainKeys = chunkToTerrain.get(chunkKey);
+    if (terrainKeys) {
+      for (const tKey of terrainKeys) {
+        terrainData.delete(tKey);
+      }
+      chunkToTerrain.delete(chunkKey);
+    }
+    
+    // B. Unload Objects
+    const objects = chunkToObjects.get(chunkKey);
+    if (objects) {
+      for (const objId of objects) {
+        const obj = worldObjects.get(objId);
+        if (obj) {
+          const gridKey = Math.floor(obj.pos[0] / 50) + "," + Math.floor(obj.pos[2] / 50);
+          objectGrid.get(gridKey)?.delete(objId);
+          worldObjects.delete(objId);
+          
+          // C. Despawn NPCs associated with this object
+          const entityId = `npc-${objId}`;
+          const ent = entities.get(entityId);
+          if (ent) {
+            if (ent.pos) {
+              const eKey = Math.floor(ent.pos[0] / 50) + "," + Math.floor(ent.pos[2] / 50);
+              entityGrid.get(eKey)?.delete(entityId);
+            }
+            entities.delete(entityId);
+            // Optionally emit to clients, but usually AOI handles this
+          }
+        }
+      }
+      chunkToObjects.delete(chunkKey);
+    }
+    
+    loadedChunksLocal.delete(chunkKey);
+    chunkLastAccess.delete(chunkKey);
+    unloadCount++;
+  }
+  
+  if (unloadCount > 0) {
+    serverLogger.info("system", `LRU CACHE: Unloaded ${unloadCount} inactive chunks from memory.`);
+  }
 };

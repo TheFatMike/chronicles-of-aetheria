@@ -14,12 +14,17 @@ import { CharacterModel } from "../../../src/models/CharacterModel";
 import { InventoryItem } from "../../../src/types";
 import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
 import { markPlayerDirty } from "../../lib/stateUtils";
+import { LootEntitySchema, TakeLootItemSchema, EquipItemSchema, UnequipItemSchema, MoveItemSchema, SplitStackSchema, DestroyItemSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
 
 export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
+  const validated = validatePayload(socket, LootEntitySchema, data, "loot_entity");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
   
-  const target = entities.get(data.targetId);
+  const target = entities.get(validated.targetId);
   if (target && target.isDead) {
     const dx = player.pos[0] - target.pos[0];
     const dz = player.pos[2] - target.pos[2];
@@ -41,13 +46,16 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
 };
 
 export const handleTakeLootItem = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, TakeLootItemSchema, data, "take_loot_item");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const target = entities.get(data.targetId);
+  const target = entities.get(validated.targetId);
   if (!target || !target.isDead || !target.lootInstances) return;
 
-  const item = target.lootInstances[data.lootIndex];
+  const item = target.lootInstances[validated.lootIndex];
   if (!item) return;
 
   // Move item (with stacking)
@@ -87,7 +95,7 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
   }
 
   player.inventory = newInventory;
-  target.lootInstances.splice(data.lootIndex, 1);
+  target.lootInstances.splice(validated.lootIndex, 1);
 
 
   // Sync
@@ -113,10 +121,13 @@ export const handleTakeLootItem = (socket: Socket, data: any) => {
 };
 
 export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
+  const validated = validatePayload(socket, LootEntitySchema, data, "take_all_loot");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const target = entities.get(data.targetId);
+  const target = entities.get(validated.targetId);
   if (!target || !target.isDead) return;
 
   // 1. Take Gold
@@ -201,10 +212,13 @@ export const handleTakeAllLoot = (io: Server, socket: Socket, data: any) => {
 };
 
 export const handleTakeGold = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, LootEntitySchema, data, "take_loot_gold");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const target = entities.get(data.targetId);
+  const target = entities.get(validated.targetId);
   if (!target || !target.isDead || !target.gold || target.gold <= 0) return;
 
   player.gold = (player.gold || 0) + target.gold;
@@ -228,10 +242,13 @@ export const handleTakeGold = (socket: Socket, data: any) => {
 };
 
 export const handleEquipItem = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, EquipItemSchema, data, "equip_item");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const itemInInventory = player.inventory[data.inventoryIndex];
+  const itemInInventory = player.inventory[validated.inventoryIndex];
   if (!itemInInventory) return;
 
   const updated = CharacterModel.equipItem(player, itemInInventory);
@@ -246,10 +263,13 @@ export const handleEquipItem = (socket: Socket, data: any) => {
 };
 
 export const handleUnequipItem = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, UnequipItemSchema, data, "unequip_item");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const updated = CharacterModel.unequipItem(player, data.slot);
+  const updated = CharacterModel.unequipItem(player, validated.slot);
   if (updated) {
     players.set(socket.id, { ...updated, id: socket.id });
     socket.emit("session_start", players.get(socket.id));
@@ -259,11 +279,13 @@ export const handleUnequipItem = (socket: Socket, data: any) => {
 };
 
 export const handleMoveItem = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, MoveItemSchema, data, "move_item");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const { fromIndex, toIndex } = data;
-  if (fromIndex < 0 || fromIndex >= 30 || toIndex < 0 || toIndex >= 30) return;
+  const { fromIndex, toIndex } = validated;
   if (fromIndex === toIndex) return;
 
   const newInventory = [...player.inventory];
@@ -308,10 +330,13 @@ export const handleMoveItem = (socket: Socket, data: any) => {
 };
 
 export const handleSplitStack = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, SplitStackSchema, data, "split_stack");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const { fromIndex, amount } = data;
+  const { fromIndex, amount } = validated;
   const item = player.inventory[fromIndex];
   
   if (!item || !item.stackable || (item.quantity || 1) <= amount || amount <= 0) return;
@@ -335,11 +360,13 @@ export const handleSplitStack = (socket: Socket, data: any) => {
 };
 
 export const handleDestroyItem = (socket: Socket, data: any) => {
+  const validated = validatePayload(socket, DestroyItemSchema, data, "destroy_item");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
-  const { inventoryIndex } = data;
-  if (inventoryIndex < 0 || inventoryIndex >= 30) return;
+  const { inventoryIndex } = validated;
 
   const item = player.inventory[inventoryIndex];
   if (!item) return;

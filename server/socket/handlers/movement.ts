@@ -13,7 +13,13 @@ import { markPlayerDirty } from "../../lib/stateUtils";
 import { loadTerrainRegion } from "../../systems/persistence";
 import { updatePlayerPositionRedis } from "../../redis";
 
+import { MovePayloadSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
+
 export const handleMove = async (socket: Socket, data: any, io: Server) => {
+  const validated = validatePayload(socket, MovePayloadSchema, data, "move");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!player) return;
 
@@ -22,9 +28,9 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   const dt = (now - lastTime) / 1000;
   
   if (player.pos && dt > 0) {
-    const dx = data.pos[0] - player.pos[0];
-    const dy = data.pos[1] - player.pos[1];
-    const dz = data.pos[2] - player.pos[2];
+    const dx = validated.pos[0] - player.pos[0];
+    const dy = validated.pos[1] - player.pos[1];
+    const dz = validated.pos[2] - player.pos[2];
     const distSq = dx*dx + dy*dy + dz*dz;
     
     // Robust Speed Check: Use a minimum DT to prevent jitter from triggering anti-cheat
@@ -41,24 +47,24 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   }
   
   const oldPos = [...player.pos] as [number, number, number];
-  let finalPos = resolveWorldCollision(oldPos, data.pos);
+  let finalPos = resolveWorldCollision(oldPos, validated.pos);
   
   // Terrain Height Enforcement: Keep players from falling THROUGH the ground
   const groundY = getInterpolatedHeight(finalPos[0], finalPos[2], terrainData, 4);
   
-  const driftX = Math.abs(finalPos[0] - data.pos[0]);
-  const driftZ = Math.abs(finalPos[2] - data.pos[2]);
-  const driftY = Math.abs(finalPos[1] - data.pos[1]);
+  const driftX = Math.abs(finalPos[0] - validated.pos[0]);
+  const driftZ = Math.abs(finalPos[2] - validated.pos[2]);
+  const driftY = Math.abs(finalPos[1] - validated.pos[1]);
 
   // Tightened sync thresholds
   if (driftX > 5.0 || driftZ > 5.0 || driftY > 8.0) {
-    socket.emit("move_sync", { pos: finalPos, rot: data.rot });
+    socket.emit("move_sync", { pos: finalPos, rot: validated.rot });
   }
 
   player.pos = finalPos;
-  player.rot = data.rot;
-  player.isMoving = data.isMoving;
-  player.isGrounded = data.isGrounded;
+  player.rot = validated.rot;
+  player.isMoving = validated.isMoving;
+  player.isGrounded = validated.isGrounded;
   player.lastMoveTime = now;
 
   // 1. Update Spatial Grid
@@ -72,6 +78,8 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
 
   if (oldChunkX !== newChunkX || oldChunkZ !== newChunkZ) {
     loadTerrainRegion(finalPos[0], finalPos[2]);
+    const { chunkLastAccess } = await import("../../state");
+    chunkLastAccess.set(`${newChunkX},${newChunkZ}`, Date.now());
 
     // Incremental World Object Sync (AoI)
     // Only send objects the player hasn't seen yet to save bandwidth
@@ -101,18 +109,24 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
 
   // 2. Targeted Broadcast (AoI)
   const nearbyKeys = getNearbyGridKeys(finalPos, 100);
-  const payload = { id: socket.id, ...data, pos: finalPos };
+  const payload = { id: socket.id, ...validated, pos: finalPos };
 
-  // Only broadcast to players in nearby grid cells
-  for (const p of players.values()) {
-    if (p.id === socket.id) continue;
-    
-    const px = Math.floor(p.pos[0] / 50);
-    const pz = Math.floor(p.pos[2] / 50);
-    const pKey = `${px},${pz}`;
-    
-    if (nearbyKeys.includes(pKey)) {
-      io.to(p.id).emit("player_move", payload);
+  // Optimized Broadcast: Only iterate over players in nearby grid cells
+  const processed = new Set<string>();
+  for (const key of nearbyKeys) {
+    const occupantIds = entityGrid.get(key);
+    if (!occupantIds) continue;
+
+    for (const otherId of occupantIds) {
+      if (otherId === socket.id || processed.has(otherId)) continue;
+      
+      // Verification: Ensure the other ID is actually a player (not an NPC)
+      // and they are within the sync radius
+      const otherPlayer = players.get(otherId);
+      if (otherPlayer) {
+        io.to(otherId).emit("player_move", payload);
+        processed.add(otherId);
+      }
     }
   }
 };

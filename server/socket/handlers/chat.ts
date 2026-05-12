@@ -5,15 +5,24 @@
  * @importance Essential: The primary tool for social interaction and community building within the game.
  */
 import { Socket, Server } from "socket.io";
-import { players, lastChatMessage } from "../../state";
+import { players, lastChatMessage, characterNameToId } from "../../state";
 import { handlePartyInvite, handlePartyLeave } from "./party";
 import { handleTradeRequest } from "./trade";
 import { redis } from "../../redis";
 
+import { ChatPayloadSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
+
 export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
+  const validatedText = validatePayload(socket, ChatPayloadSchema, text, "chat");
+  if (!validatedText) return;
+
   const now = Date.now();
   const lastChat = lastChatMessage.get(socket.id) || 0;
   
+  let cleanText = (validatedText || "").trim();
+  if (!cleanText || cleanText.length > 256) return;
+
   if (now - lastChat < 1500) {
     socket.emit("chat_message", {
       id: "sys-spam",
@@ -37,9 +46,9 @@ export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
     const arg = parts.slice(1).join(" ");
 
     if (cmd === "/invite" || cmd === "/party") {
-      const target = Array.from(players.values()).find(p => p.characterName.toLowerCase() === arg.toLowerCase());
-      if (target) {
-        handlePartyInvite(io, socket, target.id);
+      const targetId = characterNameToId.get(arg.toLowerCase());
+      if (targetId) {
+        handlePartyInvite(io, socket, targetId);
       } else {
         socket.emit("chat_message", { sender: "SYSTEM", text: `Player '${arg}' not found.`, color: "#ff4444", timestamp: now });
       }
@@ -47,9 +56,9 @@ export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
     }
 
     if (cmd === "/trade") {
-      const target = Array.from(players.values()).find(p => p.characterName.toLowerCase() === arg.toLowerCase());
-      if (target) {
-        handleTradeRequest(io, socket, target.id);
+      const targetId = characterNameToId.get(arg.toLowerCase());
+      if (targetId) {
+        handleTradeRequest(io, socket, targetId);
       } else {
         socket.emit("chat_message", { sender: "SYSTEM", text: `Player '${arg}' not found.`, color: "#ff4444", timestamp: now });
       }
@@ -63,9 +72,9 @@ export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
   }
 
   const payload = { 
-    id: Math.random().toString(), 
+    id: Math.random().toString(36).substring(2), 
     sender: player.characterName, 
-    text, 
+    text: cleanText, 
     timestamp: now,
     color: player.color,
     role: player.role || "player"

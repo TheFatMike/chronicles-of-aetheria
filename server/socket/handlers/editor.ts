@@ -5,6 +5,7 @@
  * @importance Essential: Empowers creators to build and modify the game world dynamically.
  */
 import { Socket, Server } from "socket.io";
+import { z } from "zod";
 import admin from "firebase-admin";
 import { players, worldObjects, spawners, entities, terrainData } from "../../state";
 import { db } from "../../db";
@@ -13,6 +14,8 @@ import { initializeSpawners } from "../../systems/persistence";
 import { createNPCEntity } from "../../lib/entities";
 import { updateInGrid, objectGrid, entityGrid } from "../../systems/spatial";
 import { clearAICache } from "../../systems/ai";
+import { SaveWorldObjectSchema, BatchSaveSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
 
 export const isEditorAuthorized = (socket: Socket, player: any) => {
   const email = (socket as any).email;
@@ -22,11 +25,14 @@ export const isEditorAuthorized = (socket: Socket, player: any) => {
 };
 
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
+  const validated = validatePayload(socket, SaveWorldObjectSchema, data, "save_world_object");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!isEditorAuthorized(socket, player)) return;
 
-  const { id, type, pos, rot, scale, name, role, color } = data;
-  let { modelUrl } = data;
+  const { id, type, pos, rot, scale, name, role, color } = validated;
+  let { modelUrl } = validated;
   
   if (!modelUrl && type === 'tower_base') {
     modelUrl = '/assets/models/tower_base.glb';
@@ -35,10 +41,33 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
   const worldObj = { id, type, pos, rot, scale, modelUrl, name, role, color };
 
   try {
+    // 1. Save to legacy global collection
     await db.collection("world").doc(id).set(worldObj, { merge: true });
     
-    // Update Spatial Grid
+    // 2. Save to chunked storage
     const oldObj = worldObjects.get(id);
+    const chunkX = Math.floor(pos[0] / 100);
+    const chunkZ = Math.floor(pos[2] / 100);
+    const chunkId = `chunk_${chunkX}_${chunkZ}`;
+    
+    // If object moved chunks, delete from old chunk
+    if (oldObj?.pos) {
+      const oldChunkX = Math.floor(oldObj.pos[0] / 100);
+      const oldChunkZ = Math.floor(oldObj.pos[2] / 100);
+      if (oldChunkX !== chunkX || oldChunkZ !== chunkZ) {
+        const oldChunkId = `chunk_${oldChunkX}_${oldChunkZ}`;
+        await db.collection("object_chunks").doc(oldChunkId).update({
+          [`objects.${id}`]: admin.firestore.FieldValue.delete()
+        }).catch(() => {});
+      }
+    }
+
+    // Save to new/current chunk
+    await db.collection("object_chunks").doc(chunkId).set({
+      objects: { [id]: worldObj }
+    }, { merge: true });
+    
+    // Update Spatial Grid
     updateInGrid(objectGrid, id, oldObj?.pos || null, pos);
     
     worldObjects.set(id, worldObj);
@@ -78,24 +107,32 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 };
 
 export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: any) => {
+  const validated = validatePayload(socket, z.object({ id: z.string() }), data, "remove_world_object");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!isEditorAuthorized(socket, player)) return;
 
-  const { id } = data;
+  const { id } = validated;
   const existing = worldObjects.get(id);
 
   try {
     // Aggressive cleanup: Try to delete from both legacy global and new chunked system
     await db.collection("world").doc(id).delete();
     
-    if (player.pos) {
-      const chunkX = Math.floor(player.pos[0] / 100);
-      const chunkZ = Math.floor(player.pos[2] / 100);
+    // Use the object's position to find the correct chunk, NOT the player's position
+    const pos = existing?.pos;
+    if (pos) {
+      const chunkX = Math.floor(pos[0] / 100);
+      const chunkZ = Math.floor(pos[2] / 100);
       const chunkId = `chunk_${chunkX}_${chunkZ}`;
       const path = `objects.${id}`;
+      // Use update() to ensure the field is removed properly using dot notation
       await db.collection("object_chunks").doc(chunkId).update({
         [path]: admin.firestore.FieldValue.delete()
-      }).catch(() => {}); // Ignore if chunk doc doesn't exist
+      }).catch((err: any) => {
+        serverLogger.warn("world", `Could not remove ${id} from chunk ${chunkId}: ${err.message}`);
+      });
     }
     
     // Cleanup Spatial Grid
@@ -131,10 +168,13 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
 };
 
 export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, data: { saves: any[], deletes: string[], terrain?: any[] }) => {
+  const validated = validatePayload(socket, BatchSaveSchema, data, "batch_save_world_objects");
+  if (!validated) return;
+
   const player = players.get(socket.id);
   if (!isEditorAuthorized(socket, player)) return;
 
-  const { saves = [], deletes = [], terrain = [] } = data;
+  const { saves = [], deletes = [], terrain = [] } = validated;
   serverLogger.info("world", `Batch save request: ${saves.length} saves, ${deletes.length} deletes, ${terrain.length} terrain pts from ${player.characterName}`);
   
   // 1. Safety Limit: Prevent massive DoS-style payloads
@@ -177,16 +217,17 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
             const chunkZ = Math.floor(pos[2] / 100);
             const chunkId = `chunk_${chunkX}_${chunkZ}`;
             
-            if (!objectsByChunk.has(chunkId)) objectsByChunk.set(chunkId, {});
-            const path = `objects.${id}`;
-            (objectsByChunk.get(chunkId)! as any)[path] = admin.firestore.FieldValue.delete();
+            if (!objectsByChunk.has(chunkId)) objectsByChunk.set(chunkId, { objects: {} });
+            const chunkData = objectsByChunk.get(chunkId)!;
+            // Nested object format works with batch.set(..., { merge: true })
+            chunkData.objects[id] = admin.firestore.FieldValue.delete();
 
             const gridKey = Math.floor(pos[0] / 50) + "," + Math.floor(pos[2] / 50);
             objectGrid.get(gridKey)?.delete(id);
-
-            // ALSO delete from legacy global collection if it exists there
-            batch.delete(db.collection("world").doc(id));
           }
+
+          // ALWAYS try to delete from legacy global collection if it exists there
+          batch.delete(db.collection("world").doc(id));
 
           // Handle Entity Despawn for NPCs/Spawners
           if (existing?.type.startsWith("npc_") || existing?.type.startsWith("spawner_")) {
@@ -236,6 +277,17 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
           const chunkZ = Math.floor(worldObj.pos[2] / 100);
           const chunkId = `chunk_${chunkX}_${chunkZ}`;
 
+          // CHUNK MIGRATION: If object moved chunks, delete from old chunk record
+          if (existing?.pos) {
+            const oldChunkX = Math.floor(existing.pos[0] / 100);
+            const oldChunkZ = Math.floor(existing.pos[2] / 100);
+            if (oldChunkX !== chunkX || oldChunkZ !== chunkZ) {
+              const oldChunkId = `chunk_${oldChunkX}_${oldChunkZ}`;
+              if (!objectsByChunk.has(oldChunkId)) objectsByChunk.set(oldChunkId, { objects: {} });
+              objectsByChunk.get(oldChunkId)!.objects[d.id] = admin.firestore.FieldValue.delete();
+            }
+          }
+
           if (!objectsByChunk.has(chunkId)) objectsByChunk.set(chunkId, { objects: {} });
           const chunkData = objectsByChunk.get(chunkId)!;
           chunkData.objects[d.id] = worldObj;
@@ -250,18 +302,16 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
           const chunkZ = Math.floor(Number(p.z) / 100);
           const chunkId = `chunk_${chunkX}_${chunkZ}`;
 
-          if (!terrainByChunk.has(chunkId)) terrainByChunk.set(chunkId, { data: {} });
-          const chunkData = terrainByChunk.get(chunkId)!;
+          if (!terrainByChunk.has(chunkId)) terrainByChunk.set(chunkId, {});
+          const chunkPoints = terrainByChunk.get(chunkId)!;
           const key = `${p.x}_${p.z}`;
           
           // DELTA COMPRESSION: If point is default (flat grass), delete it to save space
           if (Number(p.y) === 0 && (p.type === 'grass' || !p.type)) {
-            // We still use dot notation for deletes because we use merge:true on the whole doc
-            const path = `data.${key}`;
-            (chunkData.data as any)[path] = admin.firestore.FieldValue.delete();
+            chunkPoints[key] = admin.firestore.FieldValue.delete();
             terrainData.delete(key);
           } else {
-            chunkData.data[key] = {
+            chunkPoints[key] = {
               y: Number(p.y), 
               type: String(p.type || 'grass')
             };
@@ -281,9 +331,9 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
       }
 
       // Add object chunk updates to the batch (1 write per chunk)
-      for (const [chunkId, chunkObjs] of objectsByChunk.entries()) {
+      for (const [chunkId, chunkData] of objectsByChunk.entries()) {
         const docRef = db.collection("object_chunks").doc(chunkId);
-        batch.set(docRef, chunkObjs, { merge: true });
+        batch.set(docRef, chunkData, { merge: true });
         
         const { redis } = await import("../../redis");
         if (redis.status === 'ready') await redis.sadd("world:existing_chunks", chunkId);
@@ -294,12 +344,12 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
     }
 
     // 3. Post-save Sync
-    if (saves.some(s => s.type?.startsWith("spawner_")) || deletes.some(id => worldObjects.get(id)?.type.startsWith("spawner_"))) {
+    if (saves.some(s => s.type?.startsWith("spawner_")) || deletes.some(d => worldObjects.get(d.id)?.type.startsWith("spawner_"))) {
       await initializeSpawners();
       io.emit("spawners_sync", Array.from(spawners.values()));
     }
 
-    if (deletes.length > 0) deletes.forEach(id => io.emit("world_object_removed", { id }));
+    if (deletes.length > 0) deletes.forEach(d => io.emit("world_object_removed", { id: d.id }));
     if (saves.length > 0) {
       saves.forEach(obj => {
         const saved = worldObjects.get(obj.id);
@@ -324,7 +374,13 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
       io.emit("terrain_sync", terrain);
       try {
         const { redis, saveTerrainRedis } = await import("../../redis");
-        await saveTerrainRedis(terrain); // Authoritative cache update
+        const sanitizedTerrain = terrain.map(p => ({
+          x: p.x,
+          z: p.z,
+          y: p.y,
+          type: p.type || 'grass'
+        }));
+        await saveTerrainRedis(sanitizedTerrain); // Authoritative cache update
         if (redis.status === 'ready') {
           await redis.publish("terrain:sync", JSON.stringify(terrain));
         }

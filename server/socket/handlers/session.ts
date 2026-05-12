@@ -6,7 +6,7 @@
  */
 import { Server, Socket } from "socket.io";
 import admin from "firebase-admin";
-import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerLastGridCell, lastSkillUse, lastChatMessage, dirtyPlayers, activeTrades } from "../../state";
+import { players, entities, worldObjects, spawners, logoutTimers, playerKnownEntities, playerKnownObjects, playerLastGridCell, lastSkillUse, lastChatMessage, dirtyPlayers, activeTrades, characterNameToId } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { CharacterModel } from "../../../src/models/CharacterModel";
@@ -18,7 +18,13 @@ import { handlePartyLeave } from "./party";
 import { handleTradeCancel } from "./trade";
 import { loadTerrainRegion } from "../../systems/persistence";
 
+import { JoinPayloadSchema } from "../../lib/schemas";
+import { validatePayload } from "../../lib/validation";
+
 export const handleJoin = async (io: Server, socket: Socket, playerData: any, userId: string, email: string) => {
+  const validated = validatePayload(socket, JoinPayloadSchema, playerData, "join");
+  if (!validated) return;
+
   try {
     // 1. Get Account Role
     const userRole = await getUserRole(userId, email);
@@ -26,7 +32,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     // 2. Check for existing "Blipped" session to take over
     let existingPlayer = null;
     for (const p of players.values()) {
-      if (p.userId === userId && p.characterId === playerData.characterId) {
+      if (p.userId === userId && p.characterId === validated.characterId) {
         existingPlayer = p;
         break;
       }
@@ -43,7 +49,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
       players.delete(existingPlayer.id);
     } else {
       // 3. New Session: Get Character Data from DB
-      const charDoc = await db.collection("users").doc(userId).collection("characters").doc(playerData.characterId).get();
+      const charDoc = await db.collection("users").doc(userId).collection("characters").doc(validated.characterId).get();
       if (!charDoc.exists) {
         serverLogger.warn("net", `Join rejected: Character not found for ${userId}`);
         return;
@@ -53,13 +59,13 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
       players.set(socket.id, {
         id: socket.id,
         userId: userId,
-        characterId: playerData.characterId,
+        characterId: validated.characterId,
         characterName: charData.name,
         class: charData.class,
         color: charData.color,
         role: userRole,
-        pos: charData.pos || playerData.pos || [0, 1, 0],
-        rot: charData.rot || playerData.rot || [0, 0, 0],
+        pos: charData.pos || validated.pos || [0, 1, 0],
+        rot: charData.rot || validated.rot || [0, 0, 0],
         hp: charData.hp,
         maxHp: charData.maxHp,
         mp: charData.mp,
@@ -74,6 +80,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         exp: charData.exp || 0,
         maxExp: charData.maxExp || 100
       });
+      characterNameToId.set(charData.name.toLowerCase(), socket.id);
       updateInGrid(entityGrid, socket.id, null, players.get(socket.id).pos);
     }
 
@@ -165,10 +172,12 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
       // Final Cleanup of all session-related maps
       players.delete(socket.id);
       playerKnownEntities.delete(socket.id);
+      playerKnownObjects.delete(socket.id);
       playerLastGridCell.delete(socket.id);
       lastSkillUse.delete(socket.id);
       lastChatMessage.delete(socket.id);
       dirtyPlayers.delete(socket.id);
+      if (p.characterName) characterNameToId.delete(p.characterName.toLowerCase());
       
       // Redis Cleanup: Remove from spatial index and clear hash
       removePlayerRedis(socket.id);
@@ -179,8 +188,12 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
     logoutTimers.set(socket.id, timer);
   } else {
     // Cleanup even for unauthenticated sockets
+    const p = players.get(socket.id);
+    if (p?.characterName) characterNameToId.delete(p.characterName.toLowerCase());
+    
     players.delete(socket.id);
     playerKnownEntities.delete(socket.id);
+    playerKnownObjects.delete(socket.id);
     playerLastGridCell.delete(socket.id);
     lastSkillUse.delete(socket.id);
     lastChatMessage.delete(socket.id);

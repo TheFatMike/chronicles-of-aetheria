@@ -124,17 +124,27 @@ export const cleanupGhostPlayers = async () => {
     // In a production environment with many players, we'd use ZSCAN.
     // For free-tier/small scale, ZRANGE is acceptable.
     const allPlayerIds = await redis.zrange("world:player_positions", 0, -1);
-    const pipeline = redis.pipeline();
-    
-    for (const id of allPlayerIds) {
-      // Check if the player hash still exists
-      const exists = await redis.exists(`player:${id}`);
-      if (!exists) {
-        pipeline.zrem("world:player_positions", id);
+    if (allPlayerIds.length === 0) return;
+
+    // Use a pipeline to check existence of all players in one round-trip
+    const existPipeline = redis.pipeline();
+    allPlayerIds.forEach(id => existPipeline.exists(`player:${id}`));
+    const results = await existPipeline.exec();
+
+    const cleanupPipeline = redis.pipeline();
+    let cleanupCount = 0;
+
+    results?.forEach(([err, exists], index) => {
+      if (!err && !exists) {
+        cleanupPipeline.zrem("world:player_positions", allPlayerIds[index]);
+        cleanupCount++;
       }
-    }
+    });
     
-    await pipeline.exec();
+    if (cleanupCount > 0) {
+      await cleanupPipeline.exec();
+      serverLogger.info("redis", `Cleaned up ${cleanupCount} ghost players from spatial index.`);
+    }
   } catch (err) {
     serverLogger.error("redis", `Ghost player cleanup failed: ${err}`);
   }
