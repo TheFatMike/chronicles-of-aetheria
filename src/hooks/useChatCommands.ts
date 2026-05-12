@@ -45,7 +45,7 @@ export const useChatCommands = (
     if (command !== "help") {
       if (['tp', 'spawners'].includes(command) && !isMod) return false;
       if (command === 'dev' && !isDev) return false;
-      if (['give', 'role', 'promote'].includes(command) && !isAdmin) return false;
+      if (['give', 'promote'].includes(command) && !isAdmin) return false;
       if (!isMod && !isAdmin) return false;
     }
 
@@ -163,40 +163,6 @@ export const useChatCommands = (
         return true;
       }
 
-      case "role": {
-        if (!isAdmin) return true;
-        const newRole = args[1] as string;
-        const requestedLevel = getRoleLevel(newRole);
-
-        // You can only change your own role to something equal or lower than your current rank
-        // unless you are an owner (level 4)
-        if (roleLevel === 4 || (roleLevel >= requestedLevel && requestedLevel >= 0)) {
-          if (['owner', 'dev', 'admin', 'mod', 'player'].includes(newRole)) {
-            if (character) {
-              // The server handles the persistent account update and notifies all clients
-              socket.emit("promote_player", { targetId: socket.id, role: newRole });
-              
-              addMessage({
-                id: `sys-${Date.now()}`,
-                sender: "System",
-                text: `Requesting account rank change to ${newRole.toUpperCase()}...`,
-                timestamp: Date.now(),
-                color: "#ffd700",
-              });
-            }
-          }
-        } else {
-          addMessage({
-            id: `sys-err-${Date.now()}`,
-            sender: "System",
-            text: "You cannot self-promote to a higher rank than your current one.",
-            timestamp: Date.now(),
-            color: "#ff4444",
-          });
-        }
-        return true;
-      }
-
       case "help": {
         const commands = [
           { name: "/help", desc: "List available commands", level: 0 },
@@ -204,7 +170,6 @@ export const useChatCommands = (
           { name: "/spawners", desc: "Open spawner management tool", level: 3 },
           { name: "/tp [x] [y] [z]", desc: "Teleport to coordinates", level: 1 },
           { name: "/give [itemName]", desc: "Spawn an item into your inventory", level: 2 },
-          { name: "/role [owner|dev|admin|mod|player]", desc: "Change your own role", level: 2 },
           { name: "/promote [name] [role]", desc: "Change another player's role", level: 2 },
         ];
 
