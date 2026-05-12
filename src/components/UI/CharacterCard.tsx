@@ -96,15 +96,6 @@ export const CharacterCard = ({
 
       <h2 className="text-xl font-display font-bold text-[#f4e4bc] mb-0.5 group-hover:text-white transition-colors flex items-center gap-2">
         {char.name}
-        {char.role && char.role !== 'player' && (
-          <span className={`text-[8px] px-1.5 py-0.5 rounded border uppercase font-bold tracking-widest ${
-            char.role === 'dev' ? "bg-red-500/20 border-red-500 text-red-400" :
-            char.role === 'admin' ? "bg-orange-500/20 border-orange-500 text-orange-400" :
-            "bg-blue-500/20 border-blue-500 text-blue-400"
-          }`}>
-            {char.role}
-          </span>
-        )}
       </h2>
       <p className="text-[#8b6b4d] font-fantasy text-[10px] uppercase tracking-[0.2em] mb-3">{char.class}</p>
 

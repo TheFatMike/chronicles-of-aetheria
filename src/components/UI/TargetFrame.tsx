@@ -76,15 +76,6 @@ export const TargetFrame = () => {
               </div>
               <div className="text-[10px] text-slate-400 uppercase tracking-tighter flex items-center gap-2">
                 <span>{liveTarget.type} {liveTarget.class ? `- ${liveTarget.class}` : ""}</span>
-                {liveTarget.role && liveTarget.role !== 'player' && (
-                  <span className={`text-[8px] px-1 rounded font-black ${
-                    liveTarget.role === 'dev' ? 'bg-amber-500 text-black' : 
-                    liveTarget.role === 'admin' ? 'bg-red-600 text-white' : 
-                    'bg-blue-600 text-white'
-                  }`}>
-                    {liveTarget.role.toUpperCase()}
-                  </span>
-                )}
               </div>
             </div>
           </div>

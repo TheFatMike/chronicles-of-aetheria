@@ -14,11 +14,16 @@ import { createNPCEntity } from "../../lib/entities";
 import { updateInGrid, objectGrid, entityGrid } from "../../systems/spatial";
 import { clearAICache } from "../../systems/ai";
 
+export const isEditorAuthorized = (socket: Socket, player: any) => {
+  const email = (socket as any).email;
+  const ownerEmails = (process.env.OWNER_EMAILS || "").toLowerCase().split(",");
+  const isOwnerEmail = email && ownerEmails.includes(email.toLowerCase());
+  return player && (player.role === 'owner' || player.role === 'dev' || player.role === 'admin' || isOwnerEmail);
+};
+
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
-  const email = (socket as any).email;
-  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
-  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
+  if (!isEditorAuthorized(socket, player)) return;
 
   const { id, type, pos, rot, scale, name, role, color } = data;
   let { modelUrl } = data;
@@ -74,9 +79,7 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 
 export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
-  const email = (socket as any).email;
-  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
-  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
+  if (!isEditorAuthorized(socket, player)) return;
 
   const { id } = data;
   const existing = worldObjects.get(id);
@@ -129,9 +132,7 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
 
 export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, data: { saves: any[], deletes: string[], terrain?: any[] }) => {
   const player = players.get(socket.id);
-  const email = (socket as any).email;
-  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
-  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
+  if (!isEditorAuthorized(socket, player)) return;
 
   const { saves = [], deletes = [], terrain = [] } = data;
   serverLogger.info("world", `Batch save request: ${saves.length} saves, ${deletes.length} deletes, ${terrain.length} terrain pts from ${player.characterName}`);
@@ -342,7 +343,7 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
 
 export const handleSpawnerReload = async (io: Server, socket: Socket) => {
   const player = players.get(socket.id);
-  if (!player || !["dev", "admin"].includes(player.role)) return;
+  if (!isEditorAuthorized(socket, player)) return;
   
   spawners.clear();
   for (const [eid, ent] of entities.entries()) {

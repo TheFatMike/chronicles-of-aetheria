@@ -28,15 +28,6 @@ export const PlayerHUD = ({ character, userEmail }: PlayerHUDProps) => {
               {character.name}
             </h2>
             <span className="text-[8px] sm:text-[10px] font-bold text-[#8b6b4d]">LVL {character.level}</span>
-            {role !== 'player' && (
-              <span className={`text-[7px] sm:text-[8px] px-1 rounded font-black ${
-                role === 'dev' ? 'bg-amber-500 text-black' :
-                role === 'admin' ? 'bg-red-600 text-white' :
-                'bg-blue-600 text-white'
-              }`}>
-                {role.toUpperCase()}
-              </span>
-            )}
           </div>
           <div className="space-y-1 mt-1 min-w-[120px] sm:min-w-[180px]">
             {/* HP Bar */}

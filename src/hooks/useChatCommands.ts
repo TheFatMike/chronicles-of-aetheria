@@ -64,14 +64,21 @@ export const useChatCommands = (
         if (!isAdmin) return true;
         
         let targetId = "";
+        let targetEmail = "";
         let targetName = "";
 
-        // Try target first
-        if (currentTarget && currentTarget.type === 'player') {
+        // 1. Check if first arg is an email
+        if (args[1]?.includes("@")) {
+          targetEmail = args[1];
+          targetName = args[1];
+        } 
+        // 2. Try current target
+        else if (currentTarget && currentTarget.type === 'player') {
           targetId = currentTarget.id;
           targetName = currentTarget.name;
-        } else if (args[1]) {
-          // Look up by name
+        } 
+        // 3. Try lookup by character name
+        else if (args[1]) {
           const pName = args[1].toLowerCase();
           const pEntry = Object.values(players).find(p => p.characterName.toLowerCase() === pName);
           if (pEntry) {
@@ -80,36 +87,36 @@ export const useChatCommands = (
           }
         }
 
-        if (!targetId) {
+        if (!targetId && !targetEmail) {
           addMessage({
             id: `sys-${Date.now()}`,
             sender: "System",
-            text: "No valid target for promotion found.",
+            text: "No valid target or email for promotion found.",
             timestamp: Date.now(),
             color: "#ff4444",
           });
           return true;
         }
 
-        const newRole = (args[2] || args[1]) as string;
+        const newRole = (targetEmail ? args[2] : (args[2] || args[1])) as string;
         const requestedLevel = getRoleLevel(newRole);
         
         // Promotion Rules:
-        // Rank 4 (Main Dev) -> can promote to any (up to level 3/dev)
+        // Rank 4 (Owner) -> can promote to any (up to level 3/dev)
         // Rank 3 (Dev) -> can promote up to Admin (level 2)
         // Rank 2 (Admin) -> can promote up to Mod (level 1)
         
         let canPromote = false;
-        if (roleLevel === 4) canPromote = true; // Main dev is all-powerful
+        if (roleLevel === 4) canPromote = true; // Owner is all-powerful
         else if (roleLevel === 3 && requestedLevel <= 2) canPromote = true;
         else if (roleLevel === 2 && requestedLevel <= 1) canPromote = true;
 
-        if (canPromote && ['admin', 'mod', 'player', 'dev'].includes(newRole)) {
-          socket.emit("change_role", { targetId, role: newRole });
+        if (canPromote && ['owner', 'dev', 'admin', 'mod', 'player'].includes(newRole)) {
+          socket.emit("promote_player", { targetId, email: targetEmail, role: newRole });
           addMessage({
             id: `sys-${Date.now()}`,
             sender: "System",
-            text: `Granted ${newRole} rank to ${targetName}'s account.`,
+            text: `Granted ${newRole.toUpperCase()} rank to ${targetName}.`,
             timestamp: Date.now(),
             color: "#ffd700",
           });
@@ -162,17 +169,17 @@ export const useChatCommands = (
         const requestedLevel = getRoleLevel(newRole);
 
         // You can only change your own role to something equal or lower than your current rank
-        // unless you are the main dev (level 4)
+        // unless you are an owner (level 4)
         if (roleLevel === 4 || (roleLevel >= requestedLevel && requestedLevel >= 0)) {
-          if (['admin', 'mod', 'player', 'dev'].includes(newRole)) {
+          if (['owner', 'dev', 'admin', 'mod', 'player'].includes(newRole)) {
             if (character) {
               // The server handles the persistent account update and notifies all clients
-              socket.emit("change_role", { targetId: socket.id, role: newRole });
+              socket.emit("promote_player", { targetId: socket.id, role: newRole });
               
               addMessage({
                 id: `sys-${Date.now()}`,
                 sender: "System",
-                text: `Requesting account rank change to ${newRole}...`,
+                text: `Requesting account rank change to ${newRole.toUpperCase()}...`,
                 timestamp: Date.now(),
                 color: "#ffd700",
               });
@@ -197,7 +204,7 @@ export const useChatCommands = (
           { name: "/spawners", desc: "Open spawner management tool", level: 3 },
           { name: "/tp [x] [y] [z]", desc: "Teleport to coordinates", level: 1 },
           { name: "/give [itemName]", desc: "Spawn an item into your inventory", level: 2 },
-          { name: "/role [admin|mod|player|dev]", desc: "Change your own role", level: 2 },
+          { name: "/role [owner|dev|admin|mod|player]", desc: "Change your own role", level: 2 },
           { name: "/promote [name] [role]", desc: "Change another player's role", level: 2 },
         ];
 

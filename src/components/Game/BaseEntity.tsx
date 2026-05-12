@@ -327,13 +327,13 @@ export const BaseEntity = memo(({
             <Text
               position={[0, 0.15, 0]}
               fontSize={0.12}
-              color={color}
+              color={role === 'owner' ? '#facc15' : color}
               anchorX="center"
               anchorY="middle"
               outlineWidth={0.01}
               outlineColor="black"
             >
-              &lt;{role.toUpperCase()}&gt;
+              {role === 'owner' ? '[ OWNER ]' : `<${role.toUpperCase()}>`}
             </Text>
           )}
         </Billboard>

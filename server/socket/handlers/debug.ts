@@ -9,11 +9,13 @@ import { DEBUG_CONFIG, DebugCategory } from "../../../src/debug.config";
 import { serverLogger } from "../../logger";
 import { players } from "../../state";
 
+import { isEditorAuthorized } from "./editor";
+
 export const handleDebugToggle = (io: Server, socket: Socket, data: { category?: DebugCategory, enabled: boolean, global?: boolean }) => {
   const player = players.get(socket.id);
   
-  // Only allow developers/admins to toggle debug settings
-  if (!player || (player.role !== 'dev' && player.role !== 'admin' && player.characterName !== 'Michael')) {
+  // Only allow authorized staff (Owner/Dev/Admin) to toggle debug settings
+  if (!isEditorAuthorized(socket, player)) {
     return;
   }
 

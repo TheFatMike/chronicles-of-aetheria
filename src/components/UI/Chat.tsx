@@ -72,6 +72,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                     <div className="flex items-baseline gap-1.5 sm:gap-2 mb-0.5">
                       {msg.role && msg.role !== 'player' && (
                         <span className={`text-[6px] sm:text-[7px] px-1 rounded font-black tracking-tighter uppercase mr-1 ${
+                          msg.role === 'owner' ? 'bg-[#facc15] text-black shadow-[0_0_8px_rgba(250,204,21,0.5)]' :
                           msg.role === 'dev' ? 'bg-amber-500 text-black' : 
                           msg.role === 'admin' ? 'bg-red-600 text-white' : 
                           'bg-blue-600 text-white'

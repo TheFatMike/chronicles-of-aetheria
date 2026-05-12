@@ -9,9 +9,11 @@ import { db } from "../db";
 export async function getUserRole(userId: string, email: string): Promise<string> {
   let userRole = "player";
   
-  // Hardcoded owner check
-  const isOwner = email && email.toLowerCase() === "michaeljhoward94@gmail.com";
-  if (isOwner) userRole = "dev";
+  // 1. Check environment variables for Owner status
+  const ownerEmails = (process.env.OWNER_EMAILS || "").toLowerCase().split(",");
+  const isOwner = email && ownerEmails.includes(email.toLowerCase());
+  
+  if (isOwner) userRole = "owner";
 
   // Check DB for specific role override
   try {

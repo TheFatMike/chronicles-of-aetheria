@@ -13,13 +13,15 @@ export const handleBuyItem = (socket: Socket, data: any) => {
   const player = players.get(socket.id);
   if (!player) return;
 
-  const { itemId, price, shopId } = data;
+  const { itemId, shopId } = data;
   const shop = SHOPS[shopId];
   if (!shop) return;
 
-  // Verify item is in shop
+  // Verify item is in shop and get AUTHORITATIVE price
   const shopItem = shop.items.find(i => i.itemId === itemId);
-  if (!shopItem || shopItem.price !== price) return;
+  if (!shopItem) return;
+
+  const price = shopItem.price;
 
   // Check gold
   if ((player.gold || 0) < price) {

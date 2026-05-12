@@ -12,13 +12,10 @@
  * the specified role across the entire game.
  */
 
-export type UserRole = 'dev' | 'admin' | 'mod' | 'player';
+export type UserRole = 'owner' | 'dev' | 'admin' | 'mod' | 'player';
 
 export const STAFF_MAPPING: Record<string, UserRole> = {
-  "michaeljhoward94@gmail.com": "dev",
-  // Add more staff here:
-  // "admin@example.com": "admin",
-  // "mod@example.com": "mod",
+  // Add more staff here if you want hardcoded overrides:
 };
 
 /**
@@ -27,15 +24,22 @@ export const STAFF_MAPPING: Record<string, UserRole> = {
  */
 export const getAccountRole = (email: string | null | undefined): UserRole => {
   if (!email) return 'player';
-  return STAFF_MAPPING[email.toLowerCase()] || 'player';
+  
+  // 1. Check local mapping
+  if (STAFF_MAPPING[email.toLowerCase()]) return STAFF_MAPPING[email.toLowerCase()];
+
+  // 2. Note: Server-side handles the environment variable OWNER_EMAILS check.
+  // The client will receive the correct 'role' field in the character object from the server.
+  return 'player';
 };
 
 /**
  * Helper to check if a role has at least a certain level of access.
- * Levels: player (0), mod (1), admin (2), dev (3)
+ * Levels: player (0), mod (1), admin (2), dev (3), owner (4)
  */
 export const getRoleLevel = (role: string | null | undefined): number => {
   switch (role) {
+    case 'owner': return 4;
     case 'dev': return 3;
     case 'admin': return 2;
     case 'mod': return 1;

@@ -31,9 +31,9 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     const speedCheckDt = Math.max(dt, 0.05); 
     const speedSq = distSq / (speedCheckDt * speedCheckDt);
 
-    // Allow up to 180m/s (160 base + burst/lag buffer)
-    // 180^2 = 32400
-    if (speedSq > 32400 && dt > 0.05) { 
+    // Hardened Speed Check: 25m/s is a fast run/mount speed. 
+    // 25^2 = 625
+    if (speedSq > 625 && dt > 0.05) { 
       serverLogger.warn("anti-cheat", `Speed/Teleport detected for ${player.characterName} (Speed: ${Math.sqrt(speedSq).toFixed(1)}m/s). Resetting.`);
       socket.emit("session_start", player);
       return;
@@ -50,9 +50,8 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   const driftZ = Math.abs(finalPos[2] - data.pos[2]);
   const driftY = Math.abs(finalPos[1] - data.pos[1]);
 
-  // SUPER PERMISSIVE SYNC: Let the client be the leader unless they are WAY off
-  // Anti-cheat still catches actual teleports (speed limit)
-  if (driftX > 10.0 || driftZ > 10.0 || driftY > 15.0) {
+  // Tightened sync thresholds
+  if (driftX > 5.0 || driftZ > 5.0 || driftY > 8.0) {
     socket.emit("move_sync", { pos: finalPos, rot: data.rot });
   }
 
