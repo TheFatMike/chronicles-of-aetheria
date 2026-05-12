@@ -28,6 +28,17 @@ interface GameViewProps {
 export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId, socket, initialPos, initialRot }: GameViewProps) => {
   const setTarget = useGameStore((state) => state.setTarget);
 
+  // Safe data validation: Prevent NaN or null coordinates from crashing the renderer
+  const safePos: [number, number, number] = 
+    (initialPos && Array.isArray(initialPos) && initialPos.every(v => typeof v === 'number' && !isNaN(v))) 
+    ? initialPos as [number, number, number] 
+    : [0, 5, 0];
+    
+  const safeRot: [number, number, number] = 
+    (initialRot && Array.isArray(initialRot) && initialRot.every(v => typeof v === 'number' && !isNaN(v))) 
+    ? initialRot as [number, number, number] 
+    : [0, 0, 0];
+
   return (
     <>
       <Canvas 
@@ -61,7 +72,7 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
         <Suspense fallback={null}>
           <World onAttack={onAttack} onLoot={onLoot} socket={socket} />
 
-          <Player onMove={onMove} color={playerColor} socket={socket} initialPos={initialPos} initialRot={initialRot} />
+          <Player onMove={onMove} color={playerColor} socket={socket} initialPos={safePos} initialRot={safeRot} />
           <Projectiles />
         </Suspense>
       </Canvas>

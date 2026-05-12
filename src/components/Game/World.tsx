@@ -4,20 +4,20 @@
  * Manages lighting, skybox, stars, and the collection of players and objects within the scene.
  * @importance Critical: The container component that brings together all elements of the 3D game world.
  */
-import { memo, useRef, useState } from "react";
+import { memo, useRef, useCallback } from "react";
 import * as THREE from "three";
 import { useThree, useFrame } from "@react-three/fiber";
-import { Sky, Stars, Plane, OrbitControls } from "@react-three/drei";
-import { OtherPlayer } from "./OtherPlayer";
+import { Sky, Stars } from "@react-three/drei";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
-import { GAME_CONFIG } from "../../config";
 import { WorldObjectsRenderer } from "./WorldObjectsRenderer";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
-import { SpawnerBeacons } from "./SpawnerBeacons";
 import { EntityRenderer } from "./EntityRenderer";
 import { EditorCamera } from "./EditorCamera";
 import { Terrain } from "./Terrain";
+import { BrushPreview } from "./BrushPreview";
+import { OtherPlayers } from "./OtherPlayers";
+import { SpawnerRenderer } from "./SpawnerRenderer";
 
 interface WorldProps {
   onAttack?: () => void;
@@ -66,18 +66,21 @@ const MovingShadowLight = memo(() => {
 });
 
 export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: any }) => {
-  const entities = useGameStore(useShallow(state => Object.values(state.entities)));
-  const players = useGameStore(useShallow(state => Object.keys(state.players)));
-  const spawners = useGameStore(useShallow(state => Object.values(state.spawners)));
-  const currentPlayerId = useGameStore(state => state.id);
+  const setEditorMousePoint = useGameStore(state => state.setEditorMousePoint);
   const editorSelectedType = useGameStore(state => state.editorSelectedType);
-  const devMode = useGameStore(state => state.devMode);
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
   const gridSnap = useGameStore(state => state.gridSnap);
   const brightness = useGameStore(state => state.brightness);
 
-  const onFloorClick = (e: any) => {
-    // Only place/interact on left click (button 0)
+    const lastClickTime = useRef<number>(0);
+    const onFloorClick = useCallback((e: any) => {
+      const now = Date.now();
+      
+      // Prevent double-firing from rapid clicks or overlapping meshes
+      if (now - lastClickTime.current < 100) return;
+      lastClickTime.current = now;
+
+      // Only place/interact on left click (button 0)
     if (e.button !== 0) return;
     
     // Only clear target if the floor is the FIRST thing we hit (not clicking through to something else)
@@ -104,11 +107,18 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       const { editorBrushSize, editorBrushStrength } = useGameStore.getState();
       const brushSize = editorBrushSize;
       const strength = editorBrushStrength;
-      const resolution = 4; // MUST match Terrain.tsx resolution
+      const resolution = 2; // MUST match Terrain.tsx resolution
       const points = [];
       
       const centerX = Math.round(point.x / resolution) * resolution;
       const centerZ = Math.round(point.z / resolution) * resolution;
+
+      // Capture height for flattening if not already set
+      let targetY = 0;
+      if (editorSelectedType === 'terrain_flatten') {
+        const key = `${Math.round(point.x / resolution) * resolution}_${Math.round(point.z / resolution) * resolution}`;
+        targetY = useGameStore.getState().terrainData[key]?.y || 0;
+      }
 
       for (let x = centerX - brushSize; x <= centerX + brushSize; x += resolution) {
         for (let z = centerZ - brushSize; z <= centerZ + brushSize; z += resolution) {
@@ -119,7 +129,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
             
             if (editorSelectedType === 'terrain_raise') update.deltaY = strength * falloff;
             if (editorSelectedType === 'terrain_lower') update.deltaY = -strength * falloff;
-            if (editorSelectedType === 'terrain_flatten') update.y = 0;
+            if (editorSelectedType === 'terrain_flatten') update.y = targetY;
             
             if (editorSelectedType === 'terrain_paint_grass') update.type = 'grass';
             if (editorSelectedType === 'terrain_paint_dirt') update.type = 'dirt';
@@ -147,34 +157,37 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       );
     }
 
-    // Dispatch custom event for specialized placement
+    const template = OBJECT_TEMPLATES[editorSelectedType];
+
+    // Dispatch custom event for specialized placement (handled by WorldEditor)
     const placeEvent = new CustomEvent('editor_place_object', { 
-      detail: { point, type: editorSelectedType } 
+      detail: { 
+        point, 
+        type: editorSelectedType,
+        modelUrl: template?.modelUrl,
+        scale: template?.scale || 1
+      } 
     });
     window.dispatchEvent(placeEvent);
+  }, [editorSelectedType, gridSnap, isEditorOpen, socket]);
 
-    if (editorSelectedType !== 'waypoint') {
-      const template = OBJECT_TEMPLATES[editorSelectedType];
-      const isSpawner = editorSelectedType.startsWith('spawner_');
-      const spawnerClass = isSpawner ? editorSelectedType.replace('spawner_', '') : undefined;
-      
-      useGameStore.getState().addWorldObject({
-        id: crypto.randomUUID(),
-        type: editorSelectedType,
-        pos: [point.x, point.y, point.z],
-        rot: isSpawner ? [0, 0, 0] : [0, Math.random() * Math.PI * 2, 0],
-        scale: isSpawner ? 1 : (template?.scale || 1) * (0.9 + Math.random() * 0.2),
-        modelUrl: template?.modelUrl,
-        // Spawner logic defaults
-        entityClass: spawnerClass,
-        level: isSpawner ? 1 : undefined,
-        spawnRadius: isSpawner ? 5 : undefined,
-        maxEntities: isSpawner ? 3 : undefined,
-        respawnTime: isSpawner ? 10 : undefined,
-        pathId: isSpawner ? '' : undefined
-      });
+  const handlePointerMove = useCallback((e: any) => {
+    if (!isEditorOpen) return;
+    
+    const { x, y, z } = e.point;
+    const lastPoint = useGameStore.getState().editorMousePoint;
+    
+    // Only update if the mouse has moved more than 0.1m to prevent render-loops
+    if (!lastPoint || 
+        Math.abs(lastPoint[0] - x) > 0.1 || 
+        Math.abs(lastPoint[2] - z) > 0.1) {
+      setEditorMousePoint([x, y, z]);
     }
-  };
+  }, [isEditorOpen, setEditorMousePoint]);
+
+  const handlePointerOut = useCallback(() => {
+    setEditorMousePoint(null);
+  }, [setEditorMousePoint]);
 
   return (
     <>
@@ -188,21 +201,20 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       <pointLight position={[-10, 5, -10]} intensity={1} color="#fcd34d" />
       
       <group name="collidables_root">
-        <Terrain socket={socket} onClick={onFloorClick} />
+        <Terrain 
+          socket={socket} 
+          onClick={onFloorClick} 
+          onPointerMove={handlePointerMove}
+          onPointerOut={handlePointerOut}
+        />
         
-
+        <BrushPreview />
         <WorldObjectsRenderer socket={socket} />
       </group>
       
-      <EntityRenderer entities={entities} onAttack={onAttack} onLoot={onLoot} />
-
-      {players.map(pid => pid !== currentPlayerId && (
-        <OtherPlayer key={pid} id={pid} />
-      ))}
-
-      {devMode && isEditorOpen && spawners.length > 0 && (
-        <SpawnerBeacons spawners={spawners} entities={entities} />
-      )}
+      <EntityRenderer onAttack={onAttack} onLoot={onLoot} />
+      <OtherPlayers />
+      <SpawnerRenderer />
       
       {isEditorOpen && <EditorCamera />}
     </>

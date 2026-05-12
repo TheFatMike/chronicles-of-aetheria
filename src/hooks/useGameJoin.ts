@@ -39,16 +39,7 @@ export const useGameJoin = ({
     // Check if essential data is ready
     const checkReady = () => {
       const state = useGameStore.getState();
-      const hasObjects = Object.keys(state.worldObjects).length > 0;
-      const hasSpawners = Object.keys(state.spawners).length > 0;
-      const hasEntities = Object.keys(state.entities).length > 0;
-      
-      // If we are joining, we should at least wait for world objects and spawners sync
-      // Note: In an empty world, this might never trigger, so we still need a safety timeout
-      if (hasObjects && hasSpawners) {
-        return true;
-      }
-      return false;
+      return state.worldReady;
     };
 
     if (useGameStore.getState().isWorldLoading) {
@@ -87,6 +78,7 @@ export const useGameJoin = ({
       logger.info("play", `Joining world as ${selectedCharacter.name} (${selectedCharacter.id}) | Socket: ${socketId}`);
       setIsJoining(true);
       useGameStore.getState().setWorldLoading(true);
+      useGameStore.getState().setWorldReady(false);
       lastJoinedRef.current = { charId: selectedCharacter.id, socketId };
       
       sendJoin({

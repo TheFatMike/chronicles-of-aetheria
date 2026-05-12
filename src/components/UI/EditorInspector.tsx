@@ -25,18 +25,19 @@ export const EditorInspector = ({
       initial={{ opacity: 0, x: 50, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.95 }}
-      className="pointer-events-auto fixed right-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/95 border border-white/10 rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/10"
+      className="pointer-events-auto fixed right-8 top-[15vh] w-80 bg-[#1a140f]/95 border-4 border-[#4a3a2a] rounded-xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md overflow-hidden flex flex-col h-[70vh]"
     >
+      <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
       {/* Header */}
       <div className="bg-linear-to-b from-slate-900/80 to-transparent p-5 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <Box size={16} className="text-blue-500" />
+            <div className="w-8 h-8 rounded-lg bg-[#c2a472]/10 border border-[#c2a472]/20 flex items-center justify-center">
+              <Box size={16} className="text-[#c2a472]" />
             </div>
             <div>
-              <h3 className="text-white font-black text-[11px] uppercase tracking-[0.2em]">Inspector</h3>
-              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-wider">Properties & Logic</p>
+              <h3 className="text-[#f4e4bc] font-black text-[11px] uppercase tracking-[0.2em] relative z-10">Inspector</h3>
+              <p className="text-[#8b6b4d] text-[9px] font-bold uppercase tracking-wider relative z-10">Properties & Logic</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -137,7 +138,7 @@ export const EditorInspector = ({
                     <div key={config.axis} className="space-y-2">
                       <div className="flex items-center gap-1.5 px-1">
                         <div className={`w-1 h-1 rounded-full ${config.color}`} />
-                        <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Pos {config.axis}</label>
+                        <label className="text-[7px] text-[#8b6b4d] font-black uppercase tracking-widest">Pos {config.axis}</label>
                       </div>
                       <input 
                         type="number" step="0.1"
@@ -147,7 +148,7 @@ export const EditorInspector = ({
                           newPos[i] = parseFloat(e.target.value) || 0;
                           updateSelected({ pos: newPos as [number, number, number] });
                         }}
-                        className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono transition-all"
+                        className="w-full bg-black/40 text-[#f4e4bc] text-[10px] p-2.5 rounded-lg border border-[#4a3a2a]/30 outline-none focus:border-[#c2a472]/50 font-mono transition-all relative z-10"
                       />
                     </div>
                   ))}

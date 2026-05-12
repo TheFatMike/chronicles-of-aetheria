@@ -76,7 +76,7 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
             exit={{ opacity: 0 }}
             onClick={() => setActiveMenu(null)}
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
-            className="fixed inset-0 backdrop-blur-sm z-40 pointer-events-auto"
+            className={`fixed inset-0 backdrop-blur-sm z-40 ${isEditorOpen ? 'pointer-events-none' : 'pointer-events-auto'}`}
           />
         )}
       </AnimatePresence>
@@ -93,7 +93,7 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
         )}
       </AnimatePresence>
 
-      <div className="pointer-events-auto">
+      <div className="pointer-events-none">
         {!isEditorOpen && (
           <>
             <PlayerHUD character={selectedCharacter} userEmail={userEmail} />

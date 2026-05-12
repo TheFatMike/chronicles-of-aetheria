@@ -10,41 +10,69 @@ import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import crypto from "crypto";
 import { createNPCEntity } from "../lib/entities";
 import { updateInGrid, entityGrid } from "./spatial";
+import { serverLogger } from "../logger";
+
+export const registerSpawnerFromObject = (obj: any) => {
+  const spawnerId = obj.id;
+  const entityType = obj.type.replace('spawner_', ''); // e.g., 'spawner_slime' -> 'slime'
+  
+  if (!spawners.has(spawnerId)) {
+    serverLogger.info("game", `Registering Spawner: ${entityType} at ${obj.pos}`);
+  }
+
+  spawners.set(spawnerId, {
+    id: spawnerId,
+    name: `${entityType} Spawner`,
+    type: 'enemy',
+    entityType,
+    level: obj.level || 1,
+    pos: obj.pos,
+    spawnRadius: obj.spawnRadius || 10,
+    maxEntities: obj.maxEntities || 3,
+    respawnTime: obj.respawnTime || 10,
+    lastSpawn: -9999999, // Force immediate spawn on first tick
+  });
+};
 
 export const updateSpawners = (now: number) => {
   for (const spawner of spawners.values()) {
     const count = spawnerEntityCounts.get(spawner.id) || 0;
     const interval = spawner.spawnInterval || (spawner.respawnTime * 1000) || 10000;
     
+    // Check if we need to spawn
     if (count < spawner.maxEntities && now - (spawner.lastSpawn || 0) > interval) {
-      const id = crypto.randomUUID();
-      const template = ENTITY_TEMPLATES[spawner.entityType];
-      if (!template) continue;
+      // INITIAL BURST: If this is a fresh spawner, spawn a full wave immediately!
+      const isInitialBurst = (spawner.lastSpawn || 0) < 0;
+      const numToSpawn = isInitialBurst ? (spawner.maxEntities - count) : 1;
 
-      const radius = spawner.radius || spawner.spawnRadius || 5;
-      const rx = (Math.random() - 0.5) * radius * 2;
-      const rz = (Math.random() - 0.5) * radius * 2;
-      
-      const pos: [number, number, number] = [spawner.pos[0] + rx, 0, spawner.pos[2] + rz];
-      const rot: [number, number, number] = [0, Math.random() * Math.PI * 2, 0];
-      
-      const newEntity = createNPCEntity(id, null, spawner.entityType, pos, rot);
-      
-      // Inject spawner-specific logic
-      const entityWithSpawner = {
-        ...newEntity,
-        spawnerId: spawner.id,
-        aiState: spawner.pathId ? 'PATROL' : 'IDLE',
-        pathId: spawner.pathId,
-        currentWaypointIndex: 0
-      };
+      for (let i = 0; i < numToSpawn; i++) {
+        const id = crypto.randomUUID();
+        const radius = spawner.radius || spawner.spawnRadius || 5;
+        const rx = (Math.random() - 0.5) * radius * 2;
+        const rz = (Math.random() - 0.5) * radius * 2;
+        
+        const pos: [number, number, number] = [spawner.pos[0] + rx, 0, spawner.pos[2] + rz];
+        const rot: [number, number, number] = [0, Math.random() * Math.PI * 2, 0];
+        
+        const newEntity = createNPCEntity(id, null, spawner.entityType, pos, rot);
+        
+        // Inject spawner-specific logic
+        const entityWithSpawner = {
+          ...newEntity,
+          spawnerId: spawner.id,
+          aiState: spawner.pathId ? 'PATROL' : 'IDLE',
+          pathId: spawner.pathId,
+          currentWaypointIndex: 0
+        };
 
-      // Register in systems
-      entities.set(id, entityWithSpawner as any);
-      spawnerEntityCounts.set(spawner.id, count + 1);
-      updateInGrid(entityGrid, id, null, pos);
-      dirtyEntities.add(id);
-      
+        // Register in systems
+        entities.set(id, entityWithSpawner as any);
+        updateInGrid(entityGrid, id, null, pos);
+        dirtyEntities.add(id);
+      }
+
+      // Update the spawner's count and timestamp
+      spawnerEntityCounts.set(spawner.id, count + numToSpawn);
       spawner.lastSpawn = now;
     }
   }

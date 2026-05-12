@@ -8,7 +8,7 @@ export function getInterpolatedHeight(
   x: number, 
   z: number, 
   terrainData: Record<string, { y: number, type: string }>, 
-  resolution: number = 4
+  resolution: number = 2
 ): number {
   const x0 = Math.floor(x / resolution) * resolution;
   const z0 = Math.floor(z / resolution) * resolution;

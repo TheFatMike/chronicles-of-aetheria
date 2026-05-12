@@ -207,6 +207,13 @@ export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarPr
   const playerId = useGameStore(s => s.id);
   const localPlayer = useGameStore(s => s.players[playerId || ""]);
 
+  // Defensive check: Ensure slots is an array (Firebase sometimes returns objects for sparse arrays)
+  const safeSlots = Array.isArray(slots) 
+    ? slots 
+    : slots && typeof slots === 'object' 
+      ? Array.from({ length: 10 }, (_, i) => (slots as any)[i] || null)
+      : Array(10).fill(null);
+
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-70 flex flex-col items-center gap-2">
       {/* Experience Bar above Hotbar */}
@@ -226,7 +233,7 @@ export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarPr
       )}
 
       <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-[#1a140f]/40 backdrop-blur-sm rounded-lg border border-[#4a3a2a]/20 shadow-2xl overflow-x-auto max-w-[95vw] no-scrollbar">
-        {slots.map((slot, i) => (
+        {safeSlots.map((slot, i) => (
           <HotbarSlot 
             key={i} 
             index={i} 

@@ -86,8 +86,11 @@ export const usePlayerMovement = (
     systems.input.setup();
 
     const onMouseDown = (e: MouseEvent) => {
-      // Ignore if clicking on UI
-      if (e.target !== gl.domElement) return;
+      // Don't fight with the EditorCamera
+      if (store.isEditorOpen) return;
+
+      const target = e.target as HTMLElement;
+      if (target.tagName === "BUTTON" || target.tagName === "INPUT" || target.tagName === "SELECT" || target.closest('.pointer-events-auto')) return;
 
       if (e.button === 0) cameraState.current.isLeftMouseDown = true;
       if (e.button === 2) cameraState.current.isRightMouseDown = true;
@@ -101,6 +104,7 @@ export const usePlayerMovement = (
     };
 
     const onMouseMove = (e: MouseEvent) => {
+      if (store.isEditorOpen) return;
       const { isLeftMouseDown, isRightMouseDown, lastX, lastY } = cameraState.current;
       if (!isLeftMouseDown && !isRightMouseDown) return;
       
@@ -163,7 +167,8 @@ export const usePlayerMovement = (
 
   // MAIN GAME LOOP
   useFrame((_, delta) => {
-    if (!meshRef.current) return;
+    const state = useGameStore.getState();
+    if (!meshRef.current || state.isEditorOpen) return;
 
     // Handle Teleportation
     if (store.teleportRequest) {
@@ -257,15 +262,17 @@ export const usePlayerMovement = (
       meshRef.current.position.lerp(physicsPosition.current, 1 - Math.exp(-followSpeed * clampedDelta));
     }
 
-    // 5. CAMERA UPDATE
-    systems.camera.update(
-      camera,
-      cameraState.current,
-      meshRef.current.position,
-      clampedDelta,
-      filteredCollidablesRef.current,
-      playerMeshesRef.current
-    );
+    // 5. CAMERA UPDATE - Disabled in Editor (EditorCamera takes control)
+    if (!store.isEditorOpen) {
+      systems.camera.update(
+        camera,
+        cameraState.current,
+        meshRef.current.position,
+        clampedDelta,
+        filteredCollidablesRef.current,
+        playerMeshesRef.current
+      );
+    }
 
     // 6. NETWORK SYNC (15Hz)
     const now = performance.now();
@@ -280,11 +287,17 @@ export const usePlayerMovement = (
           isGrounded: isGrounded.current
         });
         
-        // Update local store for distance checks and UI
-        useGameStore.getState().updatePlayer(
-          useGameStore.getState().id || "", 
-          { pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z] }
-        );
+        // Update local store for distance checks and UI only if moved
+        const state = useGameStore.getState();
+        const currentPos = state.players[state.id || ""]?.pos;
+        if (!currentPos || 
+            Math.abs(currentPos[0] - physicsPosition.current.x) > 0.01 ||
+            Math.abs(currentPos[2] - physicsPosition.current.z) > 0.01) {
+          state.updatePlayer(
+            state.id || "", 
+            { pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z] }
+          );
+        }
 
         lastTime.current = now;
       }

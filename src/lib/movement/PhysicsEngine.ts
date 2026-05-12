@@ -125,7 +125,7 @@ export class PhysicsEngine {
     }
 
     // Void Recovery
-    if (pos.y < -100) {
+    if (pos.y < -500) {
       logger.warn("physics", "Recovering from void", { pos });
       pos.set(0, 5, 0);
       velocity.set(0, 0, 0);

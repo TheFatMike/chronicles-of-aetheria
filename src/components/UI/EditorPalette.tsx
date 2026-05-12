@@ -45,18 +45,19 @@ export const EditorPalette = ({
       initial={{ opacity: 0, x: -50, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: -50, scale: 0.95 }}
-      className="pointer-events-auto fixed left-8 top-1/2 -translate-y-1/2 w-80 bg-slate-950/95 border border-white/10 rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl overflow-hidden flex flex-col max-h-[85vh] ring-1 ring-white/10"
+      className="pointer-events-auto fixed left-8 top-1/2 -translate-y-1/2 w-80 bg-[#1a140f]/95 border-4 border-[#4a3a2a] rounded-xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md overflow-hidden flex flex-col max-h-[85vh]"
     >
+      <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
       {/* Header */}
-      <div className="bg-linear-to-b from-slate-900/80 to-transparent p-5 border-b border-white/5 space-y-4">
+      <div className="bg-linear-to-b from-black/40 to-transparent p-5 border-b border-[#4a3a2a]/30 space-y-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-              <Settings2 size={16} className="text-amber-500" />
+            <div className="w-8 h-8 rounded-lg bg-[#c2a472]/10 border border-[#c2a472]/20 flex items-center justify-center">
+              <Settings2 size={16} className="text-[#c2a472]" />
             </div>
             <div>
-              <h3 className="text-white font-black text-[11px] uppercase tracking-[0.2em]">World Studio</h3>
-              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-wider">Level Editor v1.2</p>
+              <h3 className="text-[#f4e4bc] font-black text-[11px] uppercase tracking-[0.2em]">World Studio</h3>
+              <p className="text-[#8b6b4d] text-[9px] font-bold uppercase tracking-wider">Level Editor v1.2</p>
             </div>
           </div>
           
@@ -104,18 +105,18 @@ export const EditorPalette = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Category Tabs */}
-        <div className="px-4 py-4 bg-white/2 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5 shadow-inner">
+        <div className="px-4 py-4 bg-black/20 flex gap-2 overflow-x-auto no-scrollbar border-b border-[#4a3a2a]/30 shadow-inner relative z-10">
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 ring-1 ${
+              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 border-2 ${
                 activeCategory === cat.id 
-                  ? 'bg-amber-500 text-white ring-amber-400 shadow-[0_4px_15px_rgba(245,158,11,0.3)]' 
-                  : 'bg-white/5 text-slate-500 hover:text-slate-300 ring-white/5'
+                  ? 'bg-[#c2a472] text-[#1a140f] border-[#f4e4bc]/30 shadow-md' 
+                  : 'bg-black/40 text-[#8b6b4d] hover:text-[#f4e4bc] border-[#4a3a2a]'
               }`}
             >
-              <span className={activeCategory === cat.id ? 'text-white' : 'text-slate-600'}>{cat.icon}</span>
+              <span className={activeCategory === cat.id ? 'text-[#1a140f]' : 'text-[#8b6b4d]'}>{cat.icon}</span>
               {cat.label}
             </button>
           ))}
@@ -136,27 +137,27 @@ export const EditorPalette = ({
 
           {/* Transform Modes (Contextual) */}
           {editorSelectedType === 'edit' && (
-            <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
+            <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-black/40 rounded-xl border-2 border-[#4a3a2a] shadow-inner relative z-10">
               <button 
                 onClick={() => setEditorTransformMode('translate')}
-                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
-                  editorTransformMode === 'translate' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-lg text-[9px] font-black transition-all ${
+                  editorTransformMode === 'translate' ? 'bg-[#c2a472] text-[#1a140f] shadow-lg' : 'text-[#8b6b4d] hover:text-[#f4e4bc]'
                 }`}
               >
                 MOVE
               </button>
               <button 
                 onClick={() => setEditorTransformMode('rotate')}
-                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
-                  editorTransformMode === 'rotate' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-lg text-[9px] font-black transition-all ${
+                  editorTransformMode === 'rotate' ? 'bg-[#c2a472] text-[#1a140f] shadow-lg' : 'text-[#8b6b4d] hover:text-[#f4e4bc]'
                 }`}
               >
                 ROT
               </button>
               <button 
                 onClick={() => setEditorTransformMode('scale')}
-                className={`py-2.5 rounded-xl text-[9px] font-black transition-all ${
-                  editorTransformMode === 'scale' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-300'
+                className={`py-2.5 rounded-lg text-[9px] font-black transition-all ${
+                  editorTransformMode === 'scale' ? 'bg-[#c2a472] text-[#1a140f] shadow-lg' : 'text-[#8b6b4d] hover:text-[#f4e4bc]'
                 }`}
               >
                 SCALE
@@ -177,10 +178,10 @@ export const EditorPalette = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={() => setEditorSelectedType(type as any)}
-                  className={`group relative aspect-square flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
+                  className={`group relative aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-300 z-10 ${
                     editorSelectedType === type 
-                      ? 'bg-amber-500 border-amber-300 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] scale-95' 
-                      : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-slate-600 hover:bg-slate-800'
+                      ? 'bg-[#c2a472]/20 border-[#c2a472] text-[#f4e4bc] shadow-[0_0_20px_rgba(194,164,114,0.3)] scale-95' 
+                      : 'bg-black/20 border-[#4a3a2a]/30 text-[#8b6b4d] hover:border-[#4a3a2a] hover:bg-black/40'
                   }`}
                 >
                   <div className={`transition-transform duration-300 ${editorSelectedType === type ? 'scale-110' : 'group-hover:scale-110'}`}>
@@ -223,9 +224,12 @@ export const EditorPalette = ({
                     <span className="text-[10px] text-blue-400 font-mono font-bold">{editorBrushSize}m</span>
                   </div>
                   <input 
-                    type="range" min="4" max="40" step="4" 
+                    type="range" 
+                    min="2" 
+                    max="40" 
+                    step="1"
                     value={editorBrushSize} 
-                    onChange={(e) => setEditorBrushSize(parseInt(e.target.value))}
+                    onChange={(e) => setEditorBrushSize(parseFloat(e.target.value))}
                     className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
                   />
                 </div>

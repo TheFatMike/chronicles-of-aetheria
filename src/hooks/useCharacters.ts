@@ -92,22 +92,36 @@ export const useCharacters = (user: User | null, socket: Socket | null) => {
   }, [user, socket]);
 
   const deleteCharacter = useCallback(async (character: Character) => {
-    if (!user) return;
-    const lowerName = character.name.toLowerCase().trim();
-    const nameRef = doc(db, "characterNames", lowerName);
-    const charRef = doc(db, `users/${user.uid}/characters`, character.id);
-
-    logger.info("characters", `Deleting character ${character.name} (${character.id})`);
-    try {
-      await runTransaction(db, async (transaction) => {
-        transaction.delete(nameRef);
-        transaction.delete(charRef);
+    if (!user || !socket) return;
+    
+    logger.info("characters", `Requesting deletion of ${character.name} (${character.id})`);
+    
+    return new Promise<void>((resolve) => {
+      // 1. Listen for success
+      socket.once("character_deleted", (charId: string) => {
+        if (charId === character.id) {
+          setCharacters(prev => prev.filter(c => c.id !== charId));
+          resolve();
+        }
       });
-      setCharacters(prev => prev.filter(c => c.id !== character.id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `users/${user.uid}/characters/${character.id}`);
-    }
-  }, [user]);
+
+      // 2. Listen for errors
+      socket.once("error", (err: { message: string }) => {
+        logger.error("characters", `Failed to delete character: ${err.message}`);
+        resolve();
+      });
+
+      // 3. Send request
+      socket.emit("delete_character", character.id);
+
+      // 4. Timeout safety
+      setTimeout(() => {
+        socket.off("character_deleted");
+        socket.off("error");
+        resolve();
+      }, 5000);
+    });
+  }, [user, socket]);
 
   return { 
     characters, 

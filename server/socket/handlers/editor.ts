@@ -5,6 +5,7 @@
  * @importance Essential: Empowers creators to build and modify the game world dynamically.
  */
 import { Socket, Server } from "socket.io";
+import admin from "firebase-admin";
 import { players, worldObjects, spawners, entities, terrainData } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
@@ -15,16 +16,18 @@ import { clearAICache } from "../../systems/ai";
 
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
-  if (!player || !["dev", "admin"].includes(player.role)) return;
+  const email = (socket as any).email;
+  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
+  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
 
-  const { id, type, pos, rot, scale } = data;
+  const { id, type, pos, rot, scale, name, role, color } = data;
   let { modelUrl } = data;
   
   if (!modelUrl && type === 'tower_base') {
     modelUrl = '/assets/models/tower_base.glb';
   }
 
-  const worldObj = { id, type, pos, rot, scale, modelUrl };
+  const worldObj = { id, type, pos, rot, scale, modelUrl, name, role, color };
 
   try {
     await db.collection("world").doc(id).set(worldObj, { merge: true });
@@ -45,7 +48,7 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 
     if (type.startsWith("npc_")) {
       const entityId = `npc-${id}`;
-      const npcEntity = createNPCEntity(entityId, id, type, pos, rot);
+      const npcEntity = createNPCEntity(entityId, id, type, pos, rot, worldObj);
       
       const oldNPC = entities.get(entityId);
       updateInGrid(entityGrid, entityId, oldNPC?.pos || null, pos);
@@ -71,13 +74,26 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
 
 export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: any) => {
   const player = players.get(socket.id);
-  if (!player || !["dev", "admin"].includes(player.role)) return;
+  const email = (socket as any).email;
+  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
+  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
 
   const { id } = data;
   const existing = worldObjects.get(id);
 
   try {
+    // Aggressive cleanup: Try to delete from both legacy global and new chunked system
     await db.collection("world").doc(id).delete();
+    
+    if (player.pos) {
+      const chunkX = Math.floor(player.pos[0] / 100);
+      const chunkZ = Math.floor(player.pos[2] / 100);
+      const chunkId = `chunk_${chunkX}_${chunkZ}`;
+      const path = `objects.${id}`;
+      await db.collection("object_chunks").doc(chunkId).update({
+        [path]: admin.firestore.FieldValue.delete()
+      }).catch(() => {}); // Ignore if chunk doc doesn't exist
+    }
     
     // Cleanup Spatial Grid
     if (existing?.pos) {
@@ -113,13 +129,16 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
 
 export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, data: { saves: any[], deletes: string[], terrain?: any[] }) => {
   const player = players.get(socket.id);
-  if (!player || !["dev", "admin"].includes(player.role)) return;
+  const email = (socket as any).email;
+  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
+  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
 
   const { saves = [], deletes = [], terrain = [] } = data;
+  serverLogger.info("world", `Batch save request: ${saves.length} saves, ${deletes.length} deletes, ${terrain.length} terrain pts from ${player.characterName}`);
   
   // 1. Safety Limit: Prevent massive DoS-style payloads
   const totalOps = saves.length + deletes.length + terrain.length;
-  if (totalOps > 2000) {
+  if (totalOps > 5000) {
     serverLogger.warn("world", `Rejected oversized batch from ${player.characterName} (${totalOps} ops)`);
     return;
   }
@@ -127,12 +146,12 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
   try {
     // Define explicit types for the operations to help TypeScript narrow them correctly
     type EditorOp = 
-      | { type: 'delete', id: string }
+      | { type: 'delete', id: string, pos?: [number, number, number] }
       | { type: 'save', data: any }
       | { type: 'terrain', data: any };
 
     const allOperations: EditorOp[] = [
-      ...deletes.map(id => ({ type: 'delete', id } as const)),
+      ...deletes.map((d: any) => ({ type: 'delete', ...d } as const)),
       ...saves.map(obj => ({ type: 'save', data: obj } as const)),
       ...terrain.map(p => ({ type: 'terrain', data: p } as const))
     ];
@@ -141,15 +160,31 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
       const batch = db.batch();
       const chunk = allOperations.slice(i, i + 450);
 
+      // 2. Process all operations in this chunk
+      const terrainByChunk = new Map<string, Record<string, any>>();
+      const objectsByChunk = new Map<string, Record<string, any>>();
+      const { OBJECT_TEMPLATES } = await import("../../../src/data/world/templates");
+
       for (const op of chunk) {
         if (op.type === 'delete') {
           const id = op.id;
           const existing = worldObjects.get(id);
-          batch.delete(db.collection("world").doc(id));
+          const pos = op.pos || existing?.pos;
           
-          if (existing?.pos) {
-            const key = Math.floor(existing.pos[0] / 50) + "," + Math.floor(existing.pos[2] / 50);
-            objectGrid.get(key)?.delete(id);
+          if (pos) {
+            const chunkX = Math.floor(pos[0] / 100);
+            const chunkZ = Math.floor(pos[2] / 100);
+            const chunkId = `chunk_${chunkX}_${chunkZ}`;
+            
+            if (!objectsByChunk.has(chunkId)) objectsByChunk.set(chunkId, {});
+            const path = `objects.${id}`;
+            (objectsByChunk.get(chunkId)! as any)[path] = admin.firestore.FieldValue.delete();
+
+            const gridKey = Math.floor(pos[0] / 50) + "," + Math.floor(pos[2] / 50);
+            objectGrid.get(gridKey)?.delete(id);
+
+            // ALSO delete from legacy global collection if it exists there
+            batch.delete(db.collection("world").doc(id));
           }
 
           // Handle Entity Despawn for NPCs/Spawners
@@ -172,51 +207,89 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
         else if (op.type === 'save') {
           const d = op.data;
           const existing = worldObjects.get(d.id);
+          const type = d.type || existing?.type;
+          const template = OBJECT_TEMPLATES[type];
           
-          // 2. Data Sanitization: Only pick allowed fields
-          const worldObj = {
+          const worldObj: any = {
             id: d.id,
-            type: d.type || existing?.type,
+            type: type,
             pos: d.pos || existing?.pos,
             rot: d.rot || existing?.rot,
-            scale: d.scale ?? existing?.scale,
-            modelUrl: d.modelUrl ?? existing?.modelUrl,
-            entityClass: d.entityClass ?? existing?.entityClass,
-            level: d.level ?? existing?.level,
-            spawnRadius: d.spawnRadius ?? existing?.spawnRadius,
-            maxEntities: d.maxEntities ?? existing?.maxEntities,
-            respawnTime: d.respawnTime ?? existing?.respawnTime,
-            pathId: d.pathId ?? existing?.pathId,
-            waypointId: d.waypointId ?? existing?.waypointId,
-            nextWaypointId: d.nextWaypointId ?? existing?.nextWaypointId
           };
 
-          batch.set(db.collection("world").doc(d.id), worldObj, { merge: true });
+          // Template Inheritance: Only save fields that differ from the template
+          if (d.scale !== undefined && d.scale !== template?.scale) worldObj.scale = d.scale;
+          if (d.modelUrl !== undefined && d.modelUrl !== template?.modelUrl) worldObj.modelUrl = d.modelUrl;
+          
+          // Carry over specific spawner/npc fields if they exist
+          if (d.name) worldObj.name = d.name;
+          if (d.role) worldObj.role = d.role;
+          if (d.color) worldObj.color = d.color;
+          if (d.entityClass) worldObj.entityClass = d.entityClass;
+          if (d.level) worldObj.level = d.level;
+          if (d.spawnRadius) worldObj.spawnRadius = d.spawnRadius;
+          if (d.maxEntities) worldObj.maxEntities = d.maxEntities;
+          if (d.respawnTime) worldObj.respawnTime = d.respawnTime;
+
+          const chunkX = Math.floor(worldObj.pos[0] / 100);
+          const chunkZ = Math.floor(worldObj.pos[2] / 100);
+          const chunkId = `chunk_${chunkX}_${chunkZ}`;
+
+          if (!objectsByChunk.has(chunkId)) objectsByChunk.set(chunkId, { objects: {} });
+          const chunkData = objectsByChunk.get(chunkId)!;
+          chunkData.objects[d.id] = worldObj;
+
           updateInGrid(objectGrid, d.id, existing?.pos || null, worldObj.pos);
-          worldObjects.set(d.id, worldObj);
+          worldObjects.set(d.id, { ...template, ...existing, ...worldObj });
           if (worldObj.type === 'waypoint') clearAICache();
         }
         else if (op.type === 'terrain') {
           const p = op.data;
-          const key = `${p.x}_${p.z}`;
           const chunkX = Math.floor(Number(p.x) / 100);
           const chunkZ = Math.floor(Number(p.z) / 100);
           const chunkId = `chunk_${chunkX}_${chunkZ}`;
 
-          // Ensure we only save sanitized terrain data with the required chunkId for lazy loading
-          batch.set(db.collection("terrain").doc(key), { 
-            x: Number(p.x), 
-            z: Number(p.z), 
-            chunkId,
-            y: Number(p.y), 
-            type: String(p.type) 
-          }, { merge: true });
+          if (!terrainByChunk.has(chunkId)) terrainByChunk.set(chunkId, { data: {} });
+          const chunkData = terrainByChunk.get(chunkId)!;
+          const key = `${p.x}_${p.z}`;
           
-          terrainData.set(key, { y: p.y, type: p.type });
+          // DELTA COMPRESSION: If point is default (flat grass), delete it to save space
+          if (Number(p.y) === 0 && (p.type === 'grass' || !p.type)) {
+            // We still use dot notation for deletes because we use merge:true on the whole doc
+            const path = `data.${key}`;
+            (chunkData.data as any)[path] = admin.firestore.FieldValue.delete();
+            terrainData.delete(key);
+          } else {
+            chunkData.data[key] = {
+              y: Number(p.y), 
+              type: String(p.type || 'grass')
+            };
+            terrainData.set(key, { y: p.y, type: p.type || 'grass' });
+          }
         }
       }
 
+      // Add terrain chunk updates to the batch using a single-pass deep merge (1 write per chunk)
+      for (const [chunkId, chunkPoints] of terrainByChunk.entries()) {
+        const docRef = db.collection("terrain_chunks").doc(chunkId);
+        // Using FieldPath keys with merge:true performs a deep-merge in a single write
+        batch.set(docRef, { data: chunkPoints }, { merge: true });
+        
+        const { redis } = await import("../../redis");
+        if (redis.status === 'ready') await redis.sadd("world:existing_chunks", chunkId);
+      }
+
+      // Add object chunk updates to the batch (1 write per chunk)
+      for (const [chunkId, chunkObjs] of objectsByChunk.entries()) {
+        const docRef = db.collection("object_chunks").doc(chunkId);
+        batch.set(docRef, chunkObjs, { merge: true });
+        
+        const { redis } = await import("../../redis");
+        if (redis.status === 'ready') await redis.sadd("world:existing_chunks", chunkId);
+      }
+
       await batch.commit();
+      serverLogger.info("firestore", `Committed batch chunk of ${chunk.length} operations.`);
     }
 
     // 3. Post-save Sync
@@ -226,16 +299,44 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
     }
 
     if (deletes.length > 0) deletes.forEach(id => io.emit("world_object_removed", { id }));
-    if (saves.length > 0) saves.forEach(obj => io.emit("world_object_updated", worldObjects.get(obj.id)));
+    if (saves.length > 0) {
+      saves.forEach(obj => {
+        const saved = worldObjects.get(obj.id);
+        if (saved) {
+          io.emit("world_object_updated", saved);
+          
+          // NPC Auto-Spawn: If we just saved a new NPC, wake them up!
+          if (saved.type.startsWith("npc_")) {
+            const entityId = `npc-${saved.id}`;
+            if (!entities.has(entityId)) {
+              const npcEntity = createNPCEntity(entityId, saved.id, saved.type, saved.pos, saved.rot, saved);
+              entities.set(entityId, npcEntity as any);
+              updateInGrid(entityGrid, entityId, null, saved.pos);
+              io.emit("entity_spawn", npcEntity);
+            }
+          }
+        }
+      });
+    }
+    
     if (terrain.length > 0) {
       io.emit("terrain_sync", terrain);
-      const { redis } = await import("../../redis");
-      redis.publish("terrain:sync", JSON.stringify(terrain));
+      try {
+        const { redis, saveTerrainRedis } = await import("../../redis");
+        await saveTerrainRedis(terrain); // Authoritative cache update
+        if (redis.status === 'ready') {
+          await redis.publish("terrain:sync", JSON.stringify(terrain));
+        }
+      } catch (re) {
+        serverLogger.warn("redis", "Redis sync skipped during batch save (not connected)");
+      }
     }
 
-    serverLogger.info("world", `${player.characterName} batch saved ${totalOps} changes.`);
+    socket.emit("world_save_status", { success: true, count: totalOps });
+    serverLogger.info("world", `[SUCCESS] ${player.characterName} batch saved ${totalOps} changes.`);
   } catch (e: any) {
-    serverLogger.error("world", "Failed to batch save", e.message);
+    serverLogger.error("world", `[CRITICAL FAILURE] Batch save failed for ${player.characterName}: ${e.message}`);
+    socket.emit("world_save_status", { success: false, error: e.message });
   }
 };
 

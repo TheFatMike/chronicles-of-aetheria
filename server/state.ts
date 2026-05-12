@@ -18,5 +18,6 @@ export const dirtyPlayers = new Map<string, Set<string>>(); // socketId -> Set o
 export const playerLastGridCell = new Map<string, string>(); // socketId -> "x,z"
 export const playerKnownEntities = new Map<string, Set<string>>(); // socketId -> Set<entityId>
 export const terrainData = new Map<string, { y: number, type: string }>(); // "x,z" -> { y, type }
+export const loadedChunksLocal = new Set<string>(); // "tx,tz"
 export const spawnerEntityCounts = new Map<string, number>(); // spawnerId -> count
 export const playerKnownObjects = new Map<string, Set<string>>(); // socketId -> Set<objectId>

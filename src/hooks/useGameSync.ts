@@ -87,6 +87,24 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       useGameStore.getState().setWorldObjects(objects);
     };
 
+    const handleWorldObjectsSync = (objects: any[]) => {
+      logger.info("socket", `World objects chunk sync: ${objects.length} objects`);
+      useGameStore.getState().addWorldObjects(objects);
+    };
+
+    const handleEntitiesSync = (entities: any[]) => {
+      logger.info("socket", `Entities sync: ${entities.length} entities`);
+      useGameStore.getState().setEntities(entities);
+    };
+
+    const handleWorldObjectUpdated = (obj: any) => {
+      useGameStore.getState().addWorldObject(obj);
+    };
+
+    const handleWorldObjectRemoved = (data: { id: string }) => {
+      useGameStore.getState().removeWorldObject(data.id);
+    };
+
     // 8. Loot Updates
     const handleLootOpened = (data: any) => {
       if (!data || (data.items.length === 0 && (data.gold || 0) <= 0)) {
@@ -108,6 +126,10 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
     socket.on("party_invite_received", handlePartyInvite);
     socket.on("terrain_sync", handleTerrainSync);
     socket.on("world_sync", handleWorldSync);
+    socket.on("world_objects_sync", handleWorldObjectsSync);
+    socket.on("entities_sync", handleEntitiesSync);
+    socket.on("world_object_updated", handleWorldObjectUpdated);
+    socket.on("world_object_removed", handleWorldObjectRemoved);
     socket.on("loot_opened", handleLootOpened);
     socket.on("loot_update", handleLootOpened);
 
@@ -122,6 +144,10 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       socket.off("party_invite_received", handlePartyInvite);
       socket.off("terrain_sync", handleTerrainSync);
       socket.off("world_sync", handleWorldSync);
+      socket.off("world_objects_sync", handleWorldObjectsSync);
+      socket.off("entities_sync", handleEntitiesSync);
+      socket.off("world_object_updated", handleWorldObjectUpdated);
+      socket.off("world_object_removed", handleWorldObjectRemoved);
       socket.off("loot_opened", handleLootOpened);
       socket.off("loot_update", handleLootOpened);
     };

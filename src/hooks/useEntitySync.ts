@@ -31,14 +31,20 @@ export const useEntitySync = (
   useEffect(() => {
     targetPos.current.set(...position);
     targetRot.current.set(...rotation);
-  }, [position, rotation]);
+
+    // Snap to target immediately on first mount to prevent "sliding from 0,0,0"
+    if (groupRef.current && groupRef.current.position.lengthSq() === 0) {
+      groupRef.current.position.set(...position);
+      groupRef.current.rotation.set(...rotation);
+    }
+  }, [position, rotation, groupRef]);
 
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
 
     // Smooth Bilinear Terrain Height Lookup for Entities
     const terrainData = useGameStore.getState().terrainData;
-    const resolution = 4;
+    const resolution = 2; // Updated to match 2m terrain
     
     const groundY = getInterpolatedHeight(
       targetPos.current.x,
@@ -53,7 +59,7 @@ export const useEntitySync = (
 
     groupRef.current.position.lerp(targetPos.current, lerpFactor);
     
-    // Smoothly interpolate rotation (usually only Y is needed for humanoids)
+    // Smoothly interpolate rotation
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
       targetRot.current.y,

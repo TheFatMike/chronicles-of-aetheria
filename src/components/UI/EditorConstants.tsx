@@ -5,14 +5,14 @@
  * @importance Essential: Provides a structured data source for the world editor's interface and tools.
  */
 import React from 'react';
-import { TreePine, Home, MousePointer2, Droplets, Target, Mountain, Flower2, Fence as FenceIcon, Flame, Container, Briefcase, MapPin, Tent } from 'lucide-react';
+import { TreePine, Home, Users, Package, Activity, Mountain, Droplets, Target, Flower2, Fence as FenceIcon, Flame, Container, Briefcase, MapPin, Tent } from 'lucide-react';
 
 export const CATEGORIES = [
   { id: 'nature', icon: <TreePine size={16} />, label: 'Nature', items: ['tree', 'rock', 'bush', 'flower'] },
+  { id: 'npcs', icon: <Users size={16} />, label: 'NPCs', items: ['npc_instructor_kael', 'npc_guard_captain', 'npc_elder_thorne', 'npc_merchant_silas', 'npc_blacksmith_torin'] },
   { id: 'town', icon: <Home size={16} />, label: 'Town', items: ['house', 'tent', 'tower_base', 'fence', 'signpost', 'barrel'] },
-  { id: 'npcs', icon: <MousePointer2 size={16} />, label: 'NPCs', items: ['npc_instructor_kael', 'npc_guard_captain'] },
-  { id: 'props', icon: <Droplets size={16} />, label: 'Props', items: ['campfire', 'chest', 'dummy', 'well'] },
-  { id: 'systems', icon: <Target size={16} />, label: 'Systems', items: ['spawner_slime', 'spawner_wolf', 'spawner_guard', 'spawner_instructor_kael', 'waypoint'] },
+  { id: 'props', icon: <Package size={16} />, label: 'Props', items: ['campfire', 'chest', 'dummy', 'well'] },
+  { id: 'systems', icon: <Activity size={16} />, label: 'Systems', items: ['spawner_slime', 'spawner_wolf', 'spawner_guard', 'spawner_instructor_kael', 'waypoint'] },
   { id: 'terrain', icon: <Mountain size={16} />, label: 'Terrain', items: ['terrain_raise', 'terrain_lower', 'terrain_flatten', 'terrain_paint_grass', 'terrain_paint_dirt', 'terrain_paint_stone', 'terrain_paint_sand'] },
 ];
 
@@ -38,6 +38,9 @@ export const ICON_MAP: Record<string, any> = {
   'spawner_instructor_kael': <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-black font-black">!</div>,
   'npc_instructor_kael': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-amber-400 rounded-full" /><div className="w-5 h-2 bg-amber-600 rounded-sm -mt-0.5" /></div>,
   'npc_guard_captain': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-blue-400 rounded-full" /><div className="w-5 h-2 bg-blue-600 rounded-sm -mt-0.5" /></div>,
+  'npc_elder_thorne': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-emerald-400 rounded-full" /><div className="w-5 h-2 bg-emerald-600 rounded-sm -mt-0.5" /></div>,
+  'npc_merchant_silas': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-purple-400 rounded-full" /><div className="w-5 h-2 bg-purple-600 rounded-sm -mt-0.5" /></div>,
+  'npc_blacksmith_torin': <div className="flex flex-col items-center"><div className="w-4 h-4 bg-rose-400 rounded-full" /><div className="w-5 h-2 bg-rose-600 rounded-sm -mt-0.5" /></div>,
   'terrain_raise': <div className="text-xs font-black text-emerald-500">↑</div>,
   'terrain_lower': <div className="text-xs font-black text-rose-500">↓</div>,
   'terrain_flatten': <div className="text-xs font-black text-blue-500">_</div>,

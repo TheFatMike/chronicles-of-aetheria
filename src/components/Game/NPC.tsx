@@ -7,10 +7,12 @@
 import { memo } from "react";
 import { Humanoid } from "./Humanoid";
 import { BaseEntity } from "./BaseEntity";
+import { GLBModel } from "./GLBModel";
 import { useGameStore } from "../../store/useGameStore";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { useShallow } from "zustand/react/shallow";
 import { Html } from "@react-three/drei";
+import { OBJECT_TEMPLATES } from "../../data/world/templates";
 
 interface NPCProps {
   id: string;
@@ -26,15 +28,21 @@ interface NPCProps {
   maxHp?: number;
   isMoving?: boolean;
   isAttacking?: boolean;
+  modelUrl?: string;
 }
 
 
 
-export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false }: NPCProps) => {
+export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false, modelUrl }: NPCProps) => {
   const activeQuests = useGameStore(useShallow(state => state.activeQuests));
   
   // Find quests associated with this NPC
-  const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => q.giverId === id || q.giverName === name);
+  const npcType = id.startsWith('npc_') ? id.replace('npc_', '') : '';
+  const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => 
+    q.giverId === id || 
+    (npcType && q.giverId === npcType) || 
+    q.giverName === name
+  );
   
   const readyQuest = npcQuests.find(q => {
     const pq = activeQuests[q.id];
@@ -57,23 +65,25 @@ export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color
   });
 
   return (
-    <BaseEntity
-      id={id}
-      name={name}
-      type="npc"
-      level={level}
-      position={position}
-      rotation={rotation}
-      color={color}
-      role={role}
-      hp={hp}
-      maxHp={maxHp}
-      onInteract={onInteract}
-      onAttack={onAttack}
-    >
-
-
-      <Humanoid color={color} isMoving={isMoving} isGrounded={true} isAttacking={isAttacking} />
+      <BaseEntity
+        id={id}
+        name={name}
+        type="npc"
+        level={level}
+        position={position}
+        rotation={rotation}
+        color={color}
+        role={role}
+        hp={hp}
+        maxHp={maxHp}
+        onInteract={onInteract}
+        onAttack={onAttack}
+      >
+        {modelUrl ? (
+          <GLBModel url={modelUrl} scale={1} position={[0, 0, 0]} rotation={[0, 0, 0]} />
+        ) : (
+          <Humanoid color={color} isMoving={isMoving} isGrounded={true} isAttacking={isAttacking} />
+        )}
       
       {/* Quest Indicators */}
       <Html position={[0, 2.2, 0]} center distanceFactor={10}>

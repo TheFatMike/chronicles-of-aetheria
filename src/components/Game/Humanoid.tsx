@@ -13,9 +13,10 @@ interface HumanoidProps {
   isMoving?: boolean;
   isGrounded?: boolean;
   isAttacking?: boolean;
+  opacity?: number;
 }
 
-export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAttacking = false }: HumanoidProps) => {
+export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAttacking = false, opacity = 1 }: HumanoidProps) => {
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
@@ -72,30 +73,30 @@ export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAt
       {/* Torso */}
       <mesh position={[0, 0.95, 0]}>
         <boxGeometry args={[0.5, 0.7, 0.25]} />
-        <meshStandardMaterial color={color} />
+        <meshStandardMaterial color={color} transparent={opacity < 1} opacity={opacity} />
       </mesh>
 
       {/* Head */}
       <mesh position={[0, 1.45, 0]}>
         <boxGeometry args={[0.3, 0.3, 0.3]} />
-        <meshStandardMaterial color="#fcd4b4" />
+        <meshStandardMaterial color="#fcd4b4" transparent={opacity < 1} opacity={opacity} />
       </mesh>
 
       {/* Eyes */}
       <mesh position={[-0.07, 1.5, -0.16]}>
         <boxGeometry args={[0.05, 0.05, 0.05]} />
-        <meshStandardMaterial color="black" />
+        <meshStandardMaterial color="black" transparent={opacity < 1} opacity={opacity} />
       </mesh>
       <mesh position={[0.07, 1.5, -0.16]}>
         <boxGeometry args={[0.05, 0.05, 0.05]} />
-        <meshStandardMaterial color="black" />
+        <meshStandardMaterial color="black" transparent={opacity < 1} opacity={opacity} />
       </mesh>
 
       {/* Left Arm */}
       <group ref={leftArm} position={[-0.35, 1.25, 0]}>
         <mesh position={[0, -0.2, 0]}>
           <boxGeometry args={[0.15, 0.5, 0.15]} />
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial color={color} transparent={opacity < 1} opacity={opacity} />
         </mesh>
       </group>
 
@@ -103,7 +104,7 @@ export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAt
       <group ref={rightArm} position={[0.35, 1.25, 0]}>
         <mesh position={[0, -0.2, 0]}>
           <boxGeometry args={[0.15, 0.5, 0.15]} />
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial color={color} transparent={opacity < 1} opacity={opacity} />
         </mesh>
       </group>
 
@@ -111,7 +112,7 @@ export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAt
       <group ref={leftLeg} position={[-0.15, 0.6, 0]}>
         <mesh position={[0, -0.3, 0]}>
           <boxGeometry args={[0.18, 0.6, 0.18]} />
-          <meshStandardMaterial color="#333" />
+          <meshStandardMaterial color="#333" transparent={opacity < 1} opacity={opacity} />
         </mesh>
       </group>
 
@@ -119,7 +120,7 @@ export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAt
       <group ref={rightLeg} position={[0.15, 0.6, 0]}>
         <mesh position={[0, -0.3, 0]}>
           <boxGeometry args={[0.18, 0.6, 0.18]} />
-          <meshStandardMaterial color="#333" />
+          <meshStandardMaterial color="#333" transparent={opacity < 1} opacity={opacity} />
         </mesh>
       </group>
     </group>

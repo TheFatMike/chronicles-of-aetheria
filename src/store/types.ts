@@ -70,7 +70,7 @@ export interface WorldSlice {
   spawners: Record<string, Spawner>;
   worldObjects: Record<string, WorldObject>;
   worldEditorBuffer: Record<string, Partial<WorldObject>>;
-  worldEditorDeleted: string[];
+  worldEditorDeleted: { id: string, pos?: [number, number, number] }[];
   terrainData: Record<string, { y: number; type: string }>;
   terrainDirtyPoints: { x: number; z: number; y: number; type: string }[];
   setSpawners: (spawners: Spawner[]) => void;
@@ -134,8 +134,10 @@ export interface UISlice {
   uiScale: number;
   brightness: number;
   editorStartPosition: [number, number, number] | null;
+  editorMousePoint: [number, number, number] | null;
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
+  worldReady: boolean;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -144,6 +146,7 @@ export interface UISlice {
   setQuestsOpen: (isOpen: boolean) => void;
   setSkillsOpen: (isOpen: boolean) => void;
   setWorldLoading: (isLoading: boolean) => void;
+  setWorldReady: (isReady: boolean) => void;
   setUIScale: (scale: number) => void;
   setBrightness: (brightness: number) => void;
   setDevMode: (enabled: boolean) => void;
@@ -156,6 +159,7 @@ export interface UISlice {
   setEditorBrushStrength: (strength: number) => void;
   setEditorShowOutliner: (val: boolean) => void;
   setEditorStartPosition: (pos: [number, number, number] | null) => void;
+  setEditorMousePoint: (pos: [number, number, number] | null) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
   setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;

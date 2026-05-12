@@ -19,6 +19,8 @@ import { startHeartbeat, initializeSpawners, initializeWorld } from "./server/sy
 import { registerHandlers } from "./server/socket/handlers";
 import { players, entities, spawners, terrainData } from "./server/state";
 
+export let io: Server;
+
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -32,7 +34,7 @@ async function bootstrap() {
   
   const app = express();
   const httpServer = createServer(app);
-  const io = new Server(httpServer, { 
+  io = new Server(httpServer, { 
     cors: { origin: "*" },
     parser: customParser
   });
@@ -73,8 +75,8 @@ async function bootstrap() {
   app.post("/api/admin/wipe-terrain", async (req, res) => {
     try {
       const { db } = await import("./server/db");
-      const snapshot = await db.collection("terrain").get();
-      serverLogger.info("admin", `Wipe request received. Found ${snapshot.size} tiles.`);
+      const snapshot = await db.collection("terrain_chunks").get();
+      serverLogger.info("admin", `Wipe request received. Found ${snapshot.size} chunks.`);
       
       const batch = db.batch();
       snapshot.forEach((doc: any) => batch.delete(doc.ref));
@@ -85,12 +87,16 @@ async function bootstrap() {
       // Clear Redis Cache
       const { redis } = await import("./server/redis");
       await redis.del("world:terrain");
+      // Clear loaded chunk markers in Redis
+      const keys = await redis.keys("loaded_chunk:*");
+      if (keys.length > 0) await redis.del(...keys);
+      
       redis.publish("terrain:sync", JSON.stringify([]));
 
       io.emit("terrain_sync", []); 
       
-      serverLogger.info("admin", `Wipe complete. Deleted ${snapshot.size} tiles.`);
-      res.json({ status: "ok", deleted: snapshot.size });
+      serverLogger.info("admin", `Wipe complete. Deleted ${snapshot.size} chunks.`);
+      res.json({ status: "ok", deletedChunks: snapshot.size });
     } catch (e: any) {
       serverLogger.error("admin", `Wipe failed: ${e.message}`);
       res.status(500).json({ error: e.message });
@@ -155,9 +161,22 @@ async function bootstrap() {
   // 6. Graceful Shutdown
   const shutdown = async (signal: string) => {
     serverLogger.info("system", `${signal} received. Performing final global save...`);
-    await import("./server/systems/persistence").then(m => m.performShutdownSave());
-    serverLogger.info("system", "Shutdown complete.");
-    process.exit(0);
+    
+    try {
+      // 1. Perform final save
+      const { performShutdownSave } = await import("./server/systems/persistence");
+      await performShutdownSave();
+      
+      // 2. Close Redis connections
+      const { closeRedis } = await import("./server/redis");
+      await closeRedis();
+      
+      serverLogger.info("system", "Shutdown complete.");
+    } catch (err: any) {
+      serverLogger.error("system", `Shutdown error: ${err.message}`);
+    } finally {
+      process.exit(0);
+    }
   };
 
 

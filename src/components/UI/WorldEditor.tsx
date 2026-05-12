@@ -4,21 +4,23 @@
  * Orchestrates the palette, inspector, outliner, and specialized tools like terrain sculpting.
  * @importance Essential: Empowers developers and creators to build and refine the game world in real-time.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WorldObject } from '../../types';
 import { AnimatePresence, motion } from 'motion/react';
 import { Save, Settings2, Activity, List } from 'lucide-react';
-import { EditorPalette } from './EditorPalette';
+import { AssetLibrary } from './AssetLibrary';
 import { EditorInspector } from './EditorInspector';
 import { EditorOutliner } from './EditorOutliner';
 import { snapVectorToGrid } from '../../lib/gameUtils';
+import { OBJECT_TEMPLATES } from '../../data/world/templates';
 
 export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: string | null }) => {
   const { 
     devMode, 
-    worldObjects, 
+    worldObjectsCount, 
+    selectedObject,
     editorSelectedType, 
     setEditorSelectedType,
     selectedWorldObjectId,
@@ -44,7 +46,8 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     requestTeleport
   } = useGameStore(useShallow(s => ({
     devMode: s.devMode,
-    worldObjects: s.worldObjects,
+    worldObjectsCount: Object.keys(s.worldObjects).length,
+    selectedObject: s.selectedWorldObjectId ? s.worldObjects[s.selectedWorldObjectId] : null,
     editorSelectedType: s.editorSelectedType,
     setEditorSelectedType: s.setEditorSelectedType,
     selectedWorldObjectId: s.selectedWorldObjectId,
@@ -76,6 +79,7 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
   })));
 
   const [activeCategory, setActiveCategory] = useState('nature');
+  const lastPlaceTime = useRef<number>(0);
   
   // Pathing Defaults
   const [activePathId, setActivePathId] = useState('new_path');
@@ -93,14 +97,12 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
   
-  // Robust access check: Check character role OR account role mapping
+  // Robust access check: Only allow 'dev' role OR the project administrator
   const hasAccess = 
     localPlayer?.role === 'dev' || 
-    localPlayer?.role === 'admin' || 
-    localPlayer?.role === 'mod' ||
     (userEmail && (userEmail.toLowerCase() === "michaeljhoward94@gmail.com"));
 
-  const selectedObject = selectedWorldObjectId ? worldObjects[selectedWorldObjectId] : null;
+  // Using the memoized selectedObject from the selector
 
   const updateSelected = (data: Partial<WorldObject>) => {
     if (selectedWorldObjectId && selectedObject) {
@@ -126,19 +128,37 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
       return { x, z, ...val };
     });
 
-    if (saves.length > 0 || deletes.length > 0 || terrain.length > 0) {
-      socket.emit("batch_save_world_objects", { saves, deletes, terrain });
+    if (saves.length === 0 && deletes.length === 0 && terrain.length === 0) {
+      setEditorOpen(false);
+      return;
     }
 
-    if (editorStartPosition) {
-      requestTeleport([...editorStartPosition]);
-      setEditorStartPosition(null);
-    }
+    const onSaveStatus = (response: { success: boolean, error?: string }) => {
+      if (response.success) {
+        useGameStore.getState().addMessage({
+          id: 'save-' + Date.now(),
+          sender: 'SYSTEM',
+          text: 'World saved successfully!',
+          color: '#10b981',
+          timestamp: Date.now()
+        });
+        useGameStore.getState().clearEditorBuffer();
+        setEditorSelectedType(null);
+        setSelectedWorldObjectId(null);
+        setEditorOpen(false);
+        
+        if (editorStartPosition) {
+          requestTeleport([...editorStartPosition]);
+          setEditorStartPosition(null);
+        }
+      } else {
+        alert("Failed to save world: " + response.error);
+      }
+      socket.off('world_save_status', onSaveStatus);
+    };
 
-    useGameStore.getState().clearEditorBuffer();
-    setEditorSelectedType(null);
-    setSelectedWorldObjectId(null);
-    setEditorOpen(false);
+    socket.on('world_save_status', onSaveStatus);
+    socket.emit("batch_save_world_objects", { saves, deletes, terrain });
   };
 
   const handleCancelSession = () => {
@@ -179,17 +199,39 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
     if (!socket) return;
     
     const handlePlace = (e: any) => {
-      const { point, type, modelUrl } = e.detail;
+      // Prevent double-spawning from rapid clicks or overlapping meshes
+      const now = Date.now();
+      if (now - lastPlaceTime.current < 100) return;
+      lastPlaceTime.current = now;
+
+      const { point, type, modelUrl, scale } = e.detail;
+      console.log("[WorldEditor] Received editor_place_object", { type, point });
       const newId = crypto.randomUUID();
+      const isSpawner = type.startsWith('spawner_');
+      const isNPC = type.startsWith('npc_');
+      const spawnerClass = isSpawner ? type.replace('spawner_', '') : undefined;
       
+      const template = OBJECT_TEMPLATES[type];
       const newObj: any = {
         id: newId,
         type: type,
+        name: isNPC ? (template?.label || 'Villager') : undefined,
+        role: isNPC ? (template?.role || template?.label || 'Villager') : undefined,
         pos: [point.x, point.y || 0, point.z],
-        rot: [0, 0, 0],
-        scale: 1,
-        modelUrl: modelUrl
+        rot: isSpawner ? [0, 0, 0] : [0, Math.random() * Math.PI * 2, 0],
+        scale: isSpawner ? 1 : (scale || 1) * (0.9 + Math.random() * 0.2),
+        modelUrl: modelUrl || template?.modelUrl,
+        color: isNPC ? (template?.color || '#facc15') : undefined
       };
+
+      if (isSpawner) {
+        newObj.entityClass = spawnerClass;
+        newObj.level = 1;
+        newObj.spawnRadius = 5;
+        newObj.maxEntities = 3;
+        newObj.respawnTime = 10;
+        newObj.pathId = '';
+      }
 
       if (type === 'waypoint') {
         newObj.pathId = activePathId;
@@ -198,6 +240,7 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
         setNextWaypointOrder(prev => prev + 1);
       }
 
+      console.log("[WorldEditor] Creating New Object", newObj);
       useGameStore.getState().addWorldObject(newObj);
       setSelectedWorldObjectId(newId);
     };
@@ -209,95 +252,82 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
   if (!devMode || !hasAccess) return null;
 
   return (
-    <div className="fixed bottom-24 right-8 z-50 flex flex-col items-end gap-5 pointer-events-none">
-      <div className="flex items-center gap-3">
-        {isEditorOpen && (
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setEditorShowOutliner(!editorShowOutliner)}
-              className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
-                editorShowOutliner
-                  ? 'bg-blue-500 text-white shadow-blue-500/20'
-                  : 'bg-slate-900/80 text-slate-300 hover:text-white'
-              }`}
-            >
-              <List size={16} />
-              {editorShowOutliner ? 'Hide Outliner' : 'Show Outliner'}
-            </motion.button>
+    <>
+      <div className="fixed bottom-24 right-8 z-50 flex flex-col items-end gap-5 pointer-events-none">
+        <div className="flex items-center gap-3">
+          {isEditorOpen && (
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setEditorShowOutliner(!editorShowOutliner)}
+                className={`pointer-events-auto px-4 h-14 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-xl border-2 border-[#4a3a2a] backdrop-blur-md font-black uppercase tracking-widest text-[9px] relative overflow-hidden ${
+                  editorShowOutliner
+                    ? 'bg-[#c2a472] text-[#1a140f]'
+                    : 'bg-[#1a140f]/90 text-[#f4e4bc] hover:bg-[#2a241f]'
+                }`}
+              >
+                <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
+                <List size={16} />
+                {editorShowOutliner ? 'Hide Outliner' : 'Show Outliner'}
+              </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveMenu(activeMenu === 'spawners' ? null : 'spawners')}
-              className={`pointer-events-auto px-4 h-14 rounded-2xl flex items-center gap-2 transition-all duration-300 shadow-xl border border-white/10 backdrop-blur-xl font-bold uppercase tracking-widest text-[9px] ${
-                activeMenu === 'spawners'
-                  ? 'bg-red-500 text-white shadow-red-500/20'
-                  : 'bg-slate-900/80 text-slate-300 hover:text-white'
-              }`}
-            >
-              <Activity size={16} />
-              {activeMenu === 'spawners' ? 'Hide Spawners' : 'Manage Spawners'}
-            </motion.button>
-          </div>
-        )}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveMenu(activeMenu === 'spawners' ? null : 'spawners')}
+                className={`pointer-events-auto px-4 h-14 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-xl border-2 border-[#4a3a2a] backdrop-blur-md font-black uppercase tracking-widest text-[9px] relative overflow-hidden ${
+                  activeMenu === 'spawners'
+                    ? 'bg-red-900/80 text-white border-red-500/50'
+                    : 'bg-[#1a140f]/90 text-[#f4e4bc] hover:bg-[#2a241f]'
+                }`}
+              >
+                <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
+                <Activity size={16} />
+                {activeMenu === 'spawners' ? 'Hide Spawners' : 'Manage Spawners'}
+              </motion.button>
+            </div>
+          )}
 
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={isEditorOpen ? handleSaveSession : () => setEditorOpen(true)}
-          className={`pointer-events-auto px-8 h-14 rounded-2xl flex items-center gap-4 transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-xl font-black uppercase tracking-[0.2em] text-[10px] ring-1 ring-white/5 ${
-            isEditorOpen 
-              ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
-              : 'bg-slate-950/90 text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
-        >
-          <div className={`transition-transform duration-500 ${isEditorOpen ? 'rotate-0' : ''}`}>
-            {isEditorOpen ? <Save size={18} strokeWidth={2.5} /> : <Settings2 size={18} strokeWidth={2.5} />}
-          </div>
-          {isEditorOpen ? 'Save & Exit' : 'Launch Studio'}
-        </motion.button>
-
-        {isEditorOpen && (
           <motion.button 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(194, 164, 114, 0.3)" }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleCancelSession}
-            className="pointer-events-auto px-6 h-14 rounded-2xl flex items-center gap-4 transition-all duration-500 bg-slate-950/90 text-red-400 hover:text-red-300 border border-white/10 backdrop-blur-xl font-black uppercase tracking-[0.2em] text-[10px] ring-1 ring-white/5 shadow-xl"
+            onClick={isEditorOpen ? handleSaveSession : () => setEditorOpen(true)}
+            className={`pointer-events-auto px-10 h-16 rounded-xl flex items-center gap-4 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.8)] border-4 border-[#4a3a2a] backdrop-blur-md font-black uppercase tracking-[0.3em] text-[11px] relative overflow-hidden ${
+              isEditorOpen 
+                ? 'bg-[#c2a472] text-[#1a140f]' 
+                : 'bg-[#1a140f]/95 text-[#f4e4bc] hover:bg-[#2a241f]'
+            }`}
           >
-            Cancel
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
+            <div className={`transition-transform duration-700 relative z-10 ${isEditorOpen ? 'rotate-180' : ''}`}>
+              {isEditorOpen ? <Save size={20} strokeWidth={3} /> : <Settings2 size={20} strokeWidth={3} />}
+            </div>
+            <span className="relative z-10">{isEditorOpen ? 'Commit Changes' : 'Enter Aetheria Studio'}</span>
           </motion.button>
-        )}
+
+          {isEditorOpen && (
+            <motion.button 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCancelSession}
+              className="pointer-events-auto px-6 h-14 rounded-xl flex items-center gap-4 transition-all duration-500 bg-[#1a140f]/90 text-red-400 hover:text-red-300 border-2 border-[#4a3a2a] backdrop-blur-md font-black uppercase tracking-[0.2em] text-[10px] shadow-xl relative overflow-hidden"
+            >
+              <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
+              <span className="relative z-10">Discard Changes</span>
+            </motion.button>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
         {isEditorOpen && (
           <>
-            <EditorPalette 
-              gridSnap={gridSnap}
-              setGridSnap={setGridSnap}
-              editorSelectedType={editorSelectedType}
-              setEditorSelectedType={setEditorSelectedType}
-              editorTransformMode={editorTransformMode}
-              setEditorTransformMode={setEditorTransformMode}
-              activeCategory={activeCategory}
-              setActiveCategory={setActiveCategory}
-              activePathId={activePathId}
-              setActivePathId={setActivePathId}
-              nextWaypointOrder={nextWaypointOrder}
-              setNextWaypointOrder={setNextWaypointOrder}
-              editorBrushSize={editorBrushSize}
-              setEditorBrushSize={setEditorBrushSize}
-              editorBrushStrength={editorBrushStrength}
-              setEditorBrushStrength={setEditorBrushStrength}
-            />
-
+            <AssetLibrary />
             {editorShowOutliner && <EditorOutliner socket={socket} />}
-
             <EditorInspector 
               selectedObject={selectedObject}
               setSelectedWorldObjectId={setSelectedWorldObjectId}
@@ -308,6 +338,6 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };

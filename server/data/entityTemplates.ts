@@ -26,6 +26,8 @@ export interface EntityTemplate {
   level?: number;
   expReward: number;
   lootTable: LootTable; 
+  modelUrl?: string;
+  color?: string;
 }
 
 export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
@@ -84,5 +86,47 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     respawnTime: 10,
     expReward: 0,
     lootTable: LOOT_TABLES.instructor_kael
+  },
+  elder_thorne: {
+    id: 'elder_thorne',
+    name: 'Elder Thorne',
+    class: 'Elder',
+    type: 'npc',
+    baseStats: { strength: 10, dexterity: 10, wisdom: 80, intelligence: 70, stamina: 50 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
+  },
+  merchant_silas: {
+    id: 'merchant_silas',
+    name: 'Merchant Silas',
+    class: 'Merchant',
+    type: 'npc',
+    baseStats: { strength: 15, dexterity: 20, wisdom: 40, intelligence: 50, stamina: 60 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
+  },
+  blacksmith_torin: {
+    id: 'blacksmith_torin',
+    name: 'Blacksmith Torin',
+    class: 'Blacksmith',
+    type: 'npc',
+    baseStats: { strength: 60, dexterity: 30, wisdom: 20, intelligence: 20, stamina: 90 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
   }
 };

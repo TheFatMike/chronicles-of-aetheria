@@ -8,10 +8,32 @@ import { memo, useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";
+import { Humanoid } from "./Humanoid";
+import { NPC } from "./NPC";
 import { GLBModel } from "./GLBModel";
 import { useGameStore } from "../../store/useGameStore";
+import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
+import { SAMPLE_QUESTS } from "../../data/quests";
+import { OBJECT_TEMPLATES } from "../../data/world/templates";
 
-export const ProceduralModel = memo(({ type, modelProps, isSelected, editorSelectedType }: { type: string, modelProps: any, isSelected: boolean, editorSelectedType: string | null }) => {
+const _point = new THREE.Vector3();
+const _sphere = new THREE.Sphere();
+
+export const ProceduralModel = memo(({ 
+  type, 
+  modelProps, 
+  isSelected, 
+  editorSelectedType,
+  isEditorOpen,
+  obj
+}: { 
+  type: string, 
+  modelProps: any, 
+  isSelected?: boolean, 
+  editorSelectedType?: string | null,
+  isEditorOpen: boolean,
+  obj?: any
+}) => {
   switch (type) {
     case 'tree': return <Tree {...modelProps} />;
     case 'rock': return <Rock {...modelProps} />;
@@ -28,28 +50,43 @@ export const ProceduralModel = memo(({ type, modelProps, isSelected, editorSelec
     case 'waypoint': 
       if (!isSelected && editorSelectedType !== 'waypoint') return null;
       return <Waypoint {...modelProps} />;
-    default: return null;
+    default: 
+      // Handle NPCs as generic humanoids in the editor if no model
+      if (type.startsWith('npc_')) {
+        if (isEditorOpen) {
+          return (
+            <group {...modelProps} position={[0, 0, 0]}>
+              <Humanoid 
+                color={modelProps.isGhost ? '#3b82f6' : (obj?.color || '#facc15')} 
+                isMoving={false} 
+                isGrounded={true} 
+                isAttacking={false}
+                opacity={modelProps.isGhost ? 0.4 : 1.0}
+              />
+            </group>
+          );
+        } else {
+          // NPCs are handled by EntityRenderer in game mode to allow for movement and better sync.
+          // In the editor, we still render the static preview above.
+          return null;
+        }
+      }
+      return null;
   }
 });
 
 ProceduralModel.displayName = "ProceduralModel";
 
-const PopIn = memo(({ children, targetScale }: { children: React.ReactNode, targetScale: any }) => {
-  const ref = useRef<THREE.Group>(null);
-  const target = useMemo(() => {
-    if (Array.isArray(targetScale)) return new THREE.Vector3(...targetScale);
-    if (typeof targetScale === 'object') return new THREE.Vector3(targetScale.x || 1, targetScale.y || 1, targetScale.z || 1);
-    return new THREE.Vector3(targetScale, targetScale, targetScale);
-  }, [targetScale]);
 
-  useFrame((_, delta) => {
-    if (ref.current && ref.current.scale.distanceToSquared(target) > 0.001) {
-      ref.current.scale.lerp(target, 1 - Math.exp(-8 * delta));
-    }
-  });
-
-  return <group ref={ref} scale={[0, 0, 0]}>{children}</group>;
-});
+interface WorldObjectItemProps {
+  obj: any;
+  isSelected: boolean;
+  isEditorOpen: boolean;
+  editorSelectedType: string | null;
+  socket: any;
+  setSelectedWorldObjectId: (id: string | null) => void;
+  setTransformRef: (node: THREE.Object3D | null) => void;
+}
 
 export const WorldObjectItem = memo(({ 
   obj, 
@@ -58,17 +95,47 @@ export const WorldObjectItem = memo(({
   editorSelectedType, 
   socket, 
   setSelectedWorldObjectId,
-  setTransformRef 
-}: { 
-  obj: any, 
-  isSelected: boolean, 
-  isEditorOpen: boolean, 
-  editorSelectedType: string | null, 
-  socket: any,
-  setSelectedWorldObjectId: (id: string | null) => void,
-  setTransformRef: (node: THREE.Object3D | null) => void
-}) => {
+  setTransformRef
+}: WorldObjectItemProps) => {
   const groupRef = useRef<THREE.Group>(null);
+  const isSpawner = obj.type.startsWith('spawner_');
+  const isNPC = obj.type.startsWith('npc_');
+
+  // High-performance visibility check
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    
+    // Spawners are only visible in editor
+    if (isSpawner && !isEditorOpen) {
+      groupRef.current.visible = false;
+      return;
+    }
+
+    // Always show if selected
+    if (isSelected) {
+      groupRef.current.visible = true;
+      return;
+    }
+
+    _point.set(obj.pos[0], obj.pos[1], obj.pos[2]);
+    const distSq = _point.distanceToSquared(state.camera.position);
+
+    // 1. "Proximity Shield": If object is close, ALWAYS show it.
+    // This prevents any popping when spinning the camera quickly.
+    if (distSq < 1600) { // 40 meters
+      if (!groupRef.current.visible) groupRef.current.visible = true;
+      return;
+    }
+
+    // 2. "Aggressive Frustum Bleed": Use a large 20m radius for the frustum check.
+    // This ensures objects are rendered long before they actually hit the screen edges.
+    _sphere.set(_point, 20); 
+    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere);
+    
+    if (groupRef.current.visible !== isVisible) {
+      groupRef.current.visible = isVisible;
+    }
+  });
 
   // Hand off ref for gizmo
   useEffect(() => {
@@ -78,8 +145,72 @@ export const WorldObjectItem = memo(({
   }, [isSelected, isEditorOpen, obj.id, setTransformRef]);
 
   const modelProps = {
+    onInteract: () => {
+      if (isEditorOpen) return;
+      
+      const npcType = obj.type.replace('npc_', '');
+      const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => 
+        q.giverId === obj.id || 
+        q.giverId === npcType || 
+        (obj.name && q.giverName === obj.name) ||
+        (OBJECT_TEMPLATES[obj.type]?.label && q.giverName === OBJECT_TEMPLATES[obj.type].label)
+      );
+      const activeQuests = useGameStore.getState().activeQuests;
+      const setActiveDialogue = useGameStore.getState().setActiveDialogue;
+      const speakerName = obj.name || OBJECT_TEMPLATES[obj.type]?.label || "Villager";
+
+      // 1. Check for turn-in
+      const readyToTurnIn = npcQuests.find(q => {
+        const pq = activeQuests[q.id];
+        return pq && pq.status === 'active' && pq.objectives.every(o => o.completed);
+      });
+
+      if (readyToTurnIn) {
+        setActiveDialogue({
+          speaker: speakerName,
+          text: `Incredible! You've done it. Here is your reward as promised.`,
+          quest: activeQuests[readyToTurnIn.id]
+        });
+        return;
+      }
+
+      // 2. Check for new quests
+      const availableQuest = npcQuests.find(q => {
+        const pq = activeQuests[q.id];
+        if (pq) return false;
+        if (q.prerequisiteQuestId) {
+          const prereq = activeQuests[q.prerequisiteQuestId];
+          return prereq && prereq.status === 'completed';
+        }
+        return true;
+      });
+
+      if (availableQuest) {
+        setActiveDialogue({
+          speaker: speakerName,
+          text: `Greetings traveler. ${availableQuest.description}`,
+          quest: availableQuest
+        });
+      } else {
+        const currentlyActive = npcQuests.find(q => activeQuests[q.id]?.status === 'active');
+        if (currentlyActive) {
+          setActiveDialogue({
+            speaker: speakerName,
+            text: `How goes the task for ${currentlyActive.title}? Keep at it!`
+          });
+        } else {
+          setActiveDialogue({
+            speaker: speakerName,
+            text: `The winds of Aetheria are cold today. Watch your step, explorer.`
+          });
+        }
+      }
+    },
     onClick: (e: any) => {
-      if (!isEditorOpen) return;
+      if (!isEditorOpen) {
+        if (isNPC) modelProps.onInteract();
+        return;
+      }
       
       // If we are in placement mode, let the click pass through to the floor
       const isPlacing = editorSelectedType && !['edit', 'delete'].includes(editorSelectedType);
@@ -101,8 +232,9 @@ export const WorldObjectItem = memo(({
     <group 
       position={obj.pos} 
       rotation={obj.rot} 
+      scale={obj.scale}
       ref={groupRef}
-      userData={{ isCollidable: true }}
+      userData={{ isCollidable: !isSpawner }}
       {...({ isWorldObject: true } as any)}
     >
       {/* Invisible Selection Hitbox: Makes small/thin objects easier to click */}
@@ -117,14 +249,19 @@ export const WorldObjectItem = memo(({
         </mesh>
       )}
 
-      {/* Model Group - Scaled with Pop-In Animation */}
-      <PopIn targetScale={obj.scale}>
         {/* Priority 1: Custom GLB Model */}
         {obj.modelUrl ? (
           <GLBModel url={obj.modelUrl} {...modelProps} />
         ) : (
           /* Priority 2: Built-in Procedural Models */
-          <ProceduralModel type={obj.type} modelProps={modelProps} isSelected={isSelected} editorSelectedType={editorSelectedType} />
+          <ProceduralModel 
+            type={obj.type} 
+            modelProps={modelProps} 
+            isSelected={isSelected} 
+            editorSelectedType={editorSelectedType} 
+            isEditorOpen={isEditorOpen}
+            obj={obj}
+          />
         )}
 
         {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
@@ -136,7 +273,6 @@ export const WorldObjectItem = memo(({
             />
           </mesh>
         )}
-      </PopIn>
 
       {/* Permanent visual indicator so we know it's there even if model is missing */}
       {(!isWaypoint || isWaypointActive) && (
@@ -147,22 +283,33 @@ export const WorldObjectItem = memo(({
       )}
 
       {isSelected && (
-        <group>
-          {/* Pulsing Floor Ring */}
+        <>
+          {/* Pulsing Floor Ring (Inner Magic) */}
           <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
-            <ringGeometry args={[1.5, 1.6, 32]} />
-            <meshBasicMaterial color="#f59e0b" transparent opacity={0.8} depthWrite={false} />
+            <ringGeometry args={[1.4, 1.5, 64]} />
+            <meshBasicMaterial color="#0ea5e9" transparent opacity={0.9} depthWrite={false} />
           </mesh>
           
-          {/* Vertical Focus Beam */}
+          {/* Pulsing Floor Ring (Outer Glow) */}
+          <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
+            <ringGeometry args={[1.3, 1.6, 64]} />
+            <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} depthWrite={false} />
+          </mesh>
+
+          {/* Vertical Focus Beam (Magical Energy) */}
           <mesh position={[0, 10, 0]} name="editor_helper">
-            <cylinderGeometry args={[0.05, 0.05, 20, 8]} />
-            <meshBasicMaterial color="#f59e0b" transparent opacity={0.2} depthWrite={false} />
+            <cylinderGeometry args={[0.02, 0.2, 20, 16]} />
+            <meshBasicMaterial color="#0ea5e9" transparent opacity={0.4} depthWrite={false} />
+          </mesh>
+
+          <mesh position={[0, 10, 0]} name="editor_helper">
+            <cylinderGeometry args={[0.01, 0.05, 20, 16]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.8} depthWrite={false} />
           </mesh>
 
           {/* Glow Point */}
-          <pointLight color="#f59e0b" intensity={2} distance={5} />
-        </group>
+          <pointLight color="#0ea5e9" intensity={5} distance={8} />
+        </>
       )}
     </group>
   );

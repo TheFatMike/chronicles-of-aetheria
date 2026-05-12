@@ -34,7 +34,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
   };
 
   return (
-    <div className={`fixed bottom-8 left-4 lg:left-8 z-100 transition-all duration-300 ${isOpen ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96" : "w-12 h-12"}`}>
+    <div className={`fixed bottom-8 left-4 lg:left-8 z-100 transition-all duration-300 pointer-events-auto ${isOpen ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96" : "w-12 h-12"}`}>
       <AnimatePresence>
         {isOpen ? (
           <motion.div

@@ -27,8 +27,8 @@ export const redisSub = new Redis(redisUrl, {
   }
 });
 
-// Graceful Shutdown Handler
-const shutdown = async () => {
+// Graceful Shutdown - Moved to server.ts to ensure persistence finishes first
+export const closeRedis = async () => {
   serverLogger.info("redis", "Closing Redis connections...");
   try {
     await Promise.all([
@@ -36,11 +36,7 @@ const shutdown = async () => {
       redisSub.quit()
     ]);
   } catch (e) {}
-  process.exit(0);
 };
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
 
 redis.on("connect", () => {
   serverLogger.info("redis", "Connected to Redis successfully.");
@@ -103,6 +99,19 @@ export const removePlayerRedis = async (playerId: string) => {
     serverLogger.debug("redis", `Cleaned up Redis data for player ${playerId}`);
   } catch (err) {
     serverLogger.error("redis", `Error removing player from Redis: ${err}`);
+  }
+};
+
+/**
+ * Specifically removes a character session from the Redis Write-Back cache.
+ * This is vital when deleting characters to ensure they don't get 'saved back' to Firestore.
+ */
+export const removeCharacterSessionRedis = async (characterId: string) => {
+  try {
+    await redis.del(`player:session:${characterId}`);
+    serverLogger.info("redis", `Purged session for deleted character: ${characterId}`);
+  } catch (err) {
+    serverLogger.error("redis", `Error purging character session: ${err}`);
   }
 };
 

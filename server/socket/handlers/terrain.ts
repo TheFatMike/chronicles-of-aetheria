@@ -17,14 +17,10 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
   
   if (!player) {
     serverLogger.warn("terrain", `Update rejected: Player not found for socket ${socket.id}`);
-    return;
   }
-
-  const hasPermission = player.role === 'admin' || player.role === 'dev' || player.role === 'mod';
-  if (!hasPermission) {
-    serverLogger.warn("terrain", `Update rejected: Player ${player.characterName} (${player.role}) lacks permissions`);
-    return;
-  }
+  const email = (socket as any).email;
+  const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
+  if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
 
   serverLogger.info("terrain", `Processing ${data.points.length} points from ${player.characterName}`);
 
@@ -43,37 +39,12 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
   }
 
 
-  // Persist to Firestore with chunking
+  // Broadast to other players but do NOT save to database here.
+  // Database saving is handled by the 'Batch Save' system to optimize performance and costs.
   if (updates.length > 0) {
-    const CHUNK_SIZE = 400; // Firestore limit is 500
-    for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
-      const chunk = updates.slice(i, i + CHUNK_SIZE);
-      const batch = db.batch();
-      
-      chunk.forEach(u => {
-        const key = `${u.x}_${u.z}`;
-        const docRef = db.collection("terrain").doc(key);
-        const chunkX = Math.floor(u.x / 100);
-        const chunkZ = Math.floor(u.z / 100);
-        const chunkId = `chunk_${chunkX}_${chunkZ}`;
-
-        batch.set(docRef, { 
-          x: u.x, 
-          z: u.z, 
-          chunkId,
-          y: u.y, 
-          type: u.type 
-        }, { merge: true });
-      });
-
-      batch.commit()
-        .then(() => {
-          serverLogger.info("firestore", `Persisted chunk of ${chunk.length} terrain points.`);
-        })
-        .catch((e: any) => {
-          serverLogger.error("firestore", `Failed to persist terrain chunk: ${e.message}`);
-        });
-    }
+    saveTerrainRedis(updates);
+    import("../../redis").then(m => m.redis.publish("terrain:sync", JSON.stringify(updates)));
+    io.emit("terrain_sync", updates);
   }
 
   // Sync to Redis for cross-instance consistency

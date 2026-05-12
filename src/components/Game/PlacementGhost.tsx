@@ -91,7 +91,11 @@ export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSe
               {OBJECT_TEMPLATES[editorSelectedType]?.modelUrl ? (
                 <GLBModel url={OBJECT_TEMPLATES[editorSelectedType].modelUrl} position={[0,0,0]} scale={OBJECT_TEMPLATES[editorSelectedType].scale || 1} rotation={[0,0,0]} isGhost={true} castShadow={false} />
               ) : (
-                <ProceduralModel type={editorSelectedType} modelProps={{ position: [0,0,0], scale: 1, rotation: [0,0,0], isGhost: true }} />
+                <ProceduralModel 
+                  type={editorSelectedType} 
+                  isEditorOpen={true}
+                  modelProps={{ position: [0,0,0], scale: 1, rotation: [0,0,0], isGhost: true }} 
+                />
               )}
             </group>
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>

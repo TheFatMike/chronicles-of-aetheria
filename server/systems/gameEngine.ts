@@ -5,7 +5,7 @@
  * @importance Critical: The central loop that ensures the game world progresses and stays in sync across all players.
  */
 import { Server } from "socket.io";
-import { players, entities, dirtyEntities, playerLastGridCell, playerKnownEntities } from "../state";
+import { players, entities, spawners, dirtyEntities, playerLastGridCell, playerKnownEntities } from "../state";
 import { serverLogger } from "../logger";
 import { performance } from "perf_hooks";
 import { calculateTotalStats, calculateHPRegen, calculateMPRegen } from "../../src/lib/gameUtils";

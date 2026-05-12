@@ -12,6 +12,11 @@ import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from 'zustand/react/shallow';
 import { useEntitySync } from "../../hooks/useEntitySync";
 import { GameTarget } from "../../types";
+import { useFrame } from "@react-three/fiber";
+import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
+
+const _point = new THREE.Vector3();
+const _sphere = new THREE.Sphere();
 
 interface BaseEntityProps {
   id: string;
@@ -61,6 +66,33 @@ export const BaseEntity = memo(({
 
   // Handle network sync/smoothing
   useEntitySync(groupRef, { position, rotation });
+
+  // Zero-latency visibility management
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    
+    // Always show if targeted
+    if (isTargeted) {
+      groupRef.current.visible = true;
+      return;
+    }
+
+    _point.set(position[0], position[1], position[2]);
+    const distSq = _point.distanceToSquared(state.camera.position);
+
+    // 1. Proximity Shield: NPCs within 25m are always visible
+    if (distSq < 625) { 
+      groupRef.current.visible = true;
+      return;
+    }
+
+    // 2. Frustum Bleed: Show if within view (with 10m margin)
+    _sphere.set(_point, 10);
+    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere);
+    if (groupRef.current.visible !== isVisible) {
+      groupRef.current.visible = isVisible;
+    }
+  });
 
   // Cleanup cursor classes on unmount (prevents stuck cursors when entity despawns)
   useEffect(() => {
@@ -163,6 +195,7 @@ export const BaseEntity = memo(({
   const mouseDownTime = useRef<number>(0);
 
   const handlePointerDown = (e: any) => {
+    if (useGameStore.getState().isEditorOpen) return;
     if (e.button === 2 || e.button === 0) {
       e.stopPropagation();
       mouseDownPos.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };

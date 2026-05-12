@@ -13,6 +13,7 @@ import { EquipmentSlots } from "../../../src/types";
 import { CLASS_STARTING_GEAR, generateItemInstance } from "../../data/items";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { getUserRole } from "../../lib/auth";
+import { removeCharacterSessionRedis } from "../../redis";
 
 export const handleCreateCharacter = async (socket: Socket, data: any, userId: string, email: string) => {
   try {
@@ -93,5 +94,44 @@ export const handleCreateCharacter = async (socket: Socket, data: any, userId: s
   } catch (e: any) {
     serverLogger.error("net", "Character creation failed", e.message);
     socket.emit("error", { message: e.message });
+  }
+};
+
+export const handleDeleteCharacter = async (socket: Socket, charId: string, userId: string) => {
+  try {
+    const charRef = db.collection("users").doc(userId).collection("characters").doc(charId);
+    const charSnap = await charRef.get();
+
+    if (!charSnap.exists) {
+      return socket.emit("error", { message: "Character not found" });
+    }
+
+    const data = charSnap.data() || {};
+    const lowerName = data.name ? data.name.toLowerCase().trim() : null;
+    const nameRef = lowerName ? db.collection("characterNames").doc(lowerName) : null;
+
+    // Verify ownership
+    if (nameRef) {
+      const nameSnap = await nameRef.get();
+      if (nameSnap.exists && nameSnap.data().characterId !== charId) {
+         return socket.emit("error", { message: "Unauthorized deletion attempt" });
+      }
+    }
+
+    serverLogger.info("net", `Deleting character ${data.name} (${charId}) for user ${userId}`);
+
+    // Atomic Delete
+    const batch = db.batch();
+    if (nameRef) batch.delete(nameRef);
+    batch.delete(charRef);
+    await batch.commit();
+
+    // 2. Clear Redis session so it doesn't save back!
+    await removeCharacterSessionRedis(charId);
+
+    socket.emit("character_deleted", charId);
+  } catch (e: any) {
+    serverLogger.error("net", "Character deletion failed", e.message);
+    socket.emit("error", { message: "Failed to delete character." });
   }
 };

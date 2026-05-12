@@ -102,6 +102,8 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     
     // 5. Regional Terrain & Sync
     await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
+    socket.emit("world_objects_sync", Array.from(worldObjects.values()));
+    socket.emit("world_ready");
     handleRequestTerrainSync(socket);
   } catch (e: any) {
     serverLogger.error("net", "Join error", e.message);

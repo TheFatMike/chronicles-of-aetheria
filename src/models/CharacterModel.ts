@@ -33,8 +33,8 @@ export class CharacterModel {
       skills: data.skills || [],
       gold: data.gold || 0,
       role: accountRole,
-      pos: data.pos || [0, 0, 0],
-      rot: data.rot || [0, 0, 0]
+      pos: this.ensureArray3(data.pos, [0, 1.5, 0]),
+      rot: this.ensureArray3(data.rot, [0, 0, 0])
     };
 
   }
@@ -169,5 +169,19 @@ export class CharacterModel {
       hp: Math.min(character.hp, maxHp),
       mp: Math.min(character.mp, maxMp)
     };
+  }
+
+  private static ensureArray3(val: any, fallback: [number, number, number]): [number, number, number] {
+    if (Array.isArray(val) && val.length === 3) return val as [number, number, number];
+    if (typeof val === 'string') {
+       try {
+         const parsed = JSON.parse(val);
+         if (Array.isArray(parsed) && parsed.length === 3) return parsed as [number, number, number];
+       } catch (e) {
+         const parts = val.split(',').map(Number);
+         if (parts.length === 3 && !parts.some(isNaN)) return parts as [number, number, number];
+       }
+    }
+    return fallback;
   }
 }

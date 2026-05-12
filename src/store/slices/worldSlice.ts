@@ -111,12 +111,15 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     };
   }),
 
-  addWorldObject: (obj) => set((state) => ({
-    worldObjects: { ...state.worldObjects, [obj.id]: obj },
-    worldEditorBuffer: state.isEditorOpen 
-      ? { ...state.worldEditorBuffer, [obj.id]: obj }
-      : state.worldEditorBuffer
-  })),
+  addWorldObject: (obj) => set((state) => {
+    console.log("[worldSlice] addWorldObject", obj);
+    return {
+      worldObjects: { ...state.worldObjects, [obj.id]: obj },
+      worldEditorBuffer: state.isEditorOpen 
+        ? { ...state.worldEditorBuffer, [obj.id]: obj }
+        : state.worldEditorBuffer
+    };
+  }),
 
   updateWorldObject: (id, data) => set((state) => {
     if (!state.worldObjects[id]) return state;
@@ -157,12 +160,13 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   })),
 
   markObjectDeleted: (id) => set((state) => {
+    const obj = state.worldObjects[id];
     const newObjects = { ...state.worldObjects };
     delete newObjects[id];
     
     return { 
       worldObjects: newObjects,
-      worldEditorDeleted: [...state.worldEditorDeleted, id],
+      worldEditorDeleted: [...state.worldEditorDeleted, { id, pos: obj?.pos }],
       // If it was in the buffer to be saved, remove it since it's now deleted
       worldEditorBuffer: (() => {
         const newBuffer = { ...state.worldEditorBuffer };

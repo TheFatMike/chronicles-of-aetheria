@@ -4,25 +4,49 @@
  * Dynamically selects and renders the appropriate component based on entity type.
  * @importance Essential: Simplifies the main scene logic by abstracting the rendering of diverse entities.
  */
-import { memo } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
+import * as THREE from "three";
 import { NPC } from "./NPC";
 import { SlimeEnemy, SkeletonEnemy, GoblinEnemy } from "./Enemy";
 import { useGameStore } from "../../store/useGameStore";
+import { useShallow } from "zustand/react/shallow";
 import { SAMPLE_QUESTS } from "../../data/quests";
 
+import { useThree } from "@react-three/fiber";
+
 interface EntityRendererProps {
-  entities: any[];
   onAttack?: () => void;
   onLoot?: (id: string) => void;
 }
 
-export const EntityRenderer = memo(({ entities, onAttack, onLoot }: EntityRendererProps) => {
+export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) => {
+  const entities = useGameStore(useShallow(state => Object.values(state.entities)));
+  const { camera } = useThree();
+  const [nearbyEntities, setNearbyEntities] = useState<any[]>([]);
+
+  // Spatial Culling for Entities: Find entities within 100m
+  useEffect(() => {
+    const updateNearby = () => {
+      const CULL_DISTANCE_SQ = 100 * 100;
+      const filtered = entities.filter(ent => {
+        const dx = ent.pos[0] - camera.position.x;
+        const dz = ent.pos[2] - camera.position.z;
+        return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
+      });
+      setNearbyEntities(filtered);
+    };
+
+    const interval = setInterval(updateNearby, 1000); 
+    updateNearby();
+    return () => clearInterval(interval);
+  }, [entities]); 
+
   const setActiveDialogue = useGameStore(state => state.setActiveDialogue);
   const activeQuests = useGameStore(state => state.activeQuests);
 
   return (
     <>
-      {entities.map(ent => (
+      {nearbyEntities.map(ent => (
         ent.type === 'npc' ? (
           <NPC 
             key={ent.id}
@@ -36,7 +60,9 @@ export const EntityRenderer = memo(({ entities, onAttack, onLoot }: EntityRender
             maxHp={ent.maxHp}
             isMoving={ent.isMoving}
             isAttacking={ent.isAttacking}
+            modelUrl={ent.modelUrl}
             onInteract={() => {
+              if (useGameStore.getState().isEditorOpen) return;
               const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => q.giverId === ent.id || q.giverName === ent.name);
               
               // 1. Check for turn-in

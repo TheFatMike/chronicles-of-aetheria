@@ -182,6 +182,16 @@ export const useSocket = (token: string | null) => {
       useGameStore.getState().removeWorldObject(data.id);
     });
 
+    socket.on("world_objects_sync", (allObjects) => {
+      logger.debug("socket", `World objects sync received: ${allObjects.length} objects`);
+      useGameStore.getState().addWorldObjects(allObjects);
+    });
+
+    socket.on("world_ready", () => {
+      logger.info("socket", "World is ready. Handshake complete.");
+      useGameStore.getState().setWorldReady(true);
+    });
+
     // Party Events
     socket.on("party_invite_received", (invite) => {
       logger.info("socket", "Party invite received", invite);

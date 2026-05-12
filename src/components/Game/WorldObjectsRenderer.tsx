@@ -4,18 +4,22 @@
  * Utilizes spatial partitioning and filtering to only render objects within the player's vicinity.
  * @importance Essential: Crucial for maintaining high frame rates in complex environments with many objects.
  */
-import { memo, useState, useEffect, useCallback } from "react";
+import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useThree, useFrame } from "@react-three/fiber";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { EditorGizmo } from "./EditorGizmo";
 import { WorldObjectItem } from "./WorldObjectItem";
 import { PlacementGhost } from "./PlacementGhost";
 
+// Shared frustum for zero-allocation culling across all items
+export const SHARED_FRUSTUM = new THREE.Frustum();
+const PROJ_SCREEN_MATRIX = new THREE.Matrix4();
+
 export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   // Use shallow selector for objects list to avoid re-renders if content doesn't change
   const worldObjects = useGameStore(useShallow(state => Object.values(state.worldObjects)));
-  
   const editorSelectedType = useGameStore(state => state.editorSelectedType);
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
   const selectedWorldObjectId = useGameStore(state => state.selectedWorldObjectId);
@@ -26,6 +30,42 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
   const transformMode = useGameStore(state => state.editorTransformMode);
   const setTransformMode = useGameStore(state => state.setEditorTransformMode);
   const gridSnap = useGameStore(state => state.gridSnap);
+
+  const [nearbyObjects, setNearbyObjects] = useState<any[]>([]);
+  const { camera } = useThree();
+
+  const worldObjectsRef = useRef(worldObjects);
+  useEffect(() => {
+    worldObjectsRef.current = worldObjects;
+  }, [worldObjects]);
+
+  // 1. Spatial Culling (Throttled): Find objects within 120m
+  useEffect(() => {
+    const updateNearby = () => {
+      const CULL_DISTANCE_SQ = 120 * 120;
+      const currentObjects = worldObjectsRef.current;
+      const camPos = camera.position;
+
+      const filtered = currentObjects.filter(obj => {
+        if (selectedWorldObjectId === obj.id) return true;
+        const dx = obj.pos[0] - camPos.x;
+        const dz = obj.pos[2] - camPos.z;
+        return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
+      });
+      
+      setNearbyObjects(filtered);
+    };
+
+    const interval = setInterval(updateNearby, 1000); 
+    updateNearby();
+    return () => clearInterval(interval);
+  }, [selectedWorldObjectId, camera]); 
+
+  // 2. High-Speed Frustum Update (Every Frame): Updates shared frustum for children
+  useFrame(() => {
+    PROJ_SCREEN_MATRIX.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    SHARED_FRUSTUM.setFromProjectionMatrix(PROJ_SCREEN_MATRIX);
+  });
 
   const [transformRef, setTransformRef] = useState<THREE.Object3D | null>(null);
 
@@ -80,7 +120,7 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
         <PlacementGhost editorSelectedType={editorSelectedType} gridSnap={gridSnap} />
       )}
 
-      {worldObjects.map(obj => (
+      {nearbyObjects.map(obj => (
         <WorldObjectItem 
           key={obj.id} 
           obj={obj}

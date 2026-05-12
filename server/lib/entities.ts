@@ -7,7 +7,7 @@
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { calculateMaxHP, calculateMaxMP } from "../../src/lib/gameUtils";
 
-export function createNPCEntity(id: string, worldObjectId: string | null, type: string, pos: [number, number, number], rot: [number, number, number]) {
+export function createNPCEntity(id: string, worldObjectId: string | null, type: string, pos: [number, number, number], rot: [number, number, number], metadata?: any) {
   const npcKey = type.replace('npc_', '');
   const template = ENTITY_TEMPLATES[npcKey] || ENTITY_TEMPLATES['guard'];
   const stats = template.baseStats;
@@ -18,10 +18,11 @@ export function createNPCEntity(id: string, worldObjectId: string | null, type: 
     ...template,
     id,
     worldObjectId,
-    name: template.name,
+    name: metadata?.name || template.name,
     type: template.type || 'npc',
-    class: template.class,
-    level: template.level || (template.id === 'instructor_kael' ? 100 : 1),
+    class: metadata?.role || template.class,
+    color: metadata?.color || template.color,
+    level: metadata?.level || template.level || (template.id === 'instructor_kael' ? 100 : 1),
     expReward: template.expReward || 0,
     pos: [...pos],
     homePos: [...pos],

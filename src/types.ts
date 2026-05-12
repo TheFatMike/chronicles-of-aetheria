@@ -194,6 +194,7 @@ export interface GameEntity extends GameTarget {
   entityClass?: string;
   lastUpdate: number;
   isMoving?: boolean;
+  isAttacking?: boolean;
   isDead?: boolean;
   loot?: string[]; // Array of Item IDs
   pathId?: string;
@@ -203,5 +204,6 @@ export interface GameEntity extends GameTarget {
   expReward?: number;
   targetId?: string | null;
   lastAttackTime?: number;
+  modelUrl?: string;
 }
 

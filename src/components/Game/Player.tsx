@@ -36,8 +36,14 @@ export const Player = memo(({ onMove, color, socket, initialPos, initialRot }: P
         updateCamera(initialPos);
       }
       if (initialRot) {
-        setRotation(initialRot[1]); // Assuming Y rotation
-        meshRef.current.rotation.set(...initialRot);
+        setRotation(initialRot[1]); 
+        // Explicitly set rotation with a valid order to prevent WebGL crashes
+        meshRef.current.rotation.set(
+          initialRot[0] || 0, 
+          initialRot[1] || 0, 
+          initialRot[2] || 0, 
+          'YXZ'
+        );
       }
     }
   }, []); // Only run once on mount

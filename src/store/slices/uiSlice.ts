@@ -30,6 +30,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   uiScale: parseFloat(localStorage.getItem('ui_scale') || '1.0'),
   brightness: parseFloat(localStorage.getItem('game_brightness') || '1.0'),
   contextMenu: null,
+  worldReady: false,
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -53,6 +54,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setQuestsOpen: (isOpen) => set({ isQuestsOpen: isOpen }),
   setSkillsOpen: (isOpen) => set({ isSkillsOpen: isOpen }),
   setWorldLoading: (isLoading) => set({ isWorldLoading: isLoading }),
+  setWorldReady: (isReady) => set({ worldReady: isReady }),
   setUIScale: (uiScale) => {
     localStorage.setItem('ui_scale', uiScale.toString());
     set({ uiScale });
@@ -73,6 +75,16 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setEditorShowOutliner: (val) => set({ editorShowOutliner: val }),
   editorStartPosition: null,
   setEditorStartPosition: (pos) => set({ editorStartPosition: pos }),
+  editorMousePoint: null,
+  setEditorMousePoint: (pos) => set((state) => {
+    // Only update if the position has actually changed to prevent render loops
+    if (!pos && !state.editorMousePoint) return state;
+    if (pos && state.editorMousePoint && 
+        pos[0] === state.editorMousePoint[0] && 
+        pos[1] === state.editorMousePoint[1] && 
+        pos[2] === state.editorMousePoint[2]) return state;
+    return { editorMousePoint: pos };
+  }),
   setSelectedWorldObjectId: (id) => set({ selectedWorldObjectId: id, isTransforming: false }),
   requestTeleport: (pos) => set({ teleportRequest: pos }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
