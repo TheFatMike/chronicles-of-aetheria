@@ -58,7 +58,22 @@ export const handleTurnInQuest = (io: any, socket: Socket, data: any) => {
   const allDone = quest.objectives.every((obj: any) => obj.completed);
   if (!allDone) return;
 
-  // 1. Remove Quest Items (for 'collect' objectives)
+  // Check inventory space for rewards
+  const rewardItems = quest.reward?.items || [];
+  if (rewardItems.length > 0) {
+    const emptySlots = player.inventory.filter((s: any) => s === null).length;
+    if (emptySlots < rewardItems.length) {
+      socket.emit("chat_message", {
+        id: "sys-q-inv-full-" + Date.now(),
+        sender: "SYSTEM",
+        text: `Inventory full! You need ${rewardItems.length} free slots to complete this quest.`,
+        timestamp: Date.now(),
+        color: "#ff4444"
+      });
+      return;
+    }
+  }
+
   const newInventory = [...player.inventory];
   let inventoryChanged = false;
 

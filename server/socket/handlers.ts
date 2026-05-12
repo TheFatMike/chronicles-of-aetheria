@@ -7,6 +7,7 @@ import { handleCreateCharacter, handleDeleteCharacter } from "./handlers/charact
 import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem } from "./handlers/inventory";
 import { handleSaveWorldObject, handleRemoveWorldObject, handleBatchSaveWorldObjects, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
+import { handleBuyItem, handleSellItem } from "./handlers/shop";
 import { handleChatMessage } from "./handlers/chat";
 import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handlers/party";
 import { handleTradeRequest, handleTradeAccept, handleTradeCancel, handleTradeLock, handleTradeConfirm, handleTradeAddItem, handleTradeRemoveItem } from "./handlers/trade";
@@ -70,6 +71,10 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   // Quests
   socket.on("accept_quest", (data) => handleAcceptQuest(socket, data));
   socket.on("turn_in_quest", (data) => handleTurnInQuest(io, socket, data));
+
+  // Shop
+  socket.on("buy_item", (data) => handleBuyItem(socket, data));
+  socket.on("sell_item", (data) => handleSellItem(socket, data));
 
   // Chat
   socket.on("chat_message", (text) => handleChatMessage(io, socket, text));

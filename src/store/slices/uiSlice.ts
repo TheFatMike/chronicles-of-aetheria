@@ -31,6 +31,8 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   brightness: parseFloat(localStorage.getItem('game_brightness') || '1.0'),
   contextMenu: null,
   worldReady: false,
+  isShopOpen: false,
+  activeShop: null,
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -90,4 +92,6 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setContextMenu: (menu) => set({ contextMenu: menu }),
   activeLoot: null,
   setActiveLoot: (loot) => set({ activeLoot: loot }),
+  setShopOpen: (isOpen) => set({ isShopOpen: isOpen }),
+  setActiveShop: (shop) => set({ activeShop: shop }),
 });

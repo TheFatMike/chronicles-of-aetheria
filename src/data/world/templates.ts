@@ -104,9 +104,9 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
     category: 'spawners',
     label: 'Guard Spawner'
   },
-  'npc_elder_thorne': { type: 'npc_elder_thorne' as any, label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1 },
-  'npc_merchant_silas': { type: 'npc_merchant_silas' as any, label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1 },
-  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin' as any, label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1 },
-  'npc_guard_captain': { type: 'npc_guard_captain' as any, label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1 },
-  'npc_instructor_kael': { type: 'npc_instructor_kael' as any, label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1 },
+  'npc_elder_thorne': { type: 'npc_elder_thorne', label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1 },
+  'npc_merchant_silas': { type: 'npc_merchant_silas', label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1 },
+  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1 },
+  'npc_guard_captain': { type: 'npc_guard_captain', label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1 },
+  'npc_instructor_kael': { type: 'npc_instructor_kael', label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1 },
 };

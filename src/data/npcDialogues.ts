@@ -59,6 +59,35 @@ export const NPC_DIALOGUE_NODES: Record<string, Record<string, DialogueNode>> = 
         { label: "I see. Back to topics.", action: "dialogue", targetId: "root" }
       ]
     }
+  },
+  "merchant_silas": {
+    "root": {
+      id: "root",
+      text: "Greetings, traveler! I've got the finest wares in all of Aetheria. Care to take a look?",
+      options: [
+        { label: "Show me your wares.", action: "shop", targetId: "general_merchant" },
+        { label: "Tell me about yourself.", action: "dialogue", targetId: "about_silas" },
+        { label: "Goodbye.", action: "close" }
+      ]
+    },
+    "about_silas": {
+      id: "about_silas",
+      text: "I've been trading across these islands since before the Shattering. It's a dangerous living, but someone has to keep the supplies moving.",
+      options: [
+        { label: "I see. Show me what you have.", action: "shop", targetId: "general_merchant" },
+        { label: "Interesting. Goodbye.", action: "close" }
+      ]
+    }
+  },
+  "blacksmith_torin": {
+    "root": {
+      id: "root",
+      text: "Hmph. Need something forged? Or did you just come to watch the sparks fly?",
+      options: [
+        { label: "I need to buy equipment.", action: "shop", targetId: "blacksmith" },
+        { label: "Goodbye.", action: "close" }
+      ]
+    }
   }
 };
 

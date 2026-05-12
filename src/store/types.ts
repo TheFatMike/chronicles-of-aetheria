@@ -138,6 +138,8 @@ export interface UISlice {
   contextMenu: { x: number; y: number; title: string; targetId: string } | null;
   activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
   worldReady: boolean;
+  isShopOpen: boolean;
+  activeShop: Shop | null;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -164,12 +166,25 @@ export interface UISlice {
   requestTeleport: (pos: [number, number, number] | null) => void;
   setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;
   setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
+  setShopOpen: (isOpen: boolean) => void;
+  setActiveShop: (shop: Shop | null) => void;
 }
 
 export interface DialogueOption {
   label: string;
-  action: 'quest' | 'dialogue' | 'close';
+  action: 'quest' | 'dialogue' | 'close' | 'shop';
   targetId?: string;
+}
+
+export interface ShopItem {
+  itemId: string;
+  price: number;
+}
+
+export interface Shop {
+  id: string;
+  name: string;
+  items: ShopItem[];
 }
 
 export interface QuestSlice {

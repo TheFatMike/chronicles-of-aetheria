@@ -19,6 +19,8 @@ import { ContextMenu } from "./ContextMenu";
 import { UserPlus, Handshake, MessageSquare, X } from "lucide-react";
 import { getNPCDialogue } from "../../data/npcDialogues";
 import { SAMPLE_QUESTS } from "../../data/quests";
+import { Shop } from "./Shop";
+import { SHOPS } from "../../data/shops";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -56,7 +58,11 @@ export const MenuManager = ({
     isQuestsOpen,
     setQuestsOpen,
     isSkillsOpen,
-    setSkillsOpen
+    setSkillsOpen,
+    isShopOpen,
+    setShopOpen,
+    activeShop,
+    setActiveShop
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -76,7 +82,11 @@ export const MenuManager = ({
     isQuestsOpen: s.isQuestsOpen,
     setQuestsOpen: s.setQuestsOpen,
     isSkillsOpen: s.isSkillsOpen,
-    setSkillsOpen: s.setSkillsOpen
+    setSkillsOpen: s.setSkillsOpen,
+    isShopOpen: s.isShopOpen,
+    setShopOpen: s.setShopOpen,
+    activeShop: s.activeShop,
+    setActiveShop: s.setActiveShop
   })));
 
   return (
@@ -182,6 +192,31 @@ export const MenuManager = ({
                   ...questDialogue
                 });
               }
+            } else if (option.action === 'shop') {
+              if (option.targetId && SHOPS[option.targetId]) {
+                setActiveShop(SHOPS[option.targetId]);
+                setShopOpen(true);
+                setActiveDialogue(null);
+              }
+            }
+          }}
+        />
+      )}
+      {isShopOpen && activeShop && (
+        <Shop
+          key="shop-window"
+          shop={activeShop}
+          playerGold={selectedCharacter.gold || 0}
+          playerInventory={selectedCharacter.inventory || []}
+          onClose={() => setShopOpen(false)}
+          onBuy={(itemId, price) => {
+            if (socket) {
+              socket.emit("buy_item", { itemId, price, shopId: activeShop.id });
+            }
+          }}
+          onSell={(inventoryIndex) => {
+            if (socket) {
+              socket.emit("sell_item", { inventoryIndex, shopId: activeShop.id });
             }
           }}
         />
