@@ -25,10 +25,12 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
   const { camera } = useThree();
   const [nearbyEntities, setNearbyEntities] = useState<any[]>([]);
 
-  // Spatial Culling for Entities: Find entities within 100m
+  // Spatial Culling for Entities: Find entities within 250m
+  // Note: The server already filters to ~80m, so this is just a secondary safety.
+  // We use a much larger radius here to avoid any race conditions with server discovery.
   useEffect(() => {
     const updateNearby = () => {
-      const CULL_DISTANCE_SQ = 100 * 100;
+      const CULL_DISTANCE_SQ = 250 * 250;
       const state = useGameStore.getState();
       const localPlayer = state.players[state.id || ""];
       if (!localPlayer) return;
@@ -41,7 +43,7 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
       setNearbyEntities(filtered);
     };
 
-    const interval = setInterval(updateNearby, 1000); 
+    const interval = setInterval(updateNearby, 200); 
     updateNearby();
     return () => clearInterval(interval);
   }, [entities]); 

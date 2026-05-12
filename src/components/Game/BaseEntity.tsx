@@ -15,9 +15,6 @@ import { GameTarget } from "../../types";
 import { useFrame } from "@react-three/fiber";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
 
-const _point = new THREE.Vector3();
-const _sphere = new THREE.Sphere();
-
 interface BaseEntityProps {
   id: string;
   name: string;
@@ -57,6 +54,9 @@ export const BaseEntity = memo(({
   isDead
 }: BaseEntityProps) => {
   const groupRef = useRef<THREE.Group>(null);
+  const _point = useRef(new THREE.Vector3());
+  const _sphere = useRef(new THREE.Sphere());
+  
   const [hovered, setHovered] = useState(false);
   const { setTarget, currentTargetId } = useGameStore(useShallow((state) => ({
     setTarget: state.setTarget,
@@ -77,21 +77,18 @@ export const BaseEntity = memo(({
       return;
     }
 
-    _point.set(position[0], position[1], position[2]);
-    const distSq = _point.distanceToSquared(state.camera.position);
+    _point.current.copy(groupRef.current.position);
+    const distSq = _point.current.distanceToSquared(state.camera.position);
 
-    // 1. Proximity Shield: NPCs within 25m are always visible
-    if (distSq < 625) { 
+    // 1. Proximity Shield: Entities within 150m are always visible
+    // We disable frustum culling for entities to prevent flickering when close or at screen edges
+    if (distSq < 22500) { 
       groupRef.current.visible = true;
       return;
     }
 
-    // 2. Frustum Bleed: Show if within view (with 10m margin)
-    _sphere.set(_point, 10);
-    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere);
-    if (groupRef.current.visible !== isVisible) {
-      groupRef.current.visible = isVisible;
-    }
+    // 2. Fallback: Hide if very far away
+    groupRef.current.visible = false;
   });
 
   // Cleanup cursor classes on unmount (prevents stuck cursors when entity despawns)
@@ -270,7 +267,7 @@ export const BaseEntity = memo(({
   return (
     <group
       ref={groupRef}
-      userData={{ isCollidable: type !== 'player' }} // Players don't block each other for better movement feel
+      userData={{ isCollidable: false }} // Living entities don't block movement in WoW
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onDoubleClick={handleDoubleClick}
@@ -294,9 +291,13 @@ export const BaseEntity = memo(({
       }}
     >
       {/* Interaction Collider */}
-      <mesh position={[0, nameOffset / 2, 0]}>
+      <mesh 
+        position={[0, nameOffset / 2, 0]} 
+        castShadow={false} 
+        receiveShadow={false}
+      >
         <boxGeometry args={[1.5, nameOffset, 1.5]} />
-        <meshStandardMaterial transparent opacity={0} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
       <SelectionCircle visible={isTargeted} color={getSelectionColor()} />

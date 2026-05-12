@@ -5,13 +5,13 @@
  * @importance Essential: Prevents visual glitches and stuttering by pre-caching large assets.
  */
 import { useEffect } from "react";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF, useTexture, useProgress } from "@react-three/drei";
 import { logger } from "../../lib/logger";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
+import { useGameStore } from "../../store/useGameStore";
 
 // Essential assets to preload
 const ESSENTIAL_MODELS = [
-  // Add any common models here
   ...Object.values(OBJECT_TEMPLATES)
     .filter(t => t.modelUrl)
     .map(t => t.modelUrl!)
@@ -23,6 +23,9 @@ const ESSENTIAL_TEXTURES = [
 ];
 
 export const AssetPreloader = () => {
+  const { progress } = useProgress();
+  const setAssetsReady = useGameStore(s => s.setAssetsReady);
+
   useEffect(() => {
     logger.info("system", "Starting preloading of essential assets...");
     
@@ -31,14 +34,18 @@ export const AssetPreloader = () => {
       useGLTF.preload(url);
     });
 
-    // Preload textures if any
-    // Note: useTexture.preload doesn't exist in some versions of drei, 
-    // but we can just use new Image().src for simple textures or let the browser handle it.
     ESSENTIAL_TEXTURES.forEach(url => {
       const img = new Image();
       img.src = url;
     });
   }, []);
 
-  return null; // This component doesn't render anything
+  useEffect(() => {
+    if (progress === 100) {
+      logger.info("system", "All assets manifest and ready.");
+      setAssetsReady(true);
+    }
+  }, [progress, setAssetsReady]);
+
+  return null;
 };

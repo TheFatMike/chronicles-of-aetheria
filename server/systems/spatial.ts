@@ -228,3 +228,70 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
   return result;
 }
 
+export function getGroundHeight(pos: [number, number, number], terrainData: any): number {
+  let groundHeight = -100;
+
+  // 1. Check Terrain
+  if (terrainData) {
+    const x = Math.round(pos[0]);
+    const z = Math.round(pos[2]);
+    const key = `${x}_${z}`;
+    if (terrainData[key]) {
+      groundHeight = terrainData[key].y;
+    }
+  }
+
+  // 2. Check Objects
+  const nearbyKeys = getNearbyGridKeys(pos, 5);
+  for (const key of nearbyKeys) {
+    const ids = objectGrid.get(key);
+    if (!ids) continue;
+
+    for (const id of ids) {
+      const obj = worldObjects.get(id);
+      if (!obj) continue;
+      const { pos: objPos, rot, scale, type } = obj;
+      const s = scale || 1;
+      const sx = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1));
+      const sy = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1));
+      const sz = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1));
+
+      const local = toLocalSpace(pos, objPos, rot[1] || 0);
+      
+      // If we are within the horizontal bounds of the object
+      const t = (type || "").toLowerCase();
+      let isInside = false;
+      
+      // Rough estimation of object bounds based on type
+      let width = sx;
+      let depth = sz;
+      let height = sy;
+
+      if (t === 'house' || t === 'tower_base') { width *= 8; depth *= 8; height *= 6; }
+      if (t === 'well') { width *= 3; depth *= 3; height *= 2; }
+      if (t === 'barrel') { width *= 0.8; depth *= 0.8; height *= 1.2; }
+      if (t === 'chest') { width *= 1.2; depth *= 0.8; height *= 0.8; }
+      if (t === 'tent') { width *= 400; depth *= 400; height *= 300; } // Adjusted for tent's weird 0.01 scale
+
+      if (t.includes('tree') || t.includes('rock') || t.includes('npc')) {
+        const radiusSq = Math.pow(width / 2, 2);
+        isInside = (local.x * local.x + local.z * local.z) < radiusSq;
+      } else {
+        isInside = Math.abs(local.x) < width / 2 && Math.abs(local.z) < depth / 2;
+      }
+
+      if (isInside) {
+        const topY = objPos[1] + height;
+        const bottomY = objPos[1];
+        
+        // If we are vertically within the object's range (with some margin), 
+        // consider its top as the ground to stand on.
+        if (pos[1] >= bottomY - 0.5 && pos[1] <= topY + 1.0) {
+          groundHeight = Math.max(groundHeight, topY);
+        }
+      }
+    }
+  }
+
+  return groundHeight;
+}

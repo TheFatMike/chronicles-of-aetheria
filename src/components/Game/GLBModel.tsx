@@ -17,9 +17,10 @@ interface GLBModelProps {
   castShadow?: boolean;
   receiveShadow?: boolean;
   isGhost?: boolean;
+  isCollidable?: boolean;
 }
 
-const ModelInner = ({ url, castShadow, receiveShadow, isGhost }: any) => {
+const ModelInner = ({ url, castShadow, receiveShadow, isGhost, isCollidable = true }: any) => {
   const { scene } = useGLTF(url) as any;
 
   // Clone the scene and apply settings safely
@@ -54,14 +55,14 @@ const ModelInner = ({ url, castShadow, receiveShadow, isGhost }: any) => {
             m.depthWrite = false; 
           });
         } else if (!isGhost) {
-          // Enable collision for real models (not ghosts)
-          node.userData.isCollidable = true;
+          // Enable collision for real models (if requested)
+          node.userData.isCollidable = isCollidable;
         }
       }
     });
     
     return clone;
-  }, [scene, castShadow, receiveShadow, isGhost]);
+  }, [scene, castShadow, receiveShadow, isGhost, isCollidable]);
 
   return <primitive object={clonedScene} />;
 };
@@ -86,7 +87,8 @@ export const GLBModel = memo(({
   onClick,
   castShadow = true,
   receiveShadow = true,
-  isGhost = false
+  isGhost = false,
+  isCollidable = true
 }: GLBModelProps) => {
   
   // Preload and monitor model status if needed
@@ -102,7 +104,7 @@ export const GLBModel = memo(({
       onClick={onClick}
     >
       <Suspense fallback={<LoadingFallback />}>
-        <ModelInner url={url} castShadow={castShadow} receiveShadow={receiveShadow} isGhost={isGhost} />
+        <ModelInner url={url} castShadow={castShadow} receiveShadow={receiveShadow} isGhost={isGhost} isCollidable={isCollidable} />
       </Suspense>
     </group>
   );

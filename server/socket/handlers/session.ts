@@ -13,7 +13,7 @@ import { CharacterModel } from "../../../src/models/CharacterModel";
 import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../systems/spatial";
 import { getUserRole } from "../../lib/auth";
 import { handleRequestTerrainSync } from "./terrain";
-import { removePlayerRedis } from "../../redis";
+import { removePlayerRedis, getCharacterPositionRedis } from "../../redis";
 import { handlePartyLeave } from "./party";
 import { handleTradeCancel } from "./trade";
 import { loadTerrainRegion } from "../../systems/persistence";
@@ -56,6 +56,12 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
       }
       const charData = CharacterModel.fromFirestore(charDoc.id, charDoc.data(), userRole);
 
+      // Check Redis for a "hot" position first (survives refreshes better than Firestore)
+      const redisPos = await getCharacterPositionRedis(validated.characterId);
+      if (redisPos) {
+        serverLogger.info("net", `Restored position from Redis for ${charData.name}: ${redisPos}`);
+      }
+
       players.set(socket.id, {
         id: socket.id,
         userId: userId,
@@ -64,7 +70,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         class: charData.class,
         color: charData.color,
         role: userRole,
-        pos: charData.pos || validated.pos || [0, 1, 0],
+        pos: redisPos || charData.pos || validated.pos || [0, 1, 0],
         rot: charData.rot || validated.rot || [0, 0, 0],
         hp: charData.hp,
         maxHp: charData.maxHp,
@@ -87,33 +93,35 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     const currentPlayer = players.get(socket.id);
     serverLogger.info("net", `Player joined: ${currentPlayer.characterName} (${currentPlayer.role})`);
 
-    // 4. Sync State
+    // --- CONSISTENT SYNC SEQUENCE (For New & Takeover Sessions) ---
+    
+    // 1. Send Character State
     socket.emit("session_start", currentPlayer);
     
-    // Broadcast join to nearby players instead of everyone
-    // PASS MAP DIRECTLY for O(1) grid lookup performance
+    // 2. Load & Sync World Context (Terrain & Static Objects)
+    await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
+    
+    const nearbyWorldObjects = filterNearby(worldObjects, currentPlayer.pos, 150, 'object');
+    socket.emit("world_sync", nearbyWorldObjects);
+    socket.emit("world_objects_sync", Array.from(worldObjects.values()));
+    
+    handleRequestTerrainSync(socket);
+    
+    // 3. Signal Ready to Client
+    socket.emit("world_ready");
+
+    // 4. Broadcast & Sync Active Entities (Players & NPCs)
     const nearbyToNew = filterNearby(players, currentPlayer.pos, 150, 'entity');
     for (const p of nearbyToNew) {
       if (p.id !== socket.id) io.to(p.id).emit("player_join", currentPlayer);
     }
     
-    // Send all nearby players to the new player
     socket.emit("players", nearbyToNew);
     
     const nearbyEntities = filterNearby(entities, currentPlayer.pos, 100, 'entity');
     socket.emit("entities", nearbyEntities);
     
-    const nearbyWorldObjects = filterNearby(worldObjects, currentPlayer.pos, 150, 'object');
-    socket.emit("world_sync", nearbyWorldObjects);
-    
     socket.emit("spawners_sync", Array.from(spawners.values()));
-
-    
-    // 5. Regional Terrain & Sync
-    await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
-    socket.emit("world_objects_sync", Array.from(worldObjects.values()));
-    socket.emit("world_ready");
-    handleRequestTerrainSync(socket);
   } catch (e: any) {
     serverLogger.error("net", "Join error", e.message);
   }

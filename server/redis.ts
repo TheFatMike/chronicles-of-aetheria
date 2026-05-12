@@ -48,31 +48,38 @@ redis.on("error", (err) => {
 
 /**
  * Updates player position in Redis using Geo-spatial indexing.
- * This allows for high-performance proximity queries.
+ * We now use characterId for the primary hash to ensure persistence across socket refreshes.
  */
-export const updatePlayerPositionRedis = async (playerId: string, pos: [number, number, number]) => {
+export const updatePlayerPositionRedis = async (playerId: string, characterId: string, pos: [number, number, number]) => {
   try {
-    // Redis GEO expects [longitude, latitude]. We map [x, z] to these.
-    // Note: Redis Geo uses a limit of -180 to 180 for long and -85 to 85 for lat.
-    // If the game world is larger, we might need to scale coordinates or use a different approach.
-    // For now, we'll assume a standard small-to-medium world size.
+    // Spatial index still uses playerId for real-time proximity (socket-based)
     await redis.geoadd("world:player_positions", pos[0], pos[2], playerId);
     
-    // Store metadata in a hash for quick retrieval of all player properties
-    await redis.hset(`player:${playerId}`, {
+    // BUT the persistent session data uses characterId
+    await redis.hset(`player:session:${characterId}`, {
       pos: JSON.stringify(pos),
       lastUpdate: Date.now()
     });
     
-    // Set expiry to clean up disconnected/crashed players (e.g., 5 minutes)
-    // This is crucial for keeping the free-tier memory usage low.
-    await redis.expire(`player:${playerId}`, 300);
-    await redis.expire("world:player_positions", 600); // Also expire the geo set if it's not updated
+    // Set expiry (e.g., 30 minutes for character session)
+    await redis.expire(`player:session:${characterId}`, 1800);
+    await redis.expire("world:player_positions", 600); 
   } catch (err: any) {
-    // Only log if it's not a coordinate out of range error (which is common if coordinates are large)
     if (!err.message.includes("out of range")) {
       serverLogger.error("redis", `Redis Position Update Error: ${err.message}`);
     }
+  }
+};
+
+/**
+ * Retrieves the last known position for a character from Redis.
+ */
+export const getCharacterPositionRedis = async (characterId: string): Promise<[number, number, number] | null> => {
+  try {
+    const data = await redis.hget(`player:session:${characterId}`, "pos");
+    return data ? JSON.parse(data) : null;
+  } catch (err) {
+    return null;
   }
 };
 

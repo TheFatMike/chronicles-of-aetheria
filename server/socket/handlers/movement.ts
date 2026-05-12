@@ -105,7 +105,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   markPlayerDirty(socket.id, ["pos", "rot"]);
 
   // 3. Update Redis Cache (Asynchronous)
-  updatePlayerPositionRedis(socket.id, finalPos);
+  updatePlayerPositionRedis(socket.id, player.characterId, finalPos);
 
   // 2. Targeted Broadcast (AoI)
   const nearbyKeys = getNearbyGridKeys(finalPos, 100);

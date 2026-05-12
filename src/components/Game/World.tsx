@@ -25,6 +25,7 @@ interface WorldProps {
 
 export const World = memo(({ onAttack, onLoot, socket }: WorldProps) => {
   const isEditorOpen = useGameStore(state => state.isEditorOpen);
+  const worldReady = useGameStore(state => state.worldReady);
   const { onFloorClick, handlePointerMove, handlePointerOut } = useWorldInteraction(socket);
 
   return (
@@ -32,21 +33,24 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps) => {
       <GlobalEnvironment />
       <DialogueAutoCloser />
 
-      <group name="collidables_root">
-        <Terrain 
-          socket={socket} 
-          onClick={onFloorClick} 
-          onPointerMove={handlePointerMove}
-          onPointerOut={handlePointerOut}
-        />
-        
+      <group 
+        name="collidables_root" 
+        onClick={onFloorClick} 
+        onPointerMove={handlePointerMove}
+        onPointerOut={handlePointerOut}
+      >
+        <Terrain socket={socket} />
         <BrushPreview />
         <WorldObjectsRenderer socket={socket} />
       </group>
       
-      <EntityRenderer onAttack={onAttack} onLoot={onLoot} />
-      <OtherPlayers />
-      <SpawnerRenderer />
+      {worldReady ? (
+        <>
+          <EntityRenderer onAttack={onAttack} onLoot={onLoot} />
+          <OtherPlayers />
+          <SpawnerRenderer />
+        </>
+      ) : null}
       
       {isEditorOpen && <EditorCamera />}
     </>

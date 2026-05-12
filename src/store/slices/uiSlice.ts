@@ -31,8 +31,10 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   brightness: parseFloat(localStorage.getItem('game_brightness') || '1.0'),
   contextMenu: null,
   worldReady: false,
+  assetsReady: false,
   isShopOpen: false,
   activeShop: null,
+  isBankOpen: false,
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -57,6 +59,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setSkillsOpen: (isOpen) => set({ isSkillsOpen: isOpen }),
   setWorldLoading: (isLoading) => set({ isWorldLoading: isLoading }),
   setWorldReady: (isReady) => set({ worldReady: isReady }),
+  setAssetsReady: (isReady) => set({ assetsReady: isReady }),
   setUIScale: (uiScale) => {
     localStorage.setItem('ui_scale', uiScale.toString());
     set({ uiScale });
@@ -94,4 +97,5 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setActiveLoot: (loot) => set({ activeLoot: loot }),
   setShopOpen: (isOpen) => set({ isShopOpen: isOpen }),
   setActiveShop: (shop) => set({ activeShop: shop }),
+  setBankOpen: (isOpen) => set({ isBankOpen: isOpen }),
 });

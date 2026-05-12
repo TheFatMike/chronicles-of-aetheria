@@ -128,5 +128,19 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     respawnTime: 10,
     expReward: 0,
     lootTable: LOOT_TABLES.guard
+  },
+  banker: {
+    id: 'banker',
+    name: 'Banker',
+    class: 'Banker',
+    type: 'npc',
+    baseStats: { strength: 10, dexterity: 10, wisdom: 50, intelligence: 80, stamina: 40 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
   }
 };

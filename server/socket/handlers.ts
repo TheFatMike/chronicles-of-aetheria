@@ -4,7 +4,7 @@ import { handleJoin, handleDisconnect } from "./handlers/session";
 import { handleMove } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
 import { handleCreateCharacter, handleDeleteCharacter } from "./handlers/character";
-import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem } from "./handlers/inventory";
+import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem, handleBankDeposit, handleBankWithdraw, handleBankMove } from "./handlers/inventory";
 import { handleSaveWorldObject, handleRemoveWorldObject, handleBatchSaveWorldObjects, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest } from "./handlers/quest";
 import { handleBuyItem, handleSellItem } from "./handlers/shop";
@@ -52,6 +52,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
     const player = players.get(socket.id);
     if (player) player.hotbar = data.hotbar;
   });
+  socket.on("bank_deposit", (data) => handleBankDeposit(socket, data));
+  socket.on("bank_withdraw", (data) => handleBankWithdraw(socket, data));
+  socket.on("bank_move", (data) => handleBankMove(socket, data));
 
   // World Editor
   socket.on("save_world_object", (data) => handleSaveWorldObject(io, socket, data));

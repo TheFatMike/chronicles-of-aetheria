@@ -17,9 +17,6 @@ import { SAMPLE_QUESTS } from "../../data/quests";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
 import { getNPCDialogue } from "../../data/npcDialogues";
 
-const _point = new THREE.Vector3();
-const _sphere = new THREE.Sphere();
-
 export const ProceduralModel = memo(({ 
   type, 
   modelProps, 
@@ -99,6 +96,9 @@ export const WorldObjectItem = memo(({
   setTransformRef
 }: WorldObjectItemProps) => {
   const groupRef = useRef<THREE.Group>(null);
+  const _point = useRef(new THREE.Vector3());
+  const _sphere = useRef(new THREE.Sphere());
+  
   const isSpawner = obj.type.startsWith('spawner_');
   const isNPC = obj.type.startsWith('npc_');
 
@@ -118,8 +118,8 @@ export const WorldObjectItem = memo(({
       return;
     }
 
-    _point.set(obj.pos[0], obj.pos[1], obj.pos[2]);
-    const distSq = _point.distanceToSquared(state.camera.position);
+    _point.current.set(obj.pos[0], obj.pos[1], obj.pos[2]);
+    const distSq = _point.current.distanceToSquared(state.camera.position);
 
     // 1. "Proximity Shield": If object is close, ALWAYS show it.
     // This prevents any popping when spinning the camera quickly.
@@ -130,8 +130,8 @@ export const WorldObjectItem = memo(({
 
     // 2. "Aggressive Frustum Bleed": Use a large 20m radius for the frustum check.
     // This ensures objects are rendered long before they actually hit the screen edges.
-    _sphere.set(_point, 20); 
-    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere);
+    _sphere.current.set(_point.current, 20); 
+    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere.current);
     
     if (groupRef.current.visible !== isVisible) {
       groupRef.current.visible = isVisible;
@@ -232,7 +232,7 @@ export const WorldObjectItem = memo(({
 
         {/* Priority 1: Custom GLB Model */}
         {obj.modelUrl ? (
-          <GLBModel url={obj.modelUrl} {...modelProps} />
+          <GLBModel url={obj.modelUrl} {...modelProps} isCollidable={true} />
         ) : (
           /* Priority 2: Built-in Procedural Models */
           <ProceduralModel 

@@ -26,6 +26,7 @@ export interface PlayerState {
   exp?: number;
   maxExp?: number;
   gold?: number;
+  bank?: (import('../types').InventoryItem | null)[];
 }
 
 export interface Projectile {
@@ -140,6 +141,8 @@ export interface UISlice {
   worldReady: boolean;
   isShopOpen: boolean;
   activeShop: Shop | null;
+  isBankOpen: boolean;
+  assetsReady: boolean;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -149,6 +152,7 @@ export interface UISlice {
   setSkillsOpen: (isOpen: boolean) => void;
   setWorldLoading: (isLoading: boolean) => void;
   setWorldReady: (isReady: boolean) => void;
+  setAssetsReady: (isReady: boolean) => void;
   setUIScale: (scale: number) => void;
   setBrightness: (brightness: number) => void;
   setDevMode: (enabled: boolean) => void;
@@ -168,11 +172,12 @@ export interface UISlice {
   setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
   setShopOpen: (isOpen: boolean) => void;
   setActiveShop: (shop: Shop | null) => void;
+  setBankOpen: (isOpen: boolean) => void;
 }
 
 export interface DialogueOption {
   label: string;
-  action: 'quest' | 'dialogue' | 'close' | 'shop';
+  action: 'quest' | 'dialogue' | 'close' | 'shop' | 'bank';
   targetId?: string;
 }
 

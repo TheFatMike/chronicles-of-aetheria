@@ -174,15 +174,7 @@ export default function App() {
             transition={{ duration: 0.8 }}
             className="fixed inset-0 z-200"
           >
-            <LoadingScreen 
-              message={
-                showDisconnected 
-                  ? "LOST CONNECTION... REWEAVING THREADS" 
-                  : !connected 
-                    ? "AWAKENING THE REALM (Waking Server)..." 
-                    : "MANIFESTING WORLD... WEAVING DATA"
-              } 
-            />
+            <LoadingStatusWrapper showDisconnected={showDisconnected} connected={connected} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -259,3 +251,24 @@ export default function App() {
     </div>
   );
 }
+
+const LoadingStatusWrapper = ({ showDisconnected, connected }: { showDisconnected: boolean, connected: boolean }) => {
+  const worldReady = useGameStore(s => s.worldReady);
+  const assetsReady = useGameStore(s => s.assetsReady);
+  
+  return (
+    <LoadingScreen 
+      message={
+        showDisconnected 
+          ? "LOST CONNECTION... REWEAVING THREADS" 
+          : !connected 
+            ? "AWAKENING THE REALM (Waking Server)..." 
+            : !worldReady 
+              ? "MANIFESTING WORLD... WEAVING DATA"
+              : !assetsReady
+                ? "FORGING REALM... MANIFESTING MODELS"
+                : "MANIFESTING WORLD... WEAVING DATA"
+      } 
+    />
+  );
+};

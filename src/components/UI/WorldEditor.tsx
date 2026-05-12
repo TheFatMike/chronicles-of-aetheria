@@ -218,8 +218,8 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
         name: isNPC ? (template?.label || 'Villager') : undefined,
         role: isNPC ? (template?.role || template?.label || 'Villager') : undefined,
         pos: [point.x, point.y || 0, point.z],
-        rot: isSpawner ? [0, 0, 0] : [0, Math.random() * Math.PI * 2, 0],
-        scale: isSpawner ? 1 : (scale || 1) * (0.9 + Math.random() * 0.2),
+        rot: [0, 0, 0],
+        scale: isSpawner ? 1 : (scale || 1),
         modelUrl: modelUrl || template?.modelUrl,
         color: isNPC ? (template?.color || '#facc15') : undefined
       };

@@ -92,3 +92,22 @@ export const SplitStackSchema = z.object({
 export const DestroyItemSchema = z.object({
   inventoryIndex: z.number().int().min(0).max(29)
 });
+
+export const BankDepositSchema = z.object({
+  inventoryIndex: z.number().int().min(0).max(29),
+  bankIndex: z.number().int().min(0).max(49).optional(),
+  amount: z.number().int().positive().optional(),
+  all: z.boolean().optional()
+});
+
+export const BankWithdrawSchema = z.object({
+  bankIndex: z.number().int().min(0).max(49),
+  inventoryIndex: z.number().int().min(0).max(29).optional(),
+  amount: z.number().int().positive().optional(),
+  all: z.boolean().optional()
+});
+
+export const BankMoveSchema = z.object({
+  fromIndex: z.number().int().min(0).max(49),
+  toIndex: z.number().int().min(0).max(49)
+});

@@ -72,6 +72,7 @@ export const handleCreateCharacter = async (socket: Socket, data: any, userId: s
         hp: maxHp,
         mp: maxMp,
         inventory: initialInventory,
+        bank: Array(50).fill(null),
         hotbar: Array(10).fill(null),
         equipment: initialEquipment,
         role: userRole,

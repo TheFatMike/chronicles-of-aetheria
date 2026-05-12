@@ -4,8 +4,8 @@
  * Handles patrolling, aggro states, pathfinding, and combat decision-making.
  * @importance Essential: Drives the behavior of enemies and NPCs, making the game world feel alive and challenging.
  */
-import { entities, worldObjects, dirtyEntities } from "../state";
-import { checkWorldCollision, updateInGrid, entityGrid, objectGrid } from "./spatial";
+import { entities, worldObjects, dirtyEntities, terrainData } from "../state";
+import { checkWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight } from "./spatial";
 
 const waypointCache = new Map<string, any[]>();
 
@@ -28,24 +28,56 @@ export const initAIWorker = () => {
 };
 
 export const updateEntityAI = (tickTime: number) => {
+  const GRAVITY = 20; // units per second squared
+  const dt = tickTime / 1000;
+
   for (const entity of entities.values()) {
     if (entity.isDead) continue;
-    const speed = entity.stats.moveSpeed * (tickTime / 1000);
+    
     const oldPos: [number, number, number] = [...entity.pos] as [number, number, number];
     const oldAIState = entity.aiState;
+
+    // 1. Gravity & Ground Detection (Moving Entities Only)
+    // We skip physics for NPCs to allow precise editor placement on complex surfaces like stairs.
+    if (entity.type !== 'npc') {
+      const currentGroundY = getGroundHeight(entity.pos, terrainData);
+      const GRAVITY = 20;
+      const dt = tickTime / 1000;
+
+      if (entity.pos[1] > currentGroundY) {
+        entity.velocity = entity.velocity || { x: 0, y: 0, z: 0 };
+        entity.velocity.y -= GRAVITY * dt;
+        entity.pos[1] += entity.velocity.y * dt;
+        
+        if (entity.pos[1] <= currentGroundY) {
+          entity.pos[1] = currentGroundY;
+          entity.velocity.y = 0;
+        }
+        dirtyEntities.add(entity.id);
+      } else if (entity.pos[1] < currentGroundY) {
+        entity.pos[1] = currentGroundY;
+        dirtyEntities.add(entity.id);
+      }
+    }
+
+    // 2. Horizontal Movement AI (Skip for NPCs)
+    if (entity.type === 'npc') continue;
+
+    const speed = entity.stats.moveSpeed * dt;
     
     const moveWithCollision = (dx: number, dz: number, s: number) => {
       const mag = Math.sqrt(dx*dx + dz*dz);
       if (mag < 0.01) return;
       const nx = (dx/mag) * s;
       const nz = (dz/mag) * s;
-      const nextPos: [number, number, number] = [entity.pos[0] + nx, 0, entity.pos[2] + nz];
+      
+      const nextPos: [number, number, number] = [entity.pos[0] + nx, entity.pos[1], entity.pos[2] + nz];
       
       if (!checkWorldCollision(nextPos, 0.5)) {
         entity.pos = nextPos;
       } else {
-         const tryX: [number, number, number] = [entity.pos[0] + nx, 0, entity.pos[2]];
-         const tryZ: [number, number, number] = [entity.pos[0], 0, entity.pos[2] + nz];
+         const tryX: [number, number, number] = [entity.pos[0] + nx, entity.pos[1], entity.pos[2]];
+         const tryZ: [number, number, number] = [entity.pos[0], entity.pos[1], entity.pos[2] + nz];
          if (!checkWorldCollision(tryX, 0.5)) entity.pos = tryX;
          else if (!checkWorldCollision(tryZ, 0.5)) entity.pos = tryZ;
       }
@@ -107,7 +139,7 @@ export const updateEntityAI = (tickTime: number) => {
       }
     }
 
-    if (entity.pos[0] !== oldPos[0] || entity.pos[2] !== oldPos[2] || entity.aiState !== oldAIState) {
+    if (entity.pos[0] !== oldPos[0] || entity.pos[2] !== oldPos[2] || entity.pos[1] !== oldPos[1] || entity.aiState !== oldAIState) {
       updateInGrid(entityGrid, entity.id, oldPos, entity.pos);
       dirtyEntities.add(entity.id);
     }

@@ -24,14 +24,23 @@ export const PlacementGhost = memo(({ editorSelectedType, gridSnap }: { editorSe
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
     
-    // Find the floor or terrain (specifically target these for editor tools)
-    const floor = intersects.find(i => 
-      i.object.name === 'terrain_mesh' || 
-      i.object.name === 'starting_plaza' ||
-      (i.object as any).geometry?.type === 'PlaneGeometry'
-    );
+    // Find the floor, terrain, or any collidable world object
+    const collidableHits = intersects.filter(i => {
+      if (i.object.name.includes('editor_helper')) return false;
+      return (
+        i.object.name === 'terrain_mesh' || 
+        i.object.name === 'starting_plaza' ||
+        (i.object as any).geometry?.type === 'PlaneGeometry' ||
+        i.object.userData.isCollidable ||
+        (i.object.parent as any)?.isWorldObject
+      );
+    });
     
-    if (floor) {
+    if (collidableHits.length > 0) {
+      // Pick the HIGHEST surface hit
+      const floor = collidableHits.reduce((highest, current) => {
+        return (current.point.y > highest.point.y) ? current : highest;
+      }, collidableHits[0]);
       let p = floor.point;
       
       if (isDebugEnabled('CLIENT', 'EDITOR') && performance.now() % 500 < 16) {

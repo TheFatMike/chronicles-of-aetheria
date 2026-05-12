@@ -60,7 +60,7 @@ export const startHeartbeat = (io: Server) => {
               playerLastGridCell.set(player.id, currentCell);
             }
             
-            const nearbyEntities = filterNearby(entities, player.pos, 80, 'entity');
+            const nearbyEntities = filterNearby(entities, player.pos, 150, 'entity');
             const known = playerKnownEntities.get(player.id) || new Set<string>();
             
             // OPTIMIZATION: Efficiently identify new and left entities without expensive array conversions
@@ -70,7 +70,6 @@ export const startHeartbeat = (io: Server) => {
               nearbyIds.add(e.id);
               if (!known.has(e.id)) {
                 newEntities.push(e);
-                if (newEntities.length >= 5) break; // Drip-feed discovery
               }
             }
 

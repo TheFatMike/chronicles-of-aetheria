@@ -109,4 +109,5 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1 },
   'npc_guard_captain': { type: 'npc_guard_captain', label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1 },
   'npc_instructor_kael': { type: 'npc_instructor_kael', label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1 },
+  'npc_banker': { type: 'npc_banker', label: 'Banker', role: 'Banker', color: '#fbbf24', category: 'npcs', scale: 1 },
 };

@@ -1,3 +1,4 @@
+import { useThree } from "@react-three/fiber";
 import { useCallback, useRef } from "react";
 import * as THREE from "three";
 import { useGameStore } from "../store/useGameStore";
@@ -11,6 +12,8 @@ export const useWorldInteraction = (socket: any) => {
 
   const lastClickTime = useRef<number>(0);
 
+  const { raycaster, mouse, camera, scene } = useThree();
+
   const onFloorClick = useCallback((e: any) => {
     const now = Date.now();
     
@@ -21,8 +24,9 @@ export const useWorldInteraction = (socket: any) => {
     // Only place/interact on left click (button 0)
     if (e.button !== 0) return;
     
-    // Only clear target if the floor is the FIRST thing we hit (not clicking through to something else)
-    if (e.intersections[0]?.object !== e.eventObject) return;
+    // In Editor mode, we allow clicking on anything to place on top of it.
+    // In normal play mode, we check if we hit the floor first.
+    if (!isEditorOpen && e.intersections[0]?.object !== e.eventObject) return;
 
     // Don't clear target if we're hovering over something else (UI or Entity)
     const isHoveringOther = document.body.classList.contains('npc-hover') || 
@@ -38,7 +42,23 @@ export const useWorldInteraction = (socket: any) => {
     }
 
     e.stopPropagation();
-    let { point } = e;
+
+    // EXPLICIT RAYCAST: Find the highest collidable surface
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    const collidableHits = intersects.filter(hit => {
+      if (hit.object.name === 'placement_ghost' || hit.object.userData?.isGhost || hit.object.name.includes('editor_helper')) return false;
+      return hit.object.userData?.isCollidable || hit.object.parent?.userData?.isCollidable || (hit.object.parent as any)?.isWorldObject;
+    });
+
+    if (collidableHits.length === 0) return;
+
+    // Pick the HIGHEST surface
+    const highestHit = collidableHits.reduce((highest, current) => {
+      return (current.point.y > highest.point.y) ? current : highest;
+    }, collidableHits[0]);
+
+    let point = highestHit.point.clone();
     
     // Terrain Sculpting Logic
     if (editorSelectedType.startsWith('terrain_')) {
@@ -86,7 +106,7 @@ export const useWorldInteraction = (socket: any) => {
 
     // Apply grid snap to placement
     if (gridSnap) {
-      point = new THREE.Vector3(
+      point.set(
         Math.round(point.x * 2) / 2,
         point.y,
         Math.round(point.z * 2) / 2
@@ -97,14 +117,14 @@ export const useWorldInteraction = (socket: any) => {
 
     const placeEvent = new CustomEvent('editor_place_object', { 
       detail: { 
-        point, 
+        point: [point.x, point.y, point.z], 
         type: editorSelectedType,
         modelUrl: template?.modelUrl,
         scale: template?.scale || 1
       } 
     });
     window.dispatchEvent(placeEvent);
-  }, [editorSelectedType, gridSnap, isEditorOpen, socket]);
+  }, [editorSelectedType, gridSnap, isEditorOpen, socket, raycaster, mouse, camera, scene]);
 
   const handlePointerMove = useCallback((e: any) => {
     if (!isEditorOpen) return;

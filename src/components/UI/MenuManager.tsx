@@ -21,6 +21,7 @@ import { getNPCDialogue } from "../../data/npcDialogues";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { Shop } from "./Shop";
 import { SHOPS } from "../../data/shops";
+import { Bank } from "./Bank";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -62,7 +63,9 @@ export const MenuManager = ({
     isShopOpen,
     setShopOpen,
     activeShop,
-    setActiveShop
+    setActiveShop,
+    isBankOpen,
+    setBankOpen
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -86,7 +89,9 @@ export const MenuManager = ({
     isShopOpen: s.isShopOpen,
     setShopOpen: s.setShopOpen,
     activeShop: s.activeShop,
-    setActiveShop: s.setActiveShop
+    setActiveShop: s.setActiveShop,
+    isBankOpen: s.isBankOpen,
+    setBankOpen: s.setBankOpen
   })));
 
   return (
@@ -198,6 +203,10 @@ export const MenuManager = ({
                 setShopOpen(true);
                 setActiveDialogue(null);
               }
+            } else if (option.action === 'bank') {
+              setBankOpen(true);
+              setInventoryOpen(true);
+              setActiveDialogue(null);
             }
           }}
         />
@@ -218,6 +227,35 @@ export const MenuManager = ({
             if (socket) {
               socket.emit("sell_item", { inventoryIndex, shopId: activeShop.id });
             }
+          }}
+        />
+      )}
+      {isBankOpen && (
+        <Bank
+          key="bank-window"
+          bankItems={selectedCharacter.bank || []}
+          inventoryItems={selectedCharacter.inventory || []}
+          onClose={() => {
+            setBankOpen(false);
+          }}
+          onDeposit={(invIdx, bankIdx, amount) => {
+            if (socket) socket.emit("bank_deposit", { 
+              inventoryIndex: invIdx, 
+              bankIndex: bankIdx,
+              amount: amount,
+              all: amount === undefined
+            });
+          }}
+          onWithdraw={(bankIdx, invIdx, amount) => {
+            if (socket) socket.emit("bank_withdraw", { 
+              bankIndex: bankIdx, 
+              inventoryIndex: invIdx,
+              amount: amount,
+              all: amount === undefined
+            });
+          }}
+          onMoveBankItem={(from, to) => {
+            if (socket) socket.emit("bank_move", { fromIndex: from, toIndex: to });
           }}
         />
       )}

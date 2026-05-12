@@ -36,10 +36,10 @@ export const useGameJoin = ({
   useEffect(() => {
     if (!setIsJoining || !selectedCharacter) return;
     
-    // Check if essential data is ready
+    // Check if essential data and assets are ready
     const checkReady = () => {
       const state = useGameStore.getState();
-      return state.worldReady;
+      return state.worldReady && state.assetsReady;
     };
 
     if (useGameStore.getState().isWorldLoading) {

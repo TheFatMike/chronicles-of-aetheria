@@ -88,6 +88,25 @@ export const NPC_DIALOGUE_NODES: Record<string, Record<string, DialogueNode>> = 
         { label: "Goodbye.", action: "close" }
       ]
     }
+  },
+  "banker": {
+    "root": {
+      id: "root",
+      text: "Welcome to the Vault of Aetheria. Your valuables are safer here than in a dragon's hoard. How can I help you?",
+      options: [
+        { label: "I'd like to access my storage.", action: "bank" },
+        { label: "Is it really safe here?", action: "dialogue", targetId: "safety" },
+        { label: "Goodbye.", action: "close" }
+      ]
+    },
+    "safety": {
+      id: "safety",
+      text: "Absolutely. Our vaults are protected by ancient Aetheric seals. Even the Shattering couldn't break them!",
+      options: [
+        { label: "Impressive. I'll access my storage then.", action: "bank" },
+        { label: "Good to know. Goodbye.", action: "close" }
+      ]
+    }
   }
 };
 
@@ -103,6 +122,10 @@ export const NPC_DIALOGUE_METADATA: Record<string, any> = {
     greeting: "Beg pardon, explorer. Could you help a poor farmer with a slime problem?",
     onQuestActive: "Those slimes won't clear themselves out!",
     onQuestComplete: "The harvest is saved! Thank you so much.",
+  },
+  "banker": {
+    default: "Welcome to the Vault of Aetheria. Your valuables are safer here than in a dragon's hoard.",
+    greeting: "Welcome! Are you looking to access your personal storage vault?",
   }
 };
 
@@ -119,11 +142,12 @@ export interface DialogueResult {
  */
 export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, state: any, nodeId?: string): DialogueResult => {
   const { activeQuests, quests } = state;
-  const speakerName = npcName;
-  
-  // 1. If a specific node is requested (and it's not the root), return it
-  if (nodeId && nodeId !== 'root' && NPC_DIALOGUE_NODES[npcType]?.[nodeId]) {
-    const node = NPC_DIALOGUE_NODES[npcType][nodeId];
+  // 1. Normalize npcType (strip npc_ prefix if present)
+  const normalizedType = npcType.startsWith('npc_') ? npcType.replace('npc_', '') : npcType;
+
+  // 2. If a specific node is requested (and it's not the root), return it
+  if (nodeId && nodeId !== 'root' && NPC_DIALOGUE_NODES[normalizedType]?.[nodeId]) {
+    const node = NPC_DIALOGUE_NODES[normalizedType][nodeId];
     return {
       text: node.text,
       options: node.options,
@@ -133,7 +157,7 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
 
   // --- 1. Gather all possible interactions ---
   const npcQuests = (Object.values(quests) as Quest[]).filter((q: Quest) => 
-    q.giverId === npcId || q.giverId === npcType || q.giverName === npcName
+    q.giverId === npcId || q.giverId === normalizedType || q.giverName === npcName
   );
 
   const readyToTurnIn = npcQuests.filter((q: Quest) => {
@@ -167,8 +191,8 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
     }
   }
 
-  const hasDialogueTree = !!NPC_DIALOGUE_NODES[npcType]?.["root"];
-  const rootNode = NPC_DIALOGUE_NODES[npcType]?.["root"];
+  const hasDialogueTree = !!NPC_DIALOGUE_NODES[normalizedType]?.["root"];
+  const rootNode = NPC_DIALOGUE_NODES[normalizedType]?.["root"];
 
   // --- 2. Build the options list ---
   const options: DialogueOption[] = [];
@@ -242,7 +266,7 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
   // Priority 5: If on an active quest but none ready to turn in/available
   if (currentlyActive.length > 0) {
     const q = currentlyActive[0];
-    const meta = NPC_DIALOGUE_METADATA[npcType] || {};
+    const meta = NPC_DIALOGUE_METADATA[normalizedType] || {};
     return {
       text: meta.onQuestActive || `How goes the task for ${q.title}? Keep at it!`,
       type: 'reminder'
@@ -250,7 +274,7 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
   }
 
   // Final Fallback: Default dialogue
-  const meta = NPC_DIALOGUE_METADATA[npcType] || {};
+  const meta = NPC_DIALOGUE_METADATA[normalizedType] || {};
   return {
     text: meta.default || "The winds of Aetheria are cold today. Watch your step, explorer.",
     type: 'default'

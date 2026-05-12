@@ -80,7 +80,7 @@ export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color
         onAttack={onAttack}
       >
         {modelUrl ? (
-          <GLBModel url={modelUrl} scale={1} position={[0, 0, 0]} rotation={[0, 0, 0]} />
+          <GLBModel url={modelUrl} scale={1} position={[0, 0, 0]} rotation={[0, 0, 0]} isCollidable={false} />
         ) : (
           <Humanoid color={color} isMoving={isMoving} isGrounded={true} isAttacking={isAttacking} />
         )}
