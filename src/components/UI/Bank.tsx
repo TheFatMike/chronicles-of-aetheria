@@ -13,12 +13,14 @@ import { useScaffold } from "./GameScaffold";
 import { InventorySlot } from "./InventorySlot";
 import { ItemTooltip } from "./ItemTooltip";
 
+import { QuantitySelector } from "./QuantitySelector";
+
 interface BankProps {
   bankItems: (InventoryItem | null)[];
   inventoryItems: (InventoryItem | null)[];
   onClose: () => void;
-  onDeposit: (inventoryIndex: number, bankIndex?: number, amount?: number) => void;
-  onWithdraw: (bankIndex: number, inventoryIndex?: number, amount?: number) => void;
+  onDeposit: (inventoryIndex: number, bankIndex?: number, amount?: number, all?: boolean) => void;
+  onWithdraw: (bankIndex: number, inventoryIndex?: number, amount?: number, all?: boolean) => void;
   onMoveBankItem: (fromIndex: number, toIndex: number) => void;
 }
 
@@ -33,7 +35,21 @@ export const Bank = React.memo(({
   const [dragOverIndex, setDragOverIndex] = useState<{type: 'bank' | 'inventory', index: number} | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<{item: InventoryItem, x: number, y: number} | null>(null);
-  const [bankContextMenu, setBankContextMenu] = useState<{ x: number, y: number, item: InventoryItem, index: number, type: 'bank' | 'inventory' } | null>(null);
+  const [quantitySelector, setQuantitySelector] = useState<{
+    isOpen: boolean;
+    item: InventoryItem;
+    type: 'deposit' | 'withdraw';
+    index: number;
+  } | null>(null);
+
+  const [bankContextMenu, setBankContextMenu] = useState<{ 
+    x: number, 
+    y: number, 
+    item: InventoryItem, 
+    index: number, 
+    type: 'bank' | 'inventory' 
+  } | null>(null);
+
   const { toLogical } = useScaffold();
 
   // Ensure we have exactly 50 bank slots (5 rows of 10)
@@ -69,7 +85,7 @@ export const Bank = React.memo(({
       if (data.type === 'inventory' && toType === 'bank') {
         onDeposit(data.fromIndex, toIndex);
       } else if (data.type === 'bank' && toType === 'inventory') {
-        onWithdraw(data.fromIndex);
+        onWithdraw(data.fromIndex, undefined);
       } else if (data.type === 'bank' && toType === 'bank') {
         if (data.fromIndex !== toIndex) onMoveBankItem(data.fromIndex, toIndex);
       }
@@ -89,25 +105,16 @@ export const Bank = React.memo(({
     const { index, type, item } = bankContextMenu;
     
     if (type === 'inventory') {
-      if (action === 'single') onDeposit(index, -1);
-      else if (action === 'all') onDeposit(index, -1); // Server logic handles 'all' via quantity match or flag
+      if (action === 'single') onDeposit(index, undefined, 1, false);
+      else if (action === 'all') onDeposit(index, undefined, undefined, true);
       else if (action === 'x') {
-        const val = prompt(`How many ${item.name} to deposit?`, item.quantity?.toString());
-        const amount = parseInt(val || '0');
-        if (amount > 0) {
-          // Trigger deposit with specific amount (requires server update to schema)
-          (onDeposit as any)(index, -1, amount);
-        }
+        setQuantitySelector({ isOpen: true, item, type: 'deposit', index });
       }
     } else {
-      if (action === 'single') onWithdraw(index, -1);
-      else if (action === 'all') onWithdraw(index, -1);
+      if (action === 'single') onWithdraw(index, undefined, 1, false);
+      else if (action === 'all') onWithdraw(index, undefined, undefined, true);
       else if (action === 'x') {
-        const val = prompt(`How many ${item.name} to withdraw?`, item.quantity?.toString());
-        const amount = parseInt(val || '0');
-        if (amount > 0) {
-          (onWithdraw as any)(index, -1, amount);
-        }
+        setQuantitySelector({ isOpen: true, item, type: 'withdraw', index });
       }
     }
     setBankContextMenu(null);
@@ -253,6 +260,24 @@ export const Bank = React.memo(({
           <ItemTooltip item={hoveredItem.item} x={hoveredItem.x} y={hoveredItem.y} />
         )}
       </AnimatePresence>
+
+      {/* Quantity Selector Modal */}
+      {quantitySelector && (
+        <QuantitySelector
+          isOpen={quantitySelector.isOpen}
+          title={quantitySelector.type === 'deposit' ? 'DEPOSIT QUANTITY' : 'WITHDRAW QUANTITY'}
+          max={quantitySelector.item.quantity || 1}
+          onConfirm={(amount) => {
+            if (quantitySelector.type === 'deposit') {
+              onDeposit(quantitySelector.index, undefined, amount, false);
+            } else {
+              onWithdraw(quantitySelector.index, undefined, amount, false);
+            }
+            setQuantitySelector(null);
+          }}
+          onCancel={() => setQuantitySelector(null)}
+        />
+      )}
     </div>
   );
 });

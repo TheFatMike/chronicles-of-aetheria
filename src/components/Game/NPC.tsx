@@ -18,6 +18,7 @@ interface NPCProps {
   id: string;
   name: string;
   role: string;
+  entityClass?: string;
   position: [number, number, number];
   rotation?: [number, number, number];
   color?: string;
@@ -33,7 +34,7 @@ interface NPCProps {
 
 
 
-export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false, modelUrl }: NPCProps) => {
+export const NPC = memo(({ id, name, role, entityClass, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false, modelUrl }: NPCProps) => {
   const activeQuests = useGameStore(useShallow(state => state.activeQuests));
   
   // Find quests associated with this NPC
@@ -74,6 +75,7 @@ export const NPC = memo(({ id, name, role, position, rotation = [0, 0, 0], color
         rotation={rotation}
         color={color}
         role={role}
+        entityClass={entityClass}
         hp={hp}
         maxHp={maxHp}
         onInteract={onInteract}

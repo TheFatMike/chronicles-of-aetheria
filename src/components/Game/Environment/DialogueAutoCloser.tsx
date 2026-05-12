@@ -2,39 +2,48 @@ import { memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "../../../store/useGameStore";
 
-export const DialogueAutoCloser = memo(() => {
+export const InteractionAutoCloser = memo(() => {
   const activeDialogue = useGameStore(state => state.activeDialogue);
   const setActiveDialogue = useGameStore(state => state.setActiveDialogue);
+  
+  const isShopOpen = useGameStore(state => state.isShopOpen);
+  const activeShopNPCId = useGameStore(state => state.activeShopNPCId);
+  const setShopOpen = useGameStore(state => state.setShopOpen);
+  
+  const isBankOpen = useGameStore(state => state.isBankOpen);
+  const activeBankNPCId = useGameStore(state => state.activeBankNPCId);
+  const setBankOpen = useGameStore(state => state.setBankOpen);
+  
   const entities = useGameStore(state => state.entities);
   const worldObjects = useGameStore(state => state.worldObjects);
 
   useFrame(() => {
-    if (!activeDialogue) return;
+    const state = useGameStore.getState();
+    const localPlayer = state.players[state.id || ""];
+    if (!localPlayer) return;
 
-    // Find the speaker's position
-    let speakerPos: [number, number, number] | null = null;
-    
-    // Check dynamic entities first
-    if (entities[activeDialogue.npcId]) {
-      speakerPos = entities[activeDialogue.npcId].pos;
-    } 
-    // Check static world objects next
-    else if (worldObjects[activeDialogue.npcId]) {
-      speakerPos = worldObjects[activeDialogue.npcId].pos;
+    const checkDistance = (npcId: string, onClose: () => void) => {
+      let npcPos: [number, number, number] | null = null;
+      if (entities[npcId]) npcPos = entities[npcId].pos;
+      else if (worldObjects[npcId]) npcPos = worldObjects[npcId].pos;
+
+      if (npcPos) {
+        const distSq = (localPlayer.pos[0] - npcPos[0])**2 + 
+                       (localPlayer.pos[2] - npcPos[2])**2;
+        if (distSq > 100) onClose(); // 10m range
+      }
+    };
+
+    if (activeDialogue) {
+      checkDistance(activeDialogue.npcId, () => setActiveDialogue(null));
     }
 
-    if (speakerPos) {
-      const state = useGameStore.getState();
-      const localPlayer = state.players[state.id || ""];
-      if (!localPlayer) return;
+    if (isShopOpen && activeShopNPCId) {
+      checkDistance(activeShopNPCId, () => setShopOpen(false));
+    }
 
-      const distSq = (localPlayer.pos[0] - speakerPos[0])**2 + 
-                     (localPlayer.pos[2] - speakerPos[2])**2;
-      
-      // Auto-close if distance > 10 meters (100 square)
-      if (distSq > 100) {
-        setActiveDialogue(null);
-      }
+    if (isBankOpen && activeBankNPCId) {
+      checkDistance(activeBankNPCId, () => setBankOpen(false));
     }
   });
 

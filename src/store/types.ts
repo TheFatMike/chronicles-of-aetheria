@@ -136,12 +136,21 @@ export interface UISlice {
   brightness: number;
   editorStartPosition: [number, number, number] | null;
   editorMousePoint: [number, number, number] | null;
-  contextMenu: { x: number; y: number; title: string; targetId: string } | null;
+  contextMenu: { 
+    x: number; 
+    y: number; 
+    title: string; 
+    targetId: string;
+    targetType?: 'player' | 'npc' | 'enemy';
+    targetRole?: string;
+  } | null;
   activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
   worldReady: boolean;
   isShopOpen: boolean;
   activeShop: Shop | null;
+  activeShopNPCId: string | null;
   isBankOpen: boolean;
+  activeBankNPCId: string | null;
   assetsReady: boolean;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
@@ -168,11 +177,18 @@ export interface UISlice {
   setEditorMousePoint: (pos: [number, number, number] | null) => void;
   setSelectedWorldObjectId: (id: string | null) => void;
   requestTeleport: (pos: [number, number, number] | null) => void;
-  setContextMenu: (menu: { x: number; y: number; title: string; targetId: string } | null) => void;
+  setContextMenu: (menu: { 
+    x: number; 
+    y: number; 
+    title: string; 
+    targetId: string;
+    targetType?: 'player' | 'npc' | 'enemy';
+    targetRole?: string;
+  } | null) => void;
   setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
-  setShopOpen: (isOpen: boolean) => void;
+  setShopOpen: (isOpen: boolean, npcId?: string) => void;
   setActiveShop: (shop: Shop | null) => void;
-  setBankOpen: (isOpen: boolean) => void;
+  setBankOpen: (isOpen: boolean, npcId?: string) => void;
 }
 
 export interface DialogueOption {

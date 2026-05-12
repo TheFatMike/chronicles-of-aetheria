@@ -34,7 +34,9 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   assetsReady: false,
   isShopOpen: false,
   activeShop: null,
+  activeShopNPCId: null,
   isBankOpen: false,
+  activeBankNPCId: null,
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -95,7 +97,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setContextMenu: (menu) => set({ contextMenu: menu }),
   activeLoot: null,
   setActiveLoot: (loot) => set({ activeLoot: loot }),
-  setShopOpen: (isOpen) => set({ isShopOpen: isOpen }),
+  setShopOpen: (isOpen, npcId) => set({ isShopOpen: isOpen, activeShopNPCId: npcId || null }),
   setActiveShop: (shop) => set({ activeShop: shop }),
-  setBankOpen: (isOpen) => set({ isBankOpen: isOpen }),
+  setBankOpen: (isOpen, npcId) => set({ isBankOpen: isOpen, activeBankNPCId: npcId || null }),
 });

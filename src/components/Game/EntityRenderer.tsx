@@ -60,6 +60,7 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
             id={ent.id} 
             name={ent.name} 
             role={ent.class || "Villager"} 
+            entityClass={ent.entityClass}
             position={ent.pos} 
             rotation={ent.rot}
             color={ent.color || "#facc15"} 

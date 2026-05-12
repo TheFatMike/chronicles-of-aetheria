@@ -31,6 +31,7 @@ interface BaseEntityProps {
   maxHp?: number;
   onInteract?: () => void;
   onAttack?: () => void;
+  entityClass?: string;
   className?: string; // For display in target UI
   isDead?: boolean;
 }
@@ -44,6 +45,7 @@ export const BaseEntity = memo(({
   rotation = [0, 0, 0],
   color,
   role,
+  entityClass,
   selectionColor,
   children,
   nameOffset = 2.2,
@@ -213,7 +215,7 @@ export const BaseEntity = memo(({
       
       const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
 
-      if (e.button === 2 && type === "player") {
+      if (e.button === 2 && (type === "player" || type === "npc")) {
         // Target first if not targeted
         if (!isTargeted) {
           setTarget(targetData);
@@ -224,18 +226,33 @@ export const BaseEntity = memo(({
           x: e.nativeEvent.clientX,
           y: e.nativeEvent.clientY,
           title: name,
-          targetId: id
+          targetId: id,
+          targetType: type,
+          targetRole: entityClass || role
         });
       } else if (e.button === 0) {
-        // 1. If not targeted, target it first
+        const state = useGameStore.getState();
+        const localPlayer = state.players[state.id || ""];
+        
+        // Always target on left click
         if (!isTargeted) {
           setTarget(targetData);
-        } else {
-          // 2. If already targeted, check distance for interaction/attack
-          const state = useGameStore.getState();
-          const localPlayer = state.players[state.id || ""];
-          if (!localPlayer) return;
+        }
 
+        // If it's an NPC, try to interact immediately if in range
+        if (type === 'npc' && localPlayer) {
+          const distDx = localPlayer.pos[0] - position[0];
+          const distDz = localPlayer.pos[2] - position[2];
+          const distance = Math.sqrt(distDx * distDx + distDz * distDz);
+
+          if (distance <= 5) {
+            if (onInteract) onInteract();
+            return; // Skip the secondary logic below
+          }
+        }
+
+        // Secondary logic for already targeted or out-of-range
+        if (isTargeted && localPlayer) {
           const distDx = localPlayer.pos[0] - position[0];
           const distDz = localPlayer.pos[2] - position[2];
           const distance = Math.sqrt(distDx * distDx + distDz * distDz);

@@ -16,7 +16,7 @@ import { SkillBook } from "./SkillBook";
 import { CharacterInfo } from "./CharacterInfo";
 import { Character, InventoryItem, EquipmentSlots } from "../../types";
 import { ContextMenu } from "./ContextMenu";
-import { UserPlus, Handshake, MessageSquare, X } from "lucide-react";
+import { UserPlus, Handshake, MessageSquare, X, ShoppingCart, Landmark } from "lucide-react";
 import { getNPCDialogue } from "../../data/npcDialogues";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { Shop } from "./Shop";
@@ -238,20 +238,20 @@ export const MenuManager = ({
           onClose={() => {
             setBankOpen(false);
           }}
-          onDeposit={(invIdx, bankIdx, amount) => {
+          onDeposit={(invIdx, bankIdx, amount, all) => {
             if (socket) socket.emit("bank_deposit", { 
               inventoryIndex: invIdx, 
-              bankIndex: bankIdx,
+              bankIndex: bankIdx === -1 ? undefined : bankIdx,
               amount: amount,
-              all: amount === undefined
+              all: all
             });
           }}
-          onWithdraw={(bankIdx, invIdx, amount) => {
+          onWithdraw={(bankIdx, invIdx, amount, all) => {
             if (socket) socket.emit("bank_withdraw", { 
               bankIndex: bankIdx, 
-              inventoryIndex: invIdx,
+              inventoryIndex: invIdx === -1 ? undefined : invIdx,
               amount: amount,
-              all: amount === undefined
+              all: all
             });
           }}
           onMoveBankItem={(from, to) => {
@@ -268,44 +268,162 @@ export const MenuManager = ({
         />
       )}
       {/* Handled independently below */}
-      {/* Removed {activeMenu === 'menu' && ...} */}
 
-      {/* Player Context Menu */}
+      {/* Dynamic Context Menu */}
       {contextMenu && (
         <ContextMenu
-          key="player-context-menu"
+          key="dynamic-context-menu"
           x={contextMenu.x}
           y={contextMenu.y}
           title={contextMenu.title}
-          options={[
-            {
-              label: "Invite to Party",
-              icon: <UserPlus size={14} />,
-              onClick: () => {
-                if (socket) socket.emit("party_invite", contextMenu.targetId);
+          options={(() => {
+            if (contextMenu.targetType === 'player') {
+              return [
+                {
+                  label: "Invite to Party",
+                  icon: <UserPlus size={14} />,
+                  onClick: () => {
+                    if (socket) socket.emit("party_invite", contextMenu.targetId);
+                  }
+                },
+                {
+                  label: "Trade Request",
+                  icon: <Handshake size={14} />,
+                  onClick: () => {
+                    if (socket) socket.emit("trade_request", contextMenu.targetId);
+                  }
+                },
+                {
+                  label: "Cancel",
+                  icon: <X size={14} />,
+                  onClick: () => {}
+                }
+              ];
+            } else if (contextMenu.targetType === 'npc') {
+              const options = [
+                {
+                  label: "Talk",
+                  icon: <MessageSquare size={14} />,
+                  onClick: () => {
+                    // Check distance
+                    const state = useGameStore.getState();
+                    const player = state.players[state.id || ""];
+                    const ent = state.entities[contextMenu.targetId];
+                    if (!player || !ent) return;
+
+                    const dx = player.pos[0] - ent.pos[0];
+                    const dz = player.pos[2] - ent.pos[2];
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+
+                    if (dist > 5) {
+                      addMessage({
+                        id: "sys-" + Date.now(),
+                        sender: "SYSTEM",
+                        text: `You are too far away to talk to ${contextMenu.title}.`,
+                        timestamp: Date.now(),
+                        color: "#ff4444"
+                      });
+                      return;
+                    }
+
+                    const dialogue = getNPCDialogue(contextMenu.targetId, contextMenu.targetRole || 'npc', contextMenu.title, {
+                      activeQuests: activeQuests,
+                      quests: SAMPLE_QUESTS
+                    });
+                    if (dialogue) {
+                      setActiveDialogue({
+                        speaker: contextMenu.title,
+                        npcId: contextMenu.targetId,
+                        npcType: contextMenu.targetRole || 'npc',
+                        ...dialogue
+                      });
+                    }
+                  }
+                }
+              ];
+
+              const role = contextMenu.targetRole?.toLowerCase() || '';
+              const id = contextMenu.targetId.toLowerCase();
+
+              // Shop options
+              if (role.includes('merchant') || role.includes('blacksmith') || id.includes('merchant') || id.includes('blacksmith')) {
+                options.push({
+                  label: "Shop",
+                  icon: <ShoppingCart size={14} />,
+                  onClick: () => {
+                    // Check distance
+                    const state = useGameStore.getState();
+                    const player = state.players[state.id || ""];
+                    const ent = state.entities[contextMenu.targetId];
+                    if (!player || !ent) return;
+
+                    const dx = player.pos[0] - ent.pos[0];
+                    const dz = player.pos[2] - ent.pos[2];
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+
+                    if (dist > 5) {
+                      addMessage({
+                        id: "sys-" + Date.now(),
+                        sender: "SYSTEM",
+                        text: `You are too far away to shop with ${contextMenu.title}.`,
+                        timestamp: Date.now(),
+                        color: "#ff4444"
+                      });
+                      return;
+                    }
+
+                    const shopId = id.includes('blacksmith') ? 'blacksmith_basic' : 'general_merchant';
+                    const shop = SHOPS[shopId];
+                    if (shop) {
+                      setActiveShop(shop);
+                      setShopOpen(true, contextMenu.targetId);
+                    }
+                  }
+                });
               }
-            },
-            {
-              label: "Trade Request",
-              icon: <Handshake size={14} />,
-              onClick: () => {
-                if (socket) socket.emit("trade_request", contextMenu.targetId);
+
+              // Bank options
+              if (role.includes('banker') || id.includes('banker')) {
+                options.push({
+                  label: "Bank",
+                  icon: <Landmark size={14} />,
+                  onClick: () => {
+                    // Check distance
+                    const state = useGameStore.getState();
+                    const player = state.players[state.id || ""];
+                    const ent = state.entities[contextMenu.targetId];
+                    if (!player || !ent) return;
+
+                    const dx = player.pos[0] - ent.pos[0];
+                    const dz = player.pos[2] - ent.pos[2];
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+
+                    if (dist > 5) {
+                      addMessage({
+                        id: "sys-" + Date.now(),
+                        sender: "SYSTEM",
+                        text: `You are too far away to access the bank.`,
+                        timestamp: Date.now(),
+                        color: "#ff4444"
+                      });
+                      return;
+                    }
+
+                    setBankOpen(true, contextMenu.targetId);
+                  }
+                });
               }
-            },
-            {
-              label: "Whisper",
-              icon: <MessageSquare size={14} />,
-              onClick: () => {
-                // Future implementation
-              }
-            },
-            {
-              label: "Cancel",
-              icon: <X size={14} />,
-              onClick: () => {},
-              variant: "danger"
+
+              options.push({
+                label: "Cancel",
+                icon: <X size={14} />,
+                onClick: () => {}
+              });
+
+              return options;
             }
-          ]}
+            return [];
+          })()}
           onClose={() => setContextMenu(null)}
         />
       )}

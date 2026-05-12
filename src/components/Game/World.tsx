@@ -14,7 +14,7 @@ import { BrushPreview } from "./BrushPreview";
 import { OtherPlayers } from "./OtherPlayers";
 import { SpawnerRenderer } from "./SpawnerRenderer";
 import { GlobalEnvironment } from "./Environment/Lighting";
-import { DialogueAutoCloser } from "./Environment/DialogueAutoCloser";
+import { InteractionAutoCloser } from "./Environment/DialogueAutoCloser";
 import { useWorldInteraction } from "../../hooks/useWorldInteraction";
 
 interface WorldProps {
@@ -31,7 +31,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps) => {
   return (
     <>
       <GlobalEnvironment />
-      <DialogueAutoCloser />
+      <InteractionAutoCloser />
 
       <group 
         name="collidables_root" 
