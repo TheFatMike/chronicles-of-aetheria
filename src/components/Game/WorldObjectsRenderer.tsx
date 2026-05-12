@@ -46,10 +46,14 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
       const currentObjects = worldObjectsRef.current;
       const camPos = camera.position;
 
+      const state = useGameStore.getState();
+      const localPlayer = state.players[state.id || ""];
+      if (!localPlayer) return;
+
       const filtered = currentObjects.filter(obj => {
         if (selectedWorldObjectId === obj.id) return true;
-        const dx = obj.pos[0] - camPos.x;
-        const dz = obj.pos[2] - camPos.z;
+        const dx = obj.pos[0] - localPlayer.pos[0];
+        const dz = obj.pos[2] - localPlayer.pos[2];
         return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
       });
       

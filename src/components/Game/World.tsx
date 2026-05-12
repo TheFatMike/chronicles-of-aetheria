@@ -88,8 +88,12 @@ const DialogueAutoCloser = memo(() => {
     }
 
     if (speakerPos) {
-      const distSq = (camera.position.x - speakerPos[0])**2 + 
-                     (camera.position.z - speakerPos[2])**2;
+      const state = useGameStore.getState();
+      const localPlayer = state.players[state.id || ""];
+      if (!localPlayer) return;
+
+      const distSq = (localPlayer.pos[0] - speakerPos[0])**2 + 
+                     (localPlayer.pos[2] - speakerPos[2])**2;
       
       // Auto-close if distance > 10 meters (100 square)
       if (distSq > 100) {

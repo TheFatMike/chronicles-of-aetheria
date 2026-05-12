@@ -149,15 +149,36 @@ export const WorldObjectItem = memo(({
     onInteract: () => {
       if (isEditorOpen) return;
       
+      // Distance Check
+      const state = useGameStore.getState();
+      const localPlayer = state.players[state.id || ""];
+      if (!localPlayer) return;
+
+      const dx = localPlayer.pos[0] - obj.pos[0];
+      const dz = localPlayer.pos[2] - obj.pos[2];
+      const distance = Math.sqrt(dx * dx + dz * dz);
+      
+      const INTERACT_RANGE = 5;
+      if (distance > INTERACT_RANGE) {
+        state.addMessage({
+          id: "sys-" + Date.now(),
+          sender: "SYSTEM",
+          text: `You are too far away to interact with ${obj.name || "this NPC"}.`,
+          timestamp: Date.now(),
+          color: "#ff4444"
+        });
+        return;
+      }
+
       const npcType = obj.type.replace('npc_', '');
       const speakerName = obj.name || OBJECT_TEMPLATES[obj.type]?.label || "Villager";
       
       const dialogue = getNPCDialogue(obj.id, npcType, speakerName, {
-        activeQuests: useGameStore.getState().activeQuests,
+        activeQuests: state.activeQuests,
         quests: SAMPLE_QUESTS
       });
 
-      useGameStore.getState().setActiveDialogue({
+      state.setActiveDialogue({
         speaker: speakerName,
         text: dialogue.text,
         npcId: obj.id,

@@ -29,9 +29,13 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
   useEffect(() => {
     const updateNearby = () => {
       const CULL_DISTANCE_SQ = 100 * 100;
+      const state = useGameStore.getState();
+      const localPlayer = state.players[state.id || ""];
+      if (!localPlayer) return;
+
       const filtered = entities.filter(ent => {
-        const dx = ent.pos[0] - camera.position.x;
-        const dz = ent.pos[2] - camera.position.z;
+        const dx = ent.pos[0] - localPlayer.pos[0];
+        const dz = ent.pos[2] - localPlayer.pos[2];
         return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
       });
       setNearbyEntities(filtered);
