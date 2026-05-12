@@ -92,36 +92,55 @@ export class PhysicsEngine {
       if (h !== null) groundHeight = h;
     }
 
-    // B. Object Height (Nearby Only)
-    this.rayOrigin.set(pos.x, pos.y + 1.0, pos.z);
+    let groundNormal = new THREE.Vector3(0, 1, 0);
+    
+    // B. Object & Terrain Height (Nearby Only)
+    this.rayOrigin.set(pos.x, pos.y + 1.5, pos.z); // Start ray higher to catch steep terrain
     this.raycaster.set(this.rayOrigin, this.rayDir);
-    this.raycaster.far = 2.0;
+    this.raycaster.far = 3.0;
 
-    // Note: 'collidables' is already spatially filtered by usePlayerMovement.ts
     const intersects = this.raycaster.intersectObjects(collidables, true);
     for (const hit of intersects) {
       if (!hit.object.visible || playerMeshes.includes(hit.object)) continue;
       
-      // MAX_STEP_HEIGHT: Only snap if the surface is not too high above our current feet
-      const MAX_STEP_HEIGHT = 0.5;
+      const isTerrain = hit.object.userData?.isTerrain;
+      const MAX_STEP_HEIGHT = isTerrain ? 1.5 : 0.5;
       const heightDiff = hit.point.y - pos.y;
       
       if (heightDiff > MAX_STEP_HEIGHT) continue;
 
       if (hit.point.y > groundHeight) {
         groundHeight = hit.point.y;
+        if (hit.face) {
+          // Calculate world normal
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
+          groundNormal.copy(hit.face.normal).applyMatrix3(normalMatrix).normalize();
+        }
       }
-      break; 
     }
+    
+    // 5. Slope Handling & Sliding
+    const SLOPE_LIMIT = 0.7; // Approx 45 degrees. Higher = stricter.
+    const isTooSteep = groundNormal.y < SLOPE_LIMIT;
 
-    // 5. Resolution
-    if (pos.y <= groundHeight + 0.05) {
-      // Snap to ground if very close
+    // 6. Resolution
+    const SNAP_THRESHOLD = 0.5; 
+    
+    if (velocity.y <= 0 && pos.y <= groundHeight + SNAP_THRESHOLD && !isTooSteep) {
       pos.y = groundHeight;
-      if (velocity.y < 0) velocity.y = 0;
+      velocity.y = 0;
       isGrounded.current = true;
     } else {
       isGrounded.current = false;
+      
+      // Apply sliding force if on a steep slope
+      if (isTooSteep && pos.y <= groundHeight + 0.1) {
+        const slideStrength = 15;
+        velocity.x += groundNormal.x * slideStrength * delta;
+        velocity.z += groundNormal.z * slideStrength * delta;
+        // Also push down slightly to ensure we stay 'on' the slope while sliding
+        velocity.y -= 5 * delta; 
+      }
     }
 
     // Void Recovery

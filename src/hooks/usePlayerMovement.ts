@@ -185,9 +185,12 @@ export const usePlayerMovement = (
     // 1. Spatial Filtering (Every 10 frames)
     frameCount.current++;
     if (frameCount.current % 10 === 0 || filteredCollidablesRef.current.length === 0) {
-      filteredCollidablesRef.current = allCollidablesRef.current.filter(obj => 
-        obj.position.distanceToSquared(meshRef.current!.position) < 400 // 20m radius
-      );
+      filteredCollidablesRef.current = allCollidablesRef.current.filter(obj => {
+        const distSq = obj.position.distanceToSquared(meshRef.current!.position);
+        // Terrain chunks are large (100m), so we need a larger radius (150m) to catch them
+        if (obj.userData?.isTerrain) return distSq < 150 * 150;
+        return distSq < 400; // 20m for normal objects
+      });
     }
     
     // 2. INPUT & ROTATION
@@ -229,7 +232,7 @@ export const usePlayerMovement = (
         groundingObj,
         PHYSICS_STEP,
         { ...GAME_CONFIG.MOVEMENT, isEditorOpen: store.isEditorOpen },
-        store.terrainData,
+        useGameStore.getState().terrainData,
         filteredCollidablesRef.current,
         playerMeshesRef.current
       );

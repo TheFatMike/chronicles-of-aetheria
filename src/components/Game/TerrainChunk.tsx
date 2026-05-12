@@ -154,6 +154,7 @@ export const TerrainChunk = memo(({ x, z, size, segments, resolution, textures, 
   return (
     <mesh 
       ref={meshRef} 
+      name="terrain_chunk"
       position={[x, 0, z]} 
       rotation={[-Math.PI / 2, 0, 0]} 
       receiveShadow 
@@ -162,6 +163,7 @@ export const TerrainChunk = memo(({ x, z, size, segments, resolution, textures, 
       onClick={onClick}
       onPointerMove={onPointerMove}
       onPointerOut={onPointerOut}
+      userData={{ isCollidable: true, isTerrain: true }}
     />
   );
 });

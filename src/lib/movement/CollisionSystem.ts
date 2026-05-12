@@ -109,7 +109,7 @@ export class CollisionSystem {
     if (playerMeshes.includes(obj)) return true;
     const name = obj.name || "";
     if (name.includes("editor_helper")) return true;
-    if (name === "starting_plaza" || name === "terrain_mesh") return true;
+    if (name === "starting_plaza" || name.startsWith("terrain_")) return true;
     // Don't collide with triggers or transparent ghost placement items
     if (obj.userData?.isTrigger) return true;
     return false;
