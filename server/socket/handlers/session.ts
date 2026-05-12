@@ -91,7 +91,8 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     socket.emit("session_start", currentPlayer);
     
     // Broadcast join to nearby players instead of everyone
-    const nearbyToNew = filterNearby(Array.from(players.values()), currentPlayer.pos, 150, 'entity');
+    // PASS MAP DIRECTLY for O(1) grid lookup performance
+    const nearbyToNew = filterNearby(players, currentPlayer.pos, 150, 'entity');
     for (const p of nearbyToNew) {
       if (p.id !== socket.id) io.to(p.id).emit("player_join", currentPlayer);
     }
@@ -99,13 +100,14 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     // Send all nearby players to the new player
     socket.emit("players", nearbyToNew);
     
-    const nearbyEntities = filterNearby(Array.from(entities.values()), currentPlayer.pos, 100, 'entity');
+    const nearbyEntities = filterNearby(entities, currentPlayer.pos, 100, 'entity');
     socket.emit("entities", nearbyEntities);
     
-    const nearbyWorldObjects = filterNearby(Array.from(worldObjects.values()), currentPlayer.pos, 150, 'object');
+    const nearbyWorldObjects = filterNearby(worldObjects, currentPlayer.pos, 150, 'object');
     socket.emit("world_sync", nearbyWorldObjects);
     
     socket.emit("spawners_sync", Array.from(spawners.values()));
+
     
     // 5. Regional Terrain & Sync
     await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
@@ -119,6 +121,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
 
 export const handleDisconnect = (io: Server, socket: Socket) => {
   const player = players.get(socket.id);
+  
   if (player && player.userId && player.characterId) {
     serverLogger.info("net", `Player blipped: ${player.characterName}. 10s logout timer started.`);
     
@@ -163,41 +166,43 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
         serverLogger.error("firestore", `Save failed for session ${socket.id}`, e.message);
       }
       
-      // Remove from Grid
-      if (player.pos) {
-        const key = getGridKey(player.pos);
-        entityGrid.get(key)?.delete(socket.id);
-      }
-
-      // Final Cleanup of all session-related maps
-      players.delete(socket.id);
-      playerKnownEntities.delete(socket.id);
-      playerKnownObjects.delete(socket.id);
-      playerLastGridCell.delete(socket.id);
-      lastSkillUse.delete(socket.id);
-      lastChatMessage.delete(socket.id);
-      dirtyPlayers.delete(socket.id);
-      if (p.characterName) characterNameToId.delete(p.characterName.toLowerCase());
-      
-      // Redis Cleanup: Remove from spatial index and clear hash
-      removePlayerRedis(socket.id);
-
-      io.emit("player_leave", socket.id); 
+      cleanupSession(io, socket.id, p.characterName);
     }, 10000);
 
     logoutTimers.set(socket.id, timer);
   } else {
-    // Cleanup even for unauthenticated sockets
-    const p = players.get(socket.id);
-    if (p?.characterName) characterNameToId.delete(p.characterName.toLowerCase());
-    
-    players.delete(socket.id);
-    playerKnownEntities.delete(socket.id);
-    playerKnownObjects.delete(socket.id);
-    playerLastGridCell.delete(socket.id);
-    lastSkillUse.delete(socket.id);
-    lastChatMessage.delete(socket.id);
-    dirtyPlayers.delete(socket.id);
-    io.emit("player_leave", socket.id);
+    cleanupSession(io, socket.id, player?.characterName);
   }
 };
+
+/**
+ * Centralized cleanup for player sessions to prevent memory leaks.
+ */
+function cleanupSession(io: Server, socketId: string, characterName?: string) {
+  // 1. Grid Cleanup
+  const p = players.get(socketId);
+  if (p?.pos) {
+    const key = getGridKey(p.pos);
+    entityGrid.get(key)?.delete(socketId);
+  }
+
+  // 2. Map Cleanup
+  players.delete(socketId);
+  playerKnownEntities.delete(socketId);
+  playerKnownObjects.delete(socketId);
+  playerLastGridCell.delete(socketId);
+  lastSkillUse.delete(socketId);
+  lastChatMessage.delete(socketId);
+  dirtyPlayers.delete(socketId);
+  
+  if (characterName) {
+    characterNameToId.delete(characterName.toLowerCase());
+  }
+
+  // 3. Redis Cleanup
+  removePlayerRedis(socketId);
+
+  // 4. Notify Others
+  io.emit("player_leave", socketId);
+}
+

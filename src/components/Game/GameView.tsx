@@ -4,7 +4,7 @@
  * Sets up the React-Three-Fiber canvas, lighting, and integrates the core world components.
  * @importance Critical: The primary visual container for the entire 3D gameplay experience.
  */
-import { Suspense, memo } from "react";
+import { Suspense, memo, useEffect } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { World } from "./World";
@@ -39,6 +39,28 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
     ? initialRot as [number, number, number] 
     : [0, 0, 0];
 
+  // Proper Cleanup for WebGL Listeners
+  useEffect(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+
+    const handleLost = (e: any) => {
+      e.preventDefault();
+      logger.error("system", "CRITICAL: WebGL Context Lost! Graphics frozen.");
+    };
+    const handleRestored = () => {
+      logger.info("system", "WebGL Context Restored. Resuming loop...");
+    };
+
+    canvas.addEventListener("webglcontextlost", handleLost);
+    canvas.addEventListener("webglcontextrestored", handleRestored);
+
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleLost);
+      canvas.removeEventListener("webglcontextrestored", handleRestored);
+    };
+  }, []);
+
   return (
     <>
       <Canvas 
@@ -59,17 +81,9 @@ export const GameView = memo(({ onMove, onAttack, onLoot, playerColor, socketId,
         onPointerMissed={() => {
           // Handled explicitly by World and entities now to avoid conflicts
         }}
-        onCreated={({ gl }) => {
-          gl.domElement.addEventListener("webglcontextlost", (e) => {
-            e.preventDefault();
-            logger.error("system", "CRITICAL: WebGL Context Lost! Graphics frozen.");
-          });
-          gl.domElement.addEventListener("webglcontextrestored", () => {
-            logger.info("system", "WebGL Context Restored. Resuming loop...");
-          });
-        }}
       >
         <Suspense fallback={null}>
+
           <World onAttack={onAttack} onLoot={onLoot} socket={socket} />
 
           <Player onMove={onMove} color={playerColor} socket={socket} initialPos={safePos} initialRot={safeRot} />

@@ -4,7 +4,7 @@
  * Supports social login (Google) and traditional email/password credentials.
  * @importance Critical: The entry point for all users, ensuring secure access to their game accounts.
  */
-import { useState, memo, useCallback, useEffect } from "react";
+import { useState, memo, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   loginWithEmail, 
@@ -15,7 +15,6 @@ import {
 import { 
   LogIn, 
   Share2, 
-  Copy, 
   Check, 
   Wifi, 
   WifiOff, 
@@ -27,7 +26,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { ParticleEffect } from "./Particles";
-import { useGameStore } from "../../store/useGameStore";
+import { useServerStatus } from "../../hooks/useServerStatus";
 
 interface LoginProps {
   onLogin: (user: any) => void;
@@ -35,76 +34,91 @@ interface LoginProps {
 
 type LoginStep = "IDENTIFY" | "SIGN_IN" | "SIGN_UP";
 
+/**
+ * Shared Form Field component to reduce JSX clutter
+ */
+const FormField = ({ label, icon: Icon, type, value, onChange, placeholder, required = true }: any) => (
+  <div className="space-y-2 text-left">
+    <label className="text-[10px] uppercase tracking-[0.3em] text-[#8b6b4d] font-bold ml-1">{label}</label>
+    <div className="relative">
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b6b4d]/50" size={16} />
+      <input 
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="w-full bg-black/40 border border-[#4a3a2a] p-4 pl-12 text-[#e2d1b0] focus:border-[#c2a472] outline-hidden transition-all rounded-sm placeholder:text-[#8b6b4d]/20"
+      />
+    </div>
+  </div>
+);
+
+/**
+ * Shared Action Button component
+ */
+const ActionButton = ({ children, onClick, loading, disabled, icon: Icon, type = "submit" }: any) => (
+  <button
+    type={type}
+    onClick={onClick}
+    disabled={loading || disabled}
+    className="w-full py-5 bg-[#c2a472] text-[#1a1410] text-sm font-bold tracking-[0.2em] border-t border-l border-[#e6d3af] shadow-lg hover:bg-[#d4b98a] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase mt-4"
+  >
+    {loading ? <RefreshCw className="animate-spin" size={18} /> : (
+      <>
+        {children}
+        {Icon && <Icon size={18} />}
+      </>
+    )}
+  </button>
+);
+
 export const Login = memo(({ onLogin }: LoginProps) => {
   const [step, setStep] = useState<LoginStep>("IDENTIFY");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const connected = useGameStore((state) => state.connected);
-  const setConnected = useGameStore((state) => state.setConnected);
-
-  // Poll server status
-  useEffect(() => {
-    let interval: any;
-    const checkStatus = async () => {
-      try {
-        const res = await fetch("/api/health");
-        if (res.ok) setConnected(true);
-        else setConnected(false);
-      } catch (e) {
-        setConnected(false);
-      }
-    };
-    if (!connected) {
-      checkStatus();
-      interval = setInterval(checkStatus, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [connected, setConnected]);
+  const connected = useServerStatus();
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    setIsLoggingIn(true);
+    setIsBusy(true);
     setError(null);
     try {
       const exists = await checkEmailExists(email);
       setStep(exists ? "SIGN_IN" : "SIGN_UP");
-    } catch (err: any) {
+    } catch (err) {
       setError("The Eternal Gate is hesitant. Try again.");
     } finally {
-      setIsLoggingIn(false);
+      setIsBusy(false);
     }
   };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
     if (step === "SIGN_UP" && password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
+      return setError("Passwords do not match.");
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
+      return setError("Password must be at least 6 characters.");
     }
 
-    setIsLoggingIn(true);
+    setIsBusy(true);
     try {
       const user = step === "SIGN_IN" 
         ? await loginWithEmail(email, password)
         : await registerWithEmail(email, password);
       onLogin(user);
     } catch (err: any) {
-      console.error("Auth Error:", err.code, err.message);
-      
-      // If we tried to sign up but account exists, switch to sign in
       if (err.code === 'auth/email-already-in-use') {
         setStep("SIGN_IN");
         setError("Account already exists. Please enter thy password.");
@@ -113,25 +127,23 @@ export const Login = memo(({ onLogin }: LoginProps) => {
       } else {
         setError(err.message || "The Gate remains closed.");
       }
-      setIsLoggingIn(false);
+      setIsBusy(false);
     }
   };
 
   const handleReset = async () => {
     if (!email) return;
-    setIsLoggingIn(true);
+    setIsBusy(true);
     try {
       await resetPassword(email);
       setSuccessMsg("A recovery scroll has been sent to thy mail.");
       setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err: any) {
+    } catch (err) {
       setError("Could not send recovery scroll.");
     } finally {
-      setIsLoggingIn(false);
+      setIsBusy(false);
     }
   };
-
-
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.origin);
@@ -140,173 +152,166 @@ export const Login = memo(({ onLogin }: LoginProps) => {
   }, []);
 
   return (
-    <div className="w-full h-full relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80 pointer-events-none"></div>
+    <div className="w-full h-full relative overflow-hidden bg-[#1a1410]">
+      {/* Background Textures */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black opacity-80 pointer-events-none" />
       
       <ParticleEffect />
       
       <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-12 lg:py-20">
-          <div className="flex flex-col items-center gap-8 w-full max-w-4xl relative z-10">
-            <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md p-6 sm:p-10 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-[0_0_80px_rgba(0,0,0,0.9)] relative overflow-hidden ring-1 ring-[#e2d1b0]/10"
-        >
-          {/* Status */}
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
-            <div className={`px-2 py-0.5 sm:py-1 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
-              connected ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-            }`}>
-              {connected ? <Wifi size={10} /> : <WifiOff size={10} />}
-              {connected ? "Server Online" : "Server Offline"}
-            </div>
-          </div>
-
-          <div className="text-center relative z-10">
-            <div className="flex justify-center mb-4 sm:mb-6">
-               <div className="w-8 sm:w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
-               <div className="w-2 sm:w-3 h-2 sm:h-3 border border-[#8b6b4d] rotate-45 mx-2 sm:mx-3" />
-               <div className="w-8 sm:w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
+        <div className="flex flex-col items-center justify-center min-h-full p-6 py-12 lg:py-20">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md p-6 sm:p-10 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-[0_0_80px_rgba(0,0,0,0.9)] relative overflow-hidden ring-1 ring-[#e2d1b0]/10"
+          >
+            {/* Server Status Badge */}
+            <div className="absolute top-4 right-4 z-20">
+              <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
+                connected ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+              }`}>
+                {connected ? <Wifi size={10} /> : <WifiOff size={10} />}
+                {connected ? "Server Online" : "Server Offline"}
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-display font-black text-[#f4e4bc] mb-1 tracking-wider uppercase">Aetheria</h1>
-            <p className="text-[#8b6b4d] font-serif italic text-xs sm:text-sm mb-6 sm:mb-10">Chronicles of the Eternal Realm</p>
-            
-            <AnimatePresence mode="wait">
-              {step === "IDENTIFY" ? (
-                <motion.form 
-                  key="identify"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleIdentify} 
-                  className="space-y-6"
-                >
-                  <div className="space-y-2 text-left">
-                    <label className="text-[10px] uppercase tracking-[0.3em] text-[#8b6b4d] font-bold ml-1">Email Address</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b6b4d]/50" size={16} />
-                      <input 
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@realm.com"
-                        required
-                        className="w-full bg-black/40 border border-[#4a3a2a] p-4 pl-10 text-[#e2d1b0] focus:border-[#c2a472] outline-hidden transition-all rounded-sm placeholder:text-[#8b6b4d]/20"
-                      />
-                    </div>
-                  </div>
+            <div className="text-center relative z-10">
+              <div className="flex justify-center mb-6">
+                <div className="w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
+                <div className="w-3 h-3 border border-[#8b6b4d] rotate-45 mx-3" />
+                <div className="w-12 h-px bg-[#8b6b4d] self-center opacity-30" />
+              </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoggingIn || !connected}
-                    className="w-full py-5 bg-[#c2a472] text-[#1a1410] text-sm font-bold tracking-[0.2em] border-t border-l border-[#e6d3af] shadow-lg hover:bg-[#d4b98a] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase"
+              <h1 className="text-4xl font-display font-black text-[#f4e4bc] mb-1 tracking-wider uppercase">Aetheria</h1>
+              <p className="text-[#8b6b4d] font-serif italic text-sm mb-10">Chronicles of the Eternal Realm</p>
+              
+              <AnimatePresence mode="wait">
+                {step === "IDENTIFY" ? (
+                  <motion.form 
+                    key="identify"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    onSubmit={handleIdentify} 
+                    className="space-y-6"
                   >
-                    {isLoggingIn ? <RefreshCw className="animate-spin" size={18} /> : "Continue"}
-                    {!isLoggingIn && <ChevronRight size={18} />}
-                  </button>
-                </motion.form>
-              ) : (
-                <motion.form 
-                  key="auth"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleAuth} 
-                  className="space-y-5 text-left"
-                >
-                  <button 
-                    type="button" 
-                    onClick={() => setStep("IDENTIFY")}
-                    className="flex items-center gap-1 text-[10px] text-[#8b6b4d] hover:text-[#c2a472] transition-colors mb-2 uppercase tracking-widest"
+                    <FormField 
+                      label="Email Address"
+                      icon={Mail}
+                      type="email"
+                      value={email}
+                      onChange={setEmail}
+                      placeholder="name@realm.com"
+                    />
+
+                    <ActionButton loading={isBusy} disabled={!connected} icon={ChevronRight}>
+                      Continue
+                    </ActionButton>
+                  </motion.form>
+                ) : (
+                  <motion.form 
+                    key="auth"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    onSubmit={handleAuth} 
+                    className="space-y-5 text-left"
                   >
-                    <ArrowLeft size={12} /> Back
-                  </button>
-
-                  <div className="p-3 bg-black/20 border border-[#4a3a2a]/30 rounded-sm mb-4">
-                    <p className="text-[10px] text-[#8b6b4d] uppercase mb-1 opacity-60">Identity Confirmed</p>
-                    <p className="text-xs text-[#e2d1b0] font-mono">{email}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-[#8b6b4d] font-bold ml-1">
-                      {step === "SIGN_IN" ? "Password" : "Create Password"}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b6b4d]/50" size={16} />
-                      <input 
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="w-full bg-black/40 border border-[#4a3a2a] p-4 pl-10 text-[#e2d1b0] focus:border-[#c2a472] outline-hidden rounded-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {step === "SIGN_UP" && (
-                    <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-widest text-[#8b6b4d] font-bold ml-1">Confirm Password</label>
-                      <div className="relative">
-                        <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b6b4d]/50" size={16} />
-                        <input 
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          required
-                          className="w-full bg-black/40 border border-[#4a3a2a] p-4 pl-10 text-[#e2d1b0] focus:border-[#c2a472] outline-hidden rounded-sm"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {step === "SIGN_IN" && (
                     <button 
                       type="button" 
-                      onClick={handleReset}
-                      className="text-[10px] text-[#8b6b4d] hover:text-[#c2a472] underline underline-offset-2 tracking-tighter"
+                      onClick={() => setStep("IDENTIFY")}
+                      className="flex items-center gap-1 text-[10px] text-[#8b6b4d] hover:text-[#c2a472] transition-colors mb-2 uppercase tracking-widest"
                     >
-                      Forgotten password?
+                      <ArrowLeft size={12} /> Back
                     </button>
-                  )}
 
-                  <button
-                    type="submit"
-                    disabled={isLoggingIn}
-                    className="w-full py-5 bg-[#c2a472] text-[#1a1410] text-sm font-bold tracking-[0.2em] shadow-lg hover:bg-[#d4b98a] active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase mt-6"
+                    <div className="p-3 bg-black/20 border border-[#4a3a2a]/30 rounded-sm mb-4">
+                      <p className="text-[10px] text-[#8b6b4d] uppercase mb-0.5 opacity-60 font-bold">Identity Confirmed</p>
+                      <p className="text-xs text-[#e2d1b0] font-mono truncate">{email}</p>
+                    </div>
+
+                    <FormField 
+                      label={step === "SIGN_IN" ? "Password" : "Create Password"}
+                      icon={Lock}
+                      type="password"
+                      value={password}
+                      onChange={setPassword}
+                      placeholder="••••••••"
+                    />
+
+                    {step === "SIGN_UP" && (
+                      <FormField 
+                        label="Confirm Password"
+                        icon={UserPlus}
+                        type="password"
+                        value={confirmPassword}
+                        onChange={setConfirmPassword}
+                        placeholder="••••••••"
+                      />
+                    )}
+
+                    {step === "SIGN_IN" && (
+                      <button 
+                        type="button" 
+                        onClick={handleReset}
+                        className="text-[10px] text-[#8b6b4d] hover:text-[#c2a472] underline underline-offset-2 tracking-widest font-bold uppercase"
+                      >
+                        Forgotten password?
+                      </button>
+                    )}
+
+                    <ActionButton loading={isBusy}>
+                      {step === "SIGN_IN" ? "Sign In" : "Sign Up"}
+                    </ActionButton>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+
+              {/* Status Messages */}
+              <AnimatePresence>
+                {error && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 text-red-400 text-[10px] font-bold uppercase p-3 bg-red-400/10 border border-red-400/20"
                   >
-                    {isLoggingIn ? <RefreshCw className="animate-spin" size={18} /> : (step === "SIGN_IN" ? "Sign In" : "Sign Up")}
-                  </button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+                    {error}
+                  </motion.p>
+                )}
+                {successMsg && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 text-green-400 text-[10px] font-bold uppercase p-3 bg-green-400/10 border border-green-400/20"
+                  >
+                    {successMsg}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
 
-            {error && <p className="mt-4 text-red-400 text-[10px] font-bold uppercase p-2 bg-red-400/10 border border-red-400/20">{error}</p>}
-            {successMsg && <p className="mt-4 text-green-400 text-[10px] font-bold uppercase p-2 bg-green-400/10 border border-green-400/20">{successMsg}</p>}
-          </div>
-        </motion.div>
-
-        {/* Share */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="flex items-center gap-4 text-[#8b6b4d]"
-        >
-          <button onClick={handleShare} className="flex items-center gap-2 text-[10px] uppercase tracking-widest hover:text-[#e2d1b0] transition-colors">
-            {copied ? <Check size={14} /> : <Share2 size={14} />}
-            {copied ? "Scroll Copied" : "Invite Adventurers"}
-          </button>
+          {/* Footer Actions */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 flex items-center gap-6 text-[#8b6b4d]"
+          >
+            <button 
+              onClick={handleShare} 
+              className="flex items-center gap-2 text-[10px] uppercase tracking-widest hover:text-[#e2d1b0] transition-all group"
+            >
+              {copied ? <Check size={14} className="text-green-500" /> : <Share2 size={14} className="group-hover:scale-110 transition-transform" />}
+              <span>{copied ? "Scroll Copied" : "Invite Adventurers"}</span>
+            </button>
           </motion.div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 });
 
 Login.displayName = "Login";
+

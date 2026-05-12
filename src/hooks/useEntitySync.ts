@@ -39,20 +39,30 @@ export const useEntitySync = (
     }
   }, [position, rotation, groupRef]);
 
+  const lastGroundPos = useRef<[number, number]>([-999, -999]);
+  const cachedGroundY = useRef<number>(position[1]);
+
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
 
     // Smooth Bilinear Terrain Height Lookup for Entities
-    const terrainData = useGameStore.getState().terrainData;
-    const resolution = 2; // Updated to match 2m terrain
+    // OPTIMIZATION: Only recalculate height if target position has moved significantly
+    if (Math.abs(lastGroundPos.current[0] - targetPos.current.x) > 0.05 || 
+        Math.abs(lastGroundPos.current[1] - targetPos.current.z) > 0.05) {
+      
+      const terrainData = useGameStore.getState().terrainData;
+      const resolution = 2; // Updated to match 2m terrain
+      
+      cachedGroundY.current = getInterpolatedHeight(
+        targetPos.current.x,
+        targetPos.current.z,
+        terrainData,
+        resolution
+      );
+      lastGroundPos.current = [targetPos.current.x, targetPos.current.z];
+    }
     
-    const groundY = getInterpolatedHeight(
-      targetPos.current.x,
-      targetPos.current.z,
-      terrainData,
-      resolution
-    );
-    targetPos.current.y = groundY;
+    targetPos.current.y = cachedGroundY.current;
 
     // Frame-independent lerp
     const lerpFactor = 1 - Math.exp(-lerpSpeed * delta);
@@ -66,6 +76,7 @@ export const useEntitySync = (
       lerpFactor
     );
   });
+
 
   return { targetPos, targetRot };
 };

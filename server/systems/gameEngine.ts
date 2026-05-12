@@ -61,17 +61,31 @@ export const startHeartbeat = (io: Server) => {
             }
             
             const nearbyEntities = filterNearby(entities, player.pos, 80, 'entity');
-            const nearbyIds = new Set(nearbyEntities.map(e => e.id));
             const known = playerKnownEntities.get(player.id) || new Set<string>();
             
-            // OPTIMIZATION: Drip-feed discovery (max 5 per tick) to prevent client FPS drops
-            const newEntities = nearbyEntities.filter(e => !known.has(e.id)).slice(0, 5);
-            const leftEntities = Array.from(known).filter(id => !nearbyIds.has(id));
+            // OPTIMIZATION: Efficiently identify new and left entities without expensive array conversions
+            const nearbyIds = new Set<string>();
+            const newEntities = [];
+            for (const e of nearbyEntities) {
+              nearbyIds.add(e.id);
+              if (!known.has(e.id)) {
+                newEntities.push(e);
+                if (newEntities.length >= 5) break; // Drip-feed discovery
+              }
+            }
+
+            const leftEntities = [];
+            for (const id of known) {
+              if (!nearbyIds.has(id)) {
+                leftEntities.push(id);
+              }
+            }
             
             if (newEntities.length > 0 || leftEntities.length > 0) {
+              // Create a new Set only if changes occurred
               const updatedKnown = new Set(known);
-              newEntities.forEach(e => updatedKnown.add(e.id));
-              leftEntities.forEach(id => updatedKnown.delete(id));
+              for (const e of newEntities) updatedKnown.add(e.id);
+              for (const id of leftEntities) updatedKnown.delete(id);
               playerKnownEntities.set(player.id, updatedKnown);
             }
 
@@ -84,11 +98,18 @@ export const startHeartbeat = (io: Server) => {
 
             if (dirtyEntityList.length > 0) {
               const newlyDiscoveredIds = new Set(newEntities.map(e => e.id));
-              const updatePayload = dirtyEntityList.filter(e => known.has(e.id) && !newlyDiscoveredIds.has(e.id));
+              const updatePayload = [];
+              for (const e of dirtyEntityList) {
+                if (known.has(e.id) && !newlyDiscoveredIds.has(e.id)) {
+                  updatePayload.push(e);
+                }
+              }
+              
               if (updatePayload.length > 0) {
                 io.to(player.id).emit("entities_update", updatePayload);
               }
             }
+
           }
         }
       }

@@ -20,144 +20,81 @@ interface useGameSyncProps {
 export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, connected }: useGameSyncProps) => {
   useEffect(() => {
     if (!socket || !connected) return;
+    
+    // Centralized store access
+    const store = useGameStore.getState();
 
-    // 1. Quest Updates
-    const handleQuestUpdate = (newQuests: any) => {
-      setSelectedCharacter(prev => prev ? { ...prev, quests: newQuests } : null);
-      useGameStore.getState().setActiveQuests(newQuests);
-    };
-
-    // 2. Session Start (Initial Full Sync)
-    const handleSessionStart = (confirmedState: any) => {
-      setSelectedCharacter(prev => prev ? {
-        ...prev,
-        inventory: confirmedState.inventory,
-        equipment: confirmedState.equipment,
-        hp: confirmedState.hp,
-        maxHp: confirmedState.maxHp,
-        mp: confirmedState.mp,
-        maxMp: confirmedState.maxMp,
-        stats: confirmedState.stats,
-        level: confirmedState.level,
-        quests: confirmedState.quests,
-        gold: confirmedState.gold,
-        role: confirmedState.role
-      } : null);
-      
-      useGameStore.getState().setActiveQuests(confirmedState.quests || {});
-    };
-
-    // 3. Inventory Updates
-    const handleInventoryUpdate = (data: any) => {
-      setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
-    };
-
-    // 4. Player Stats (Health/Mana/Gold)
-    const handlePlayerStats = (data: any) => {
-      if (data.id === socket.id) {
-        setSelectedCharacter(prev => {
-          if (!prev) return null;
-          const updates: any = {};
-          if (data.hp !== undefined) updates.hp = data.hp;
-          if (data.mp !== undefined) updates.mp = data.mp;
-          if (data.gold !== undefined) updates.gold = data.gold;
-          if (data.level !== undefined) updates.level = data.level;
-          if (data.exp !== undefined) updates.exp = data.exp;
-          if (data.maxExp !== undefined) updates.maxExp = data.maxExp;
-          return { ...prev, ...updates };
-        });
+    const listeners = {
+      "quest_update": (newQuests: any) => {
+        setSelectedCharacter(prev => prev ? { ...prev, quests: newQuests } : null);
+        store.setActiveQuests(newQuests);
+      },
+      "session_start": (confirmedState: any) => {
+        setSelectedCharacter(prev => prev ? { ...prev, ...confirmedState } : null);
+        store.setActiveQuests(confirmedState.quests || {});
+        if (confirmedState.pos) store.requestTeleport(confirmedState.pos);
+        store.setPlayerId(socket.id || null);
+      },
+      "inventory_update": (data: any) => {
+        setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
+      },
+      "player_stats": (data: any) => {
+        if (data.id === socket.id) {
+          setSelectedCharacter(prev => {
+            if (!prev) return null;
+            // Only trigger re-render if values actually changed
+            const hasChanged = Object.entries(data).some(([k, v]) => (prev as any)[k] !== v && v !== undefined);
+            if (!hasChanged) return prev;
+            return { ...prev, ...data };
+          });
+        }
+        // Also update the players map in the store for other systems
+        store.updatePlayer(data.id, data);
+      },
+      "party_update": store.setParty,
+      "party_invite_received": store.setPartyInvite,
+      "terrain_sync": store.updateTerrainData,
+      "world_sync": (objects: any[]) => {
+        logger.info("socket", `World sync: ${objects.length} objects`);
+        store.setWorldObjects(objects);
+      },
+      "world_objects_sync": (objects: any[]) => {
+        logger.info("socket", `World objects chunk sync: ${objects.length} objects`);
+        store.addWorldObjects(objects);
+      },
+      "entities_sync": (entities: any[]) => {
+        logger.info("socket", `Entities sync: ${entities.length} entities`);
+        store.setEntities(entities);
+      },
+      "world_object_updated": store.addWorldObject,
+      "world_object_removed": (data: { id: string }) => store.removeWorldObject(data.id),
+      "loot_opened": (data: any) => {
+        if (!data || (data.items.length === 0 && (data.gold || 0) <= 0)) {
+          store.setActiveLoot(null);
+        } else {
+          store.setActiveLoot(data);
+        }
+      },
+      "role_update": (data: { role: string }) => {
+        setSelectedCharacter(prev => prev ? { ...prev, role: data.role } : null);
       }
     };
 
-    // 5. Party Updates
-    const handlePartyUpdate = (data: any) => {
-      useGameStore.getState().setParty(data);
-    };
-    const handlePartyInvite = (data: any) => {
-      useGameStore.getState().setPartyInvite(data);
-    };
-
-    // 6. Terrain Sync
-    const handleTerrainSync = (data: any) => {
-      useGameStore.getState().updateTerrainData(data);
-    };
-
-    // 7. World Sync (Nearby Objects)
-    const handleWorldSync = (objects: any[]) => {
-      logger.info("socket", `World sync received: ${objects.length} objects`);
-      useGameStore.getState().setWorldObjects(objects);
-    };
-
-    const handleWorldObjectsSync = (objects: any[]) => {
-      logger.info("socket", `World objects chunk sync: ${objects.length} objects`);
-      useGameStore.getState().addWorldObjects(objects);
-    };
-
-    const handleEntitiesSync = (entities: any[]) => {
-      logger.info("socket", `Entities sync: ${entities.length} entities`);
-      useGameStore.getState().setEntities(entities);
-    };
-
-    const handleWorldObjectUpdated = (obj: any) => {
-      useGameStore.getState().addWorldObject(obj);
-    };
-
-    const handleWorldObjectRemoved = (data: { id: string }) => {
-      useGameStore.getState().removeWorldObject(data.id);
-    };
-
-    // 8. Loot Updates
-    const handleLootOpened = (data: any) => {
-      if (!data || (data.items.length === 0 && (data.gold || 0) <= 0)) {
-        useGameStore.getState().setActiveLoot(null);
-      } else {
-        useGameStore.getState().setActiveLoot(data);
-      }
-    };
-
-    // 9. Role Updates
-    const handleRoleUpdate = (data: { role: string }) => {
-      setSelectedCharacter(prev => prev ? { ...prev, role: data.role } : null);
-    };
- 
-    // Register listeners
-    socket.on("quest_update", handleQuestUpdate);
-    socket.on("session_start", (data) => {
-      handleSessionStart(data);
-      if (data.pos) useGameStore.getState().requestTeleport(data.pos);
+    // Register all listeners
+    Object.entries(listeners).forEach(([event, handler]) => {
+      socket.on(event, handler);
     });
-    socket.on("inventory_update", handleInventoryUpdate);
-    socket.on("player_stats", handlePlayerStats);
-    socket.on("party_update", handlePartyUpdate);
-    socket.on("party_invite_received", handlePartyInvite);
-    socket.on("terrain_sync", handleTerrainSync);
-    socket.on("world_sync", handleWorldSync);
-    socket.on("world_objects_sync", handleWorldObjectsSync);
-    socket.on("entities_sync", handleEntitiesSync);
-    socket.on("world_object_updated", handleWorldObjectUpdated);
-    socket.on("world_object_removed", handleWorldObjectRemoved);
-    socket.on("loot_opened", handleLootOpened);
-    socket.on("loot_update", handleLootOpened);
-    socket.on("role_update", handleRoleUpdate);
+    // Special case for loot_update sharing handler
+    socket.on("loot_update", listeners.loot_opened);
 
-    logger.info("system", "Socket listeners registered via useGameSync");
+    logger.info("system", `Registered ${Object.keys(listeners).length + 1} socket listeners via useGameSync`);
 
     return () => {
-      socket.off("quest_update", handleQuestUpdate);
-      socket.off("session_start");
-      socket.off("inventory_update", handleInventoryUpdate);
-      socket.off("player_stats", handlePlayerStats);
-      socket.off("party_update", handlePartyUpdate);
-      socket.off("party_invite_received", handlePartyInvite);
-      socket.off("terrain_sync", handleTerrainSync);
-      socket.off("world_sync", handleWorldSync);
-      socket.off("world_objects_sync", handleWorldObjectsSync);
-      socket.off("entities_sync", handleEntitiesSync);
-      socket.off("world_object_updated", handleWorldObjectUpdated);
-      socket.off("world_object_removed", handleWorldObjectRemoved);
-      socket.off("loot_opened", handleLootOpened);
-      socket.off("loot_update", handleLootOpened);
-      socket.off("role_update");
+      Object.entries(listeners).forEach(([event, handler]) => {
+        socket.off(event, handler);
+      });
+      socket.off("loot_update", listeners.loot_opened);
     };
+
   }, [socket, connected, setSelectedCharacter]);
 };

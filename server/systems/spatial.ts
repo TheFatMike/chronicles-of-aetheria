@@ -198,13 +198,23 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
   
   const result: T[] = [];
   const isMap = items instanceof Map;
+  const itemMap = isMap ? (items as Map<string, T>) : null;
+  const itemArray = isMap ? null : (items as T[]);
 
   for (const key of nearbyKeys) {
     const ids = grid.get(key);
     if (!ids) continue;
 
     for (const id of ids) {
-      const item = isMap ? items.get(id) : (items as T[]).find(i => i.id === id);
+      let item: T | undefined;
+      
+      if (itemMap) {
+        item = itemMap.get(id);
+      } else if (itemArray) {
+        // Optimized: only look for it if we don't have a map, but we should really always use maps
+        item = itemArray.find(i => i.id === id);
+      }
+      
       if (item) {
         const dx = item.pos[0] - playerPos[0];
         const dz = item.pos[2] - playerPos[2];
@@ -217,3 +227,4 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
 
   return result;
 }
+
