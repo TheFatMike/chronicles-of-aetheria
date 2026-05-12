@@ -7,8 +7,6 @@
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   fetchSignInMethodsForEmail, 
@@ -24,7 +22,6 @@ export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestore
   : getFirestore(app);
 
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
 export const checkEmailExists = async (email: string) => {
   try {
@@ -50,12 +47,4 @@ export const registerWithEmail = async (email: string, pass: string) => {
   return result.user;
 };
 
-export const loginWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Error signing in with Google", error);
-    throw error;
-  }
-};
+

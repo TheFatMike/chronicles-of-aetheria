@@ -7,7 +7,6 @@
 import { useState, memo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  loginWithGoogle, 
   loginWithEmail, 
   checkEmailExists, 
   registerWithEmail, 
@@ -132,16 +131,7 @@ export const Login = memo(({ onLogin }: LoginProps) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoggingIn(true);
-    setError(null);
-    try {
-      const user = await loginWithGoogle();
-      onLogin(user);
-    } catch (error) {
-      setIsLoggingIn(false);
-    }
-  };
+
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.origin);
@@ -297,20 +287,6 @@ export const Login = memo(({ onLogin }: LoginProps) => {
 
             {error && <p className="mt-4 text-red-400 text-[10px] font-bold uppercase p-2 bg-red-400/10 border border-red-400/20">{error}</p>}
             {successMsg && <p className="mt-4 text-green-400 text-[10px] font-bold uppercase p-2 bg-green-400/10 border border-green-400/20">{successMsg}</p>}
-
-            <div className="flex items-center gap-4 py-6 opacity-30">
-              <div className="h-px bg-[#4a3a2a] flex-1"></div>
-              <span className="text-[10px] uppercase tracking-tighter">or</span>
-              <div className="h-px bg-[#4a3a2a] flex-1"></div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full py-3 border border-[#4a3a2a] text-[#8b6b4d] text-[10px] uppercase tracking-[0.3em] hover:bg-[#c2a472]/5 transition-all flex items-center justify-center gap-2"
-            >
-              Sign in with Google
-            </button>
           </div>
         </motion.div>
 
