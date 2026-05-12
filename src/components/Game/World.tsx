@@ -65,6 +65,42 @@ const MovingShadowLight = memo(() => {
   );
 });
 
+const DialogueAutoCloser = memo(() => {
+  const { camera } = useThree();
+  const activeDialogue = useGameStore(state => state.activeDialogue);
+  const setActiveDialogue = useGameStore(state => state.setActiveDialogue);
+  const entities = useGameStore(state => state.entities);
+  const worldObjects = useGameStore(state => state.worldObjects);
+
+  useFrame(() => {
+    if (!activeDialogue) return;
+
+    // Find the speaker's position
+    let speakerPos: [number, number, number] | null = null;
+    
+    // Check dynamic entities first
+    if (entities[activeDialogue.npcId]) {
+      speakerPos = entities[activeDialogue.npcId].pos;
+    } 
+    // Check static world objects next
+    else if (worldObjects[activeDialogue.npcId]) {
+      speakerPos = worldObjects[activeDialogue.npcId].pos;
+    }
+
+    if (speakerPos) {
+      const distSq = (camera.position.x - speakerPos[0])**2 + 
+                     (camera.position.z - speakerPos[2])**2;
+      
+      // Auto-close if distance > 10 meters (100 square)
+      if (distSq > 100) {
+        setActiveDialogue(null);
+      }
+    }
+  });
+
+  return null;
+});
+
 export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: any }) => {
   const setEditorMousePoint = useGameStore(state => state.setEditorMousePoint);
   const editorSelectedType = useGameStore(state => state.editorSelectedType);
@@ -200,6 +236,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps & { socket: 
       <MovingShadowLight />
       <pointLight position={[-10, 5, -10]} intensity={1} color="#fcd34d" />
       
+      <DialogueAutoCloser />
       <group name="collidables_root">
         <Terrain 
           socket={socket} 

@@ -47,7 +47,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
               <div className="flex items-center gap-2">
                 <MessageSquare size={14} className="text-[#c2a472]" />
-                <span className="text-[10px] font-fantasy uppercase tracking-widest text-[#f4e4bc]">World Chat</span>
+                <span className="text-[10px] font-sans font-black uppercase tracking-widest text-[#f4e4bc]">World Chat</span>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
@@ -64,7 +64,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             >
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-[9px] sm:text-[10px] font-serif italic text-stone-600 uppercase tracking-widest">Silence falls upon the realm...</p>
+                  <p className="text-[9px] sm:text-[10px] font-sans font-bold text-stone-600 uppercase tracking-widest">Silence falls upon the realm...</p>
                 </div>
               ) : (
                 messages.map((msg, idx) => (
@@ -80,7 +80,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                         </span>
                       )}
                       <span 
-                        className="text-[10px] sm:text-[11px] font-fantasy font-bold uppercase tracking-wide px-1 sm:px-1.5 py-0.5 rounded-sm bg-black/40"
+                        className="text-[10px] sm:text-[11px] font-sans font-black uppercase tracking-wide px-1 sm:px-1.5 py-0.5 rounded-sm bg-black/40"
                         style={{ color: msg.color }}
                       >
                         {msg.sender}
@@ -89,7 +89,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-[#e2d1b0] leading-relaxed wrap-break-word font-serif ml-1">
+                    <p className="text-xs sm:text-sm text-[#e2d1b0] leading-relaxed wrap-break-word font-sans font-medium ml-1">
                       {msg.text}
                     </p>
                   </div>
@@ -105,7 +105,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Whisper to the void..."
-                  className="w-full bg-black/60 border border-[#4a3a2a] p-2 sm:p-3 pr-10 text-xs sm:text-sm italic font-serif text-[#f4e4bc] placeholder:text-stone-700 focus:outline-none focus:border-[#c2a472] transition-colors rounded-sm"
+                  className="w-full bg-black/60 border border-[#4a3a2a] p-2 sm:p-3 pr-10 text-xs sm:text-sm font-sans text-[#f4e4bc] placeholder:text-stone-700 focus:outline-none focus:border-[#c2a472] transition-colors rounded-sm"
                 />
                 <button 
                   type="submit"

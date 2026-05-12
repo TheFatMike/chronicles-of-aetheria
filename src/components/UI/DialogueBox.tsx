@@ -7,15 +7,18 @@
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Quest } from '../../types';
+import { DialogueOption } from '../../store/types';
 import { BookOpen, Check, X } from 'lucide-react';
 
 interface DialogueBoxProps {
   speaker: string;
   text: string;
   quest?: Quest | null;
+  options?: DialogueOption[];
   onAccept?: () => void;
   onDecline?: () => void;
   onComplete?: () => void;
+  onOptionSelect?: (option: DialogueOption) => void;
   isQuestReady?: boolean;
 }
 
@@ -23,9 +26,11 @@ export const DialogueBox = memo(({
   speaker, 
   text, 
   quest, 
+  options,
   onAccept, 
   onDecline, 
   onComplete,
+  onOptionSelect,
   isQuestReady 
 }: DialogueBoxProps) => {
   return (
@@ -33,7 +38,7 @@ export const DialogueBox = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-xl z-100 px-6"
+      className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-xl z-100 px-6 pointer-events-auto"
     >
       <div className="bg-[#1a140f]/95 backdrop-blur-xl border-2 border-[#4a3a2a] p-6 rounded-2xl shadow-2xl relative">
         {/* Speaker Name Tag */}
@@ -42,7 +47,7 @@ export const DialogueBox = memo(({
         </div>
 
         <div className="space-y-4">
-          <p className="text-[#f4e4bc] font-serif italic text-lg leading-relaxed">
+          <p className="text-[#f4e4bc] font-sans text-lg leading-relaxed font-medium">
             "{text}"
           </p>
 
@@ -54,9 +59,9 @@ export const DialogueBox = memo(({
             >
               <div className="flex items-center gap-2 mb-1">
                 <BookOpen size={14} className="text-amber-500" />
-                <h4 className="text-amber-500 font-black text-xs uppercase tracking-wider">{quest.title}</h4>
+                <h4 className="text-amber-500 font-black text-xs uppercase tracking-wider font-sans">{quest.title}</h4>
               </div>
-              <p className="text-[#8b6b4d] text-[10px] leading-relaxed">{quest.description}</p>
+              <p className="text-[#f4e4bc]/80 text-[11px] leading-relaxed font-sans">{quest.description}</p>
               
               <div className="flex gap-4 pt-2">
                 <button 
@@ -95,7 +100,27 @@ export const DialogueBox = memo(({
             </motion.div>
           )}
 
-          {!quest && !isQuestReady && (
+          {/* Dialogue Options (Selection Menu) */}
+          {options && options.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-[#4a3a2a]/30">
+              {options.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onOptionSelect?.(option)}
+                  className="w-full text-left px-4 py-3 bg-[#2d221a]/50 hover:bg-[#c2a472]/10 border border-[#4a3a2a] hover:border-[#c2a472]/40 rounded-xl transition-all group flex items-center justify-between"
+                >
+                  <span className="text-[#f4e4bc] font-bold text-sm group-hover:translate-x-1 transition-transform">
+                    {option.label}
+                  </span>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Check size={14} className="text-[#c2a472]" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!quest && !isQuestReady && (!options || options.length === 0) && (
             <div className="flex justify-end pt-2">
               <button 
                 onClick={onDecline}

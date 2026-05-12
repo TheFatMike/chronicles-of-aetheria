@@ -18,6 +18,7 @@ export function createNPCEntity(id: string, worldObjectId: string | null, type: 
     ...template,
     id,
     worldObjectId,
+    entityClass: template.id,
     name: metadata?.name || template.name,
     type: template.type || 'npc',
     class: metadata?.role || template.class,

@@ -15,6 +15,7 @@ import { useGameStore } from "../../store/useGameStore";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { OBJECT_TEMPLATES } from "../../data/world/templates";
+import { getNPCDialogue } from "../../data/npcDialogues";
 
 const _point = new THREE.Vector3();
 const _sphere = new THREE.Sphere();
@@ -149,62 +150,21 @@ export const WorldObjectItem = memo(({
       if (isEditorOpen) return;
       
       const npcType = obj.type.replace('npc_', '');
-      const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => 
-        q.giverId === obj.id || 
-        q.giverId === npcType || 
-        (obj.name && q.giverName === obj.name) ||
-        (OBJECT_TEMPLATES[obj.type]?.label && q.giverName === OBJECT_TEMPLATES[obj.type].label)
-      );
-      const activeQuests = useGameStore.getState().activeQuests;
-      const setActiveDialogue = useGameStore.getState().setActiveDialogue;
       const speakerName = obj.name || OBJECT_TEMPLATES[obj.type]?.label || "Villager";
-
-      // 1. Check for turn-in
-      const readyToTurnIn = npcQuests.find(q => {
-        const pq = activeQuests[q.id];
-        return pq && pq.status === 'active' && pq.objectives.every(o => o.completed);
+      
+      const dialogue = getNPCDialogue(obj.id, npcType, speakerName, {
+        activeQuests: useGameStore.getState().activeQuests,
+        quests: SAMPLE_QUESTS
       });
 
-      if (readyToTurnIn) {
-        setActiveDialogue({
-          speaker: speakerName,
-          text: `Incredible! You've done it. Here is your reward as promised.`,
-          quest: activeQuests[readyToTurnIn.id]
-        });
-        return;
-      }
-
-      // 2. Check for new quests
-      const availableQuest = npcQuests.find(q => {
-        const pq = activeQuests[q.id];
-        if (pq) return false;
-        if (q.prerequisiteQuestId) {
-          const prereq = activeQuests[q.prerequisiteQuestId];
-          return prereq && prereq.status === 'completed';
-        }
-        return true;
+      useGameStore.getState().setActiveDialogue({
+        speaker: speakerName,
+        text: dialogue.text,
+        npcId: obj.id,
+        npcType: npcType,
+        quest: dialogue.quest,
+        options: dialogue.options
       });
-
-      if (availableQuest) {
-        setActiveDialogue({
-          speaker: speakerName,
-          text: `Greetings traveler. ${availableQuest.description}`,
-          quest: availableQuest
-        });
-      } else {
-        const currentlyActive = npcQuests.find(q => activeQuests[q.id]?.status === 'active');
-        if (currentlyActive) {
-          setActiveDialogue({
-            speaker: speakerName,
-            text: `How goes the task for ${currentlyActive.title}? Keep at it!`
-          });
-        } else {
-          setActiveDialogue({
-            speaker: speakerName,
-            text: `The winds of Aetheria are cold today. Watch your step, explorer.`
-          });
-        }
-      }
     },
     onClick: (e: any) => {
       if (!isEditorOpen) {

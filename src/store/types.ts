@@ -166,10 +166,23 @@ export interface UISlice {
   setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
 }
 
+export interface DialogueOption {
+  label: string;
+  action: 'quest' | 'dialogue' | 'close';
+  targetId?: string;
+}
+
 export interface QuestSlice {
-  activeDialogue: { speaker: string; text: string; quest?: Quest | null } | null;
+  activeDialogue: { 
+    speaker: string; 
+    text: string; 
+    npcId: string;
+    npcType: string;
+    quest?: Quest | null;
+    options?: DialogueOption[];
+  } | null;
   activeQuests: Record<string, Quest>;
-  setActiveDialogue: (dialogue: { speaker: string; text: string; quest?: Quest | null } | null) => void;
+  setActiveDialogue: (dialogue: { speaker: string; text: string; npcId: string; npcType: string; quest?: Quest | null; options?: DialogueOption[] } | null) => void;
   setActiveQuests: (quests: Record<string, Quest>) => void;
   addQuest: (quest: Quest) => void;
   trackKill: (entityClass: string) => void;

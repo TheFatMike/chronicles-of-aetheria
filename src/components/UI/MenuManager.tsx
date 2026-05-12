@@ -17,6 +17,8 @@ import { CharacterInfo } from "./CharacterInfo";
 import { Character, InventoryItem, EquipmentSlots } from "../../types";
 import { ContextMenu } from "./ContextMenu";
 import { UserPlus, Handshake, MessageSquare, X } from "lucide-react";
+import { getNPCDialogue } from "../../data/npcDialogues";
+import { SAMPLE_QUESTS } from "../../data/quests";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -87,6 +89,7 @@ export const MenuManager = ({
           speaker={activeDialogue.speaker}
           text={activeDialogue.text}
           quest={activeDialogue.quest}
+          options={activeDialogue.options}
           isQuestReady={activeDialogue.quest ? activeQuests[activeDialogue.quest.id]?.objectives.every((o: any) => o.completed) : false}
           onAccept={() => {
             if (activeDialogue.quest && socket) {
@@ -100,6 +103,86 @@ export const MenuManager = ({
               socket.emit("turn_in_quest", { questId: activeDialogue.quest.id });
             }
             setActiveDialogue(null);
+          }}
+          onOptionSelect={(option) => {
+            if (option.action === 'close') {
+              setActiveDialogue(null);
+              return;
+            }
+
+            const { npcId, npcType, speaker: speakerName } = activeDialogue;
+
+            if (option.action === 'dialogue') {
+              const nextDialogue = getNPCDialogue(npcId, npcType, speakerName, {
+                activeQuests: activeQuests,
+                quests: SAMPLE_QUESTS
+              }, option.targetId);
+
+              setActiveDialogue({
+                speaker: speakerName,
+                npcId,
+                npcType,
+                ...nextDialogue
+              });
+            } else if (option.action === 'quest') {
+              if (option.targetId && SAMPLE_QUESTS[option.targetId]) {
+                const q = SAMPLE_QUESTS[option.targetId];
+                setActiveDialogue({
+                  speaker: speakerName,
+                  npcId,
+                  npcType,
+                  text: q.description,
+                  quest: q
+                });
+                return;
+              }
+
+              // Force search for quests by temporarily ignoring the dialogue tree
+              const questDialogue = getNPCDialogue(npcId, npcType, speakerName, {
+                activeQuests: activeQuests,
+                quests: SAMPLE_QUESTS
+              });
+
+              // If it returned a dialogue node (the root again), we need to manually find the quest
+              if (questDialogue.type === 'dialogue') {
+                const npcQuests = Object.values(SAMPLE_QUESTS).filter((q: any) => 
+                  q.giverId === npcId || q.giverId === npcType || q.giverName === speakerName
+                );
+                const availableQuest = npcQuests.find((q: any) => {
+                  const pq = activeQuests[q.id];
+                  if (pq) return false;
+                  if (q.prerequisiteQuestId) {
+                    const prereq = activeQuests[q.prerequisiteQuestId];
+                    return prereq && prereq.status === 'completed';
+                  }
+                  return true;
+                });
+
+                if (availableQuest) {
+                  setActiveDialogue({
+                    speaker: speakerName,
+                    npcId,
+                    npcType,
+                    text: availableQuest.description,
+                    quest: availableQuest
+                  });
+                } else {
+                   setActiveDialogue({
+                    speaker: speakerName,
+                    npcId,
+                    npcType,
+                    text: "I don't have any tasks for you right now."
+                  });
+                }
+              } else {
+                setActiveDialogue({
+                  speaker: speakerName,
+                  npcId,
+                  npcType,
+                  ...questDialogue
+                });
+              }
+            }
           }}
         />
       )}
