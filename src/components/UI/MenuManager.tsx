@@ -16,7 +16,7 @@ import { SkillBook } from "./SkillBook";
 import { CharacterInfo } from "./CharacterInfo";
 import { Character, InventoryItem, EquipmentSlots } from "../../types";
 import { ContextMenu } from "./ContextMenu";
-import { UserPlus, Handshake, MessageSquare, X, ShoppingCart, Landmark } from "lucide-react";
+import { UserPlus, Handshake, MessageSquare, X, ShoppingCart, Landmark, Sword } from "lucide-react";
 import { getNPCDialogue } from "../../data/npcDialogues";
 import { SAMPLE_QUESTS } from "../../data/quests";
 import { Shop } from "./Shop";
@@ -65,7 +65,8 @@ export const MenuManager = ({
     activeShop,
     setActiveShop,
     isBankOpen,
-    setBankOpen
+    setBankOpen,
+    setAutoAttackTarget
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -91,7 +92,8 @@ export const MenuManager = ({
     activeShop: s.activeShop,
     setActiveShop: s.setActiveShop,
     isBankOpen: s.isBankOpen,
-    setBankOpen: s.setBankOpen
+    setBankOpen: s.setBankOpen,
+    setAutoAttackTarget: s.setAutoAttackTarget
   })));
 
   return (
@@ -421,6 +423,21 @@ export const MenuManager = ({
               });
 
               return options;
+            } else if (contextMenu.targetType === 'enemy') {
+              return [
+                {
+                  label: "Attack",
+                  icon: <Sword size={14} />,
+                  onClick: () => {
+                    setAutoAttackTarget(contextMenu.targetId);
+                  }
+                },
+                {
+                  label: "Cancel",
+                  icon: <X size={14} />,
+                  onClick: () => {}
+                }
+              ];
             }
             return [];
           })()}

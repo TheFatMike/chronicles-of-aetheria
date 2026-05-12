@@ -215,7 +215,7 @@ export const BaseEntity = memo(({
       
       const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
 
-      if (e.button === 2 && (type === "player" || type === "npc")) {
+      if (e.button === 2 && (type === "player" || type === "npc" || type === "enemy")) {
         // Target first if not targeted
         if (!isTargeted) {
           setTarget(targetData);
