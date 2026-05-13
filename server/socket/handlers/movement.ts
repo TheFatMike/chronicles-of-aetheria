@@ -12,8 +12,9 @@ import { chunkLastAccess, worldObjects, playerKnownObjects } from "../../state";
 import { markPlayerDirty } from "../../lib/stateUtils";
 import { loadTerrainRegion } from "../../systems/persistence";
 import { updatePlayerPositionRedis } from "../../redis";
+import { takeGold } from "../../lib/playerUtils";
 
-import { MovePayloadSchema } from "../../lib/schemas";
+import { MovePayloadSchema, TeleportPayloadSchema } from "../../lib/schemas";
 import { validatePayload } from "../../lib/validation";
 
 export const handleMove = async (socket: Socket, data: any, io: Server) => {
@@ -130,10 +131,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   // 2. Mark as dirty for eventual persistence (Selective Fields)
   markPlayerDirty(socket.id, ["pos", "rot"]);
 
-  // 3. Update Redis Cache (Asynchronous)
-  updatePlayerPositionRedis(socket.id, player.characterId, finalPos);
-
-  // 2. Targeted Broadcast (AoI)
+  // 3. Targeted Broadcast (AoI)
   const nearbyKeys = getNearbyGridKeys(finalPos, 100);
   const payload = { id: socket.id, ...validated, pos: finalPos };
 
@@ -155,4 +153,52 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
       }
     }
   }
+};
+
+export const handleTeleport = async (socket: Socket, data: any, io: Server) => {
+  const validated = validatePayload(socket, TeleportPayloadSchema, data, "teleport");
+  if (!validated) return;
+
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  // 1. Deduct Gold (Authoritative)
+  const TELEPORT_COST = 50;
+  if (!takeGold(socket, player, TELEPORT_COST)) {
+    socket.emit("chat_message", { sender: "SYSTEM", text: "You don't have enough gold to teleport!", color: "#ff4444" });
+    return;
+  }
+
+  const oldPos = [...player.pos] as [number, number, number];
+  player.pos = validated.pos;
+  player.lastMoveTime = Date.now(); // Reset to avoid speed check delta issues
+  player.airTime = 0; // Reset air time for fly detection
+
+  // 1. Update Spatial Grid
+  updateInGrid(entityGrid, socket.id, oldPos, validated.pos);
+
+  // 2. Broadcast Teleport Effects
+  io.emit("teleport_effect", { pos: oldPos, type: "departure", playerId: socket.id });
+  io.emit("teleport_effect", { pos: validated.pos, type: "arrival", playerId: socket.id });
+
+  // 3. Broadcast to others in the destination area
+  const nearbyKeys = getNearbyGridKeys(validated.pos, 100);
+  const payload = { id: socket.id, pos: validated.pos, rot: player.rot, isMoving: false, isTeleport: true };
+
+  const processed = new Set<string>();
+  for (const key of nearbyKeys) {
+    const occupantIds = entityGrid.get(key);
+    if (!occupantIds) continue;
+
+    for (const otherId of occupantIds) {
+      if (otherId === socket.id || processed.has(otherId)) continue;
+      const otherPlayer = players.get(otherId);
+      if (otherPlayer) {
+        io.to(otherId).emit("player_move", payload);
+        processed.add(otherId);
+      }
+    }
+  }
+
+  serverLogger.info("net", `Player ${player.characterName} teleported to ${validated.pos}`);
 };

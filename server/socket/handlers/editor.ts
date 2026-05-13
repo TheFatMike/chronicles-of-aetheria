@@ -78,17 +78,6 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
       io.emit("spawners_sync", Array.from(spawners.values()));
     }
 
-    if (type.startsWith("npc_")) {
-      const entityId = `npc-${id}`;
-      const npcEntity = createNPCEntity(entityId, id, type, pos, rot, worldObj);
-      
-      const oldNPC = entities.get(entityId);
-      updateInGrid(entityGrid, entityId, oldNPC?.pos || null, pos);
-      
-      entities.set(entityId, npcEntity as any);
-      io.emit("entity_spawn", npcEntity);
-    }
-
     io.emit("world_object_updated", worldObj);
     serverLogger.info("world", `${player.characterName} updated ${type} (${id})`);
 
@@ -348,17 +337,6 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
         const saved = worldObjects.get(obj.id);
         if (saved) {
           io.emit("world_object_updated", saved);
-          
-          // NPC Auto-Spawn: If we just saved a new NPC, wake them up!
-          if (saved.type.startsWith("npc_")) {
-            const entityId = `npc-${saved.id}`;
-            if (!entities.has(entityId)) {
-              const npcEntity = createNPCEntity(entityId, saved.id, saved.type, saved.pos, saved.rot, saved);
-              entities.set(entityId, npcEntity as any);
-              updateInGrid(entityGrid, entityId, null, saved.pos);
-              io.emit("entity_spawn", npcEntity);
-            }
-          }
         }
       });
     }

@@ -83,6 +83,19 @@ export const getCharacterPositionRedis = async (characterId: string): Promise<[n
   }
 };
 
+/**
+ * Retrieves the full last known session data for a character from Redis.
+ */
+export const getCharacterSessionRedis = async (characterId: string): Promise<any | null> => {
+  try {
+    const data = await redis.hgetall(`player:session:${characterId}`);
+    if (!data || Object.keys(data).length === 0) return null;
+    return data;
+  } catch (err) {
+    return null;
+  }
+};
+
 export const getNearbyPlayersRedis = async (x: number, z: number, radius: number) => {
   try {
     return await redis.georadius("world:player_positions", x, z, radius, "m");

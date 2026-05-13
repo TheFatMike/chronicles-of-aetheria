@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { handleUpdateTerrain, handleRequestTerrainSync } from "./handlers/terrain";
 import { handleJoin, handleDisconnect } from "./handlers/session";
-import { handleMove } from "./handlers/movement";
+import { handleMove, handleTeleport } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
 import { handleCreateCharacter, handleDeleteCharacter, handleUpdateCharacter } from "./handlers/character";
 import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem, handleBankDeposit, handleBankWithdraw, handleBankMove, handleBankDepositAll } from "./handlers/inventory";
@@ -31,6 +31,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
 
   // Movement
   socket.on("move", (data) => handleMove(socket, data, io));
+  socket.on("teleport", (data) => handleTeleport(socket, data, io));
 
   // Combat
   socket.on("cast_skill", (data) => handleCombatSkill(io, socket, data));

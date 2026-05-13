@@ -15,11 +15,24 @@ export const autosavePlayers = async () => {
   const playersToSave = new Map(dirtyPlayers);
   dirtyPlayers.clear();
   
+  const pipeline = redis.pipeline();
+  let count = 0;
+
   for (const [id, fields] of playersToSave.entries()) {
     const p = players.get(id);
     if (p) {
       const redisData = {
-        ...p,
+        userId: p.userId,
+        characterId: p.characterId,
+        characterName: p.characterName,
+        class: p.class,
+        color: p.color,
+        level: p.level,
+        exp: p.exp,
+        maxExp: p.maxExp,
+        hp: p.hp,
+        mp: p.mp,
+        gold: p.gold,
         pos: JSON.stringify(p.pos),
         rot: JSON.stringify(p.rot),
         stats: JSON.stringify(p.stats),
@@ -31,11 +44,16 @@ export const autosavePlayers = async () => {
         discoveredTeleports: JSON.stringify(p.discoveredTeleports || []),
         lastActive: Date.now()
       };
-      await redis.hset(`player:session:${p.characterId}`, redisData);
+      pipeline.hset(`player:session:${p.characterId}`, redisData);
+      pipeline.expire(`player:session:${p.characterId}`, 60 * 60 * 24); // 24 hour TTL
+      count++;
     }
   }
   
-  serverLogger.info("redis", `Buffered ${playersToSave.size} player updates to Redis Write-Back cache.`);
+  if (count > 0) {
+    await pipeline.exec();
+    serverLogger.info("redis", `Buffered ${count} player updates to Redis Write-Back cache via pipeline.`);
+  }
 };
 
 export const flushRedisToFirestore = async () => {
@@ -109,6 +127,9 @@ export const performShutdownSave = async () => {
   serverLogger.info("system", "Performing final shutdown save...");
   await autosavePlayers();
   await flushRedisToFirestore();
+  
+  const { autosaveTerrain } = await import("./terrain");
+  await autosaveTerrain();
 };
 
 export const startPeriodicTasks = () => {
@@ -117,10 +138,10 @@ export const startPeriodicTasks = () => {
     await autosavePlayers();
   }, 1000 * 60);
 
-  // 2. Redis to Firestore Flush (Every 30 minutes)
+  // 2. Redis to Firestore Flush (Every 60 minutes)
   setInterval(async () => {
     await flushRedisToFirestore();
-  }, 1000 * 60 * 30);
+  }, 1000 * 60 * 60);
 
   // 3. Redis Ghost Cleanup (10 minutes)
   setInterval(async () => {
@@ -132,4 +153,10 @@ export const startPeriodicTasks = () => {
   setInterval(async () => {
     await unloadInactiveChunks();
   }, 1000 * 60 * 5);
+
+  // 5. Terrain Autosave to Firestore (Every 15 minutes)
+  setInterval(async () => {
+    const { autosaveTerrain } = await import("./terrain");
+    await autosaveTerrain();
+  }, 1000 * 60 * 15);
 };

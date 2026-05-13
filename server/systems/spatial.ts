@@ -34,7 +34,11 @@ export function getGridKey(pos: [number, number, number]): string {
 export function updateInGrid(grid: Map<string, Set<string>>, id: string, oldPos: [number, number, number] | null, newPos: [number, number, number]) {
   if (oldPos) {
     const oldKey = getGridKey(oldPos);
-    grid.get(oldKey)?.delete(id);
+    const oldSet = grid.get(oldKey);
+    if (oldSet) {
+      oldSet.delete(id);
+      if (oldSet.size === 0) grid.delete(oldKey);
+    }
   }
   const newKey = getGridKey(newPos);
   if (!grid.has(newKey)) grid.set(newKey, new Set());

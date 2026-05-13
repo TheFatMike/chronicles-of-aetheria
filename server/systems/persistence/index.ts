@@ -6,3 +6,4 @@
 export * from "./init";
 export * from "./chunks";
 export * from "./players";
+export * from "./terrain";

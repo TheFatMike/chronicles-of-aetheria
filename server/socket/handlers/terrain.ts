@@ -9,6 +9,7 @@ import { terrainData, players } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { saveTerrainRedis } from "../../redis";
+import { dirtyTerrainChunks, chunkToTerrain } from "../../state";
 
 export const handleUpdateTerrain = (io: Server, socket: Socket, data: { 
   points: { x: number, z: number, y?: number, deltaY?: number, type?: string }[] 
@@ -38,32 +39,48 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
     updates.push({ x: p.x, z: p.z, ...current });
   }
 
-
-  // Broadast to other players but do NOT save to database here.
-  // Database saving is handled by the 'Batch Save' system to optimize performance and costs.
+  // 4. Save to Redis and broadcast
   if (updates.length > 0) {
     saveTerrainRedis(updates);
+    
+    // Mark chunks as dirty for eventual Firestore persistence
+    for (const p of updates) {
+      const tx = Math.floor(p.x / 100);
+      const tz = Math.floor(p.z / 100);
+      const chunkKey = `${tx},${tz}`;
+      dirtyTerrainChunks.add(chunkKey);
+      
+      if (!chunkToTerrain.has(chunkKey)) chunkToTerrain.set(chunkKey, new Set());
+      chunkToTerrain.get(chunkKey)!.add(`${p.x}_${p.z}`);
+    }
+
     import("../../redis").then(m => m.redis.publish("terrain:sync", JSON.stringify(updates)));
     io.emit("terrain_sync", updates);
   }
-
-  // Sync to Redis for cross-instance consistency
-  saveTerrainRedis(updates);
-  import("../../redis").then(m => m.redis.publish("terrain:sync", JSON.stringify(updates)));
-
-  // Broadcast updates to all players connected to THIS instance
-  io.emit("terrain_sync", updates);
 };
 
 export const handleRequestTerrainSync = (socket: Socket) => {
-  // For now, send the entire terrain data. 
-  // Future: filter by distance
-  const allTerrain = [...terrainData.entries()]
-    .filter(([_, val]) => !isNaN(val.y))
+  const player = players.get(socket.id);
+  if (!player) return;
+
+  // OPTIMIZATION: Only send terrain edits within 150 units of the player
+  const SYNC_RADIUS = 150;
+  const SYNC_RADIUS_SQ = SYNC_RADIUS * SYNC_RADIUS;
+
+  const nearbyTerrain = [...terrainData.entries()]
+    .filter(([key, val]) => {
+      if (isNaN(val.y)) return false;
+      const [x, z] = key.split('_').map(Number);
+      const dx = x - player.pos[0];
+      const dz = z - player.pos[2];
+      return (dx * dx + dz * dz) < SYNC_RADIUS_SQ;
+    })
     .map(([key, val]) => {
       const [x, z] = key.split('_').map(Number);
       return { x, z, ...val };
     });
   
-  socket.emit("terrain_sync", allTerrain);
+  if (nearbyTerrain.length > 0) {
+    socket.emit("terrain_sync", nearbyTerrain);
+  }
 };

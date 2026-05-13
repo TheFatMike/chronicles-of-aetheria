@@ -4,13 +4,14 @@
  * Decides whether to render a procedural object (like a tree) or an external GLB model.
  * @importance Essential: Simplifies object management by providing a uniform interface for all environmental props.
  */
-import { memo, useRef, useEffect, useMemo } from "react";
+import { memo, useRef, useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint, TeleportCrystal } from "./Environment";
 import { Humanoid } from "./Humanoid";
 import { NPC } from "./NPC";
 import { GLBModel } from "./GLBModel";
+import { Billboard, Text } from "@react-three/drei";
 import { SelectionCircle } from "./SelectionCircle";
 import { useGameStore } from "../../store/useGameStore";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
@@ -52,21 +53,23 @@ export const ProceduralModel = memo(({
       return <Waypoint {...modelProps} />;
     default: 
       // Handle NPCs as generic humanoids in the editor if no model
+      // NPCs are now static WorldObjects by default
       if (type.startsWith('npc_')) {
-        if (isEditorOpen) {
-          return (
-            <group {...modelProps} position={[0, 0, 0]}>
-              <Humanoid 
-                color={modelProps.isGhost ? '#3b82f6' : (obj?.color || '#facc15')} 
-                isMoving={false} 
-                isGrounded={true} 
-                isAttacking={false}
-                opacity={modelProps.isGhost ? 0.4 : 1.0}
-              />
-            </group>
-          );
+        const color = obj?.color || '#facc15';
+        if (obj?.modelUrl) {
+          return <GLBModel url={obj.modelUrl} {...modelProps} isCollidable={true} />;
         }
-        return null;
+        return (
+          <group {...modelProps} position={[0, 0, 0]}>
+            <Humanoid 
+              color={color} 
+              isMoving={false} 
+              isGrounded={true} 
+              isAttacking={false}
+              opacity={1.0}
+            />
+          </group>
+        );
       }
       
       // FALLBACK: If no custom procedural component, use the modelUrl if provided
@@ -101,6 +104,7 @@ export const WorldObjectItem = memo(({
   setTransformRef
 }: WorldObjectItemProps) => {
   const groupRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
   const _point = useRef(new THREE.Vector3());
   const _sphere = useRef(new THREE.Sphere());
   
@@ -189,13 +193,7 @@ export const WorldObjectItem = memo(({
           // Check if already attuning
           if (state.castState?.name === "Attuning Crystal") return;
           
-          state.addMessage({
-            id: "sys-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9),
-            sender: "SYSTEM",
-            text: `Establishing magical link with ${speakerName}...`,
-            timestamp: Date.now(),
-            color: "#a855f7"
-          });
+          /* Message removed as per user request */
           
           state.startCast("Attuning Crystal", 5000);
           
@@ -251,8 +249,9 @@ export const WorldObjectItem = memo(({
     onClick: (e: any) => {
       e.stopPropagation();
       
-      // Strict Guard: If not in editor and not an interactable type, ignore completely
-      if (!isEditorOpen && !isNPC && obj.type !== 'teleport_crystal') {
+      // Strict Guard: If not in editor and not a valid interactable type, ignore completely
+      // Spawners should NEVER be interactable in-game, even if they have 'npc_' in their type name
+      if (!isEditorOpen && (isSpawner || (!isNPC && obj.type !== 'teleport_crystal'))) {
         return;
       }
 
@@ -310,9 +309,43 @@ export const WorldObjectItem = memo(({
 
   const isTargetedInGame = useGameStore(s => s.currentTarget?.id === obj.id);
   const isSelectedFinal = isSelected || (isTargetedInGame && !isEditorOpen);
+  const showAllNames = useGameStore(s => s.showAllNames);
+  const activeQuests = useGameStore(s => s.activeQuests);
 
   const isWaypoint = obj.type === 'waypoint';
   const isWaypointActive = isWaypoint && (isSelected || editorSelectedType === 'waypoint');
+
+  // Quest Marker Logic
+  const npcType = obj.type.startsWith('npc_') ? obj.type.replace('npc_', '') : '';
+  const npcQuests = Object.values(SAMPLE_QUESTS).filter(q => 
+    q.giverId === obj.id || 
+    (npcType && q.giverId === npcType) || 
+    q.giverName === obj.name
+  );
+  
+  const readyQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    return pq && pq.status === 'active' && pq.objectives.every(o => o.completed);
+  });
+
+  const availableQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    if (pq) return false;
+    if (q.prerequisiteQuestId) {
+      const prereq = activeQuests[q.prerequisiteQuestId];
+      return prereq && prereq.status === 'completed';
+    }
+    return true;
+  });
+
+  const activeQuest = npcQuests.find(q => {
+    const pq = activeQuests[q.id];
+    return pq && pq.status === 'active' && !pq.objectives.every(o => o.completed);
+  });
+
+  const template = OBJECT_TEMPLATES[obj.type];
+  const speakerName = obj.name || template?.label || "Villager";
+  const role = obj.role || template?.role;
 
   return (
     <group 
@@ -320,10 +353,64 @@ export const WorldObjectItem = memo(({
       rotation={obj.rot} 
       scale={obj.scale}
       ref={groupRef}
-      userData={{ isCollidable: !isSpawner }}
+      userData={{ isCollidable: !isSpawner && !isNPC }}
       {...({ isWorldObject: true } as any)}
-      onClick={(isEditorOpen || isNPC || obj.type === 'teleport_crystal') ? modelProps.onClick : undefined}
+      onClick={(isEditorOpen || (!isSpawner && (isNPC || obj.type === 'teleport_crystal'))) ? modelProps.onClick : undefined}
+      onPointerOver={(e) => {
+        if (isEditorOpen) return;
+        e.stopPropagation();
+        setHovered(true);
+        if (isNPC) document.body.classList.add('npc-hover');
+        if (obj.type === 'teleport_crystal') document.body.classList.add('npc-hover');
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.classList.remove('npc-hover');
+      }}
     >
+      {/* Quest Markers */}
+      {isNPC && !isEditorOpen && (
+        <Billboard position={[0, 2.4, 0]}>
+          {readyQuest ? (
+            <Text fontSize={0.6} color="#facc15" anchorX="center" anchorY="middle" outlineWidth={0.05} outlineColor="black">?</Text>
+          ) : availableQuest ? (
+            <Text fontSize={0.6} color="#facc15" anchorX="center" anchorY="middle" outlineWidth={0.05} outlineColor="black">!</Text>
+          ) : activeQuest ? (
+            <Text fontSize={0.6} color="#9ca3af" anchorX="center" anchorY="middle" outlineWidth={0.05} outlineColor="black" fillOpacity={0.6}>?</Text>
+          ) : null}
+        </Billboard>
+      )}
+
+      {/* Name and Role Tag for NPCs */}
+      {isNPC && (isSelectedFinal || showAllNames || hovered) && (
+        <Billboard position={[0, 2.2, 0]} follow={true}>
+          <Text
+            position={[0, 0.4, 0]}
+            fontSize={0.25}
+            color={hovered ? "#fff" : "#f4e4bc"}
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.02}
+            outlineColor="black"
+          >
+            {speakerName.toUpperCase()}
+          </Text>
+          {role && (
+            <Text
+              position={[0, 0.15, 0]}
+              fontSize={0.12}
+              color="#facc15"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={0.01}
+              outlineColor="black"
+            >
+              {`<${role.toUpperCase()}>`}
+            </Text>
+          )}
+        </Billboard>
+      )}
+
       {/* Selection Circle - Unified with BaseEntity */}
       <SelectionCircle 
         visible={isSelectedFinal} 

@@ -13,7 +13,7 @@ import { CharacterModel } from "../../../src/models/CharacterModel";
 import { filterNearby, updateInGrid, entityGrid, getGridKey } from "../../systems/spatial";
 import { getUserRole } from "../../lib/auth";
 import { handleRequestTerrainSync } from "./terrain";
-import { removePlayerRedis, getCharacterPositionRedis } from "../../redis";
+import { removePlayerRedis, getCharacterSessionRedis } from "../../redis";
 import { handlePartyLeave } from "./party";
 import { handleTradeCancel } from "./trade";
 import { loadTerrainRegion } from "../../systems/persistence";
@@ -56,10 +56,27 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
       }
       const charData = CharacterModel.fromFirestore(charDoc.id, charDoc.data(), userRole);
 
-      // Check Redis for a "hot" position first (survives refreshes better than Firestore)
-      const redisPos = await getCharacterPositionRedis(validated.characterId);
-      if (redisPos) {
-        serverLogger.info("net", `Restored position from Redis for ${charData.name}: ${redisPos}`);
+      // Check Redis for a "hot" session (Write-Back Cache)
+      const redisSession = await getCharacterSessionRedis(validated.characterId);
+      if (redisSession) {
+        serverLogger.info("net", `Restoring hot session from Redis for ${charData.name}`);
+        try {
+          if (redisSession.pos) charData.pos = JSON.parse(redisSession.pos);
+          if (redisSession.rot) charData.rot = JSON.parse(redisSession.rot);
+          if (redisSession.hp) charData.hp = parseFloat(redisSession.hp);
+          if (redisSession.mp) charData.mp = parseFloat(redisSession.mp);
+          if (redisSession.gold) charData.gold = parseInt(redisSession.gold);
+          if (redisSession.level) charData.level = parseInt(redisSession.level);
+          if (redisSession.exp) charData.exp = parseInt(redisSession.exp);
+          if (redisSession.inventory) charData.inventory = JSON.parse(redisSession.inventory);
+          if (redisSession.bank) charData.bank = JSON.parse(redisSession.bank);
+          if (redisSession.equipment) charData.equipment = JSON.parse(redisSession.equipment);
+          if (redisSession.hotbar) charData.hotbar = JSON.parse(redisSession.hotbar);
+          if (redisSession.quests) charData.quests = JSON.parse(redisSession.quests);
+          if (redisSession.discoveredTeleports) charData.discoveredTeleports = JSON.parse(redisSession.discoveredTeleports);
+        } catch (e: any) {
+          serverLogger.error("net", `Failed to parse Redis session for ${charData.name}: ${e.message}`);
+        }
       }
 
       // MIGRATION: Update legacy skill IDs to new Aetheria names
@@ -99,7 +116,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         class: charData.class,
         color: charData.color,
         role: userRole,
-        pos: redisPos || charData.pos || validated.pos || [0, 1, 0],
+        pos: charData.pos || validated.pos || [0, 1, 0],
         rot: charData.rot || validated.rot || [0, 0, 0],
         hp: charData.hp,
         maxHp: charData.maxHp,
@@ -150,7 +167,6 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     
     const nearbyWorldObjects = filterNearby(worldObjects, currentPlayer.pos, 150, 'object');
     socket.emit("world_sync", nearbyWorldObjects);
-    socket.emit("world_objects_sync", Array.from(worldObjects.values()));
     
     handleRequestTerrainSync(socket);
     

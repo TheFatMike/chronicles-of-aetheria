@@ -13,6 +13,7 @@ import { filterNearby, getGridKey } from "./spatial";
 import { updateEntityAI, initAIWorker } from "./ai";
 import { updateSpawners } from "./spawners";
 import { autosavePlayers } from "./persistence";
+import { markPlayerDirty } from "../lib/stateUtils";
 
 export const startHeartbeat = (io: Server) => {
   const TICK_TIME = 100; // 10 ticks per second
@@ -129,6 +130,9 @@ export const startHeartbeat = (io: Server) => {
             for (const nearby of nearbyPlayers) {
               io.to(nearby.id).emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
             }
+            
+            // Mark as dirty so regen is persisted to Redis/Firestore
+            markPlayerDirty(player.id, ["hp", "mp"]);
           }
         }
         timeSinceLastStatsRegen -= 3000;

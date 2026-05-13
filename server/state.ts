@@ -25,3 +25,4 @@ export const characterNameToId = new Map<string, string>(); // characterName.toL
 export const chunkLastAccess = new Map<string, number>(); // "tx,tz" -> timestamp
 export const chunkToObjects = new Map<string, Set<string>>(); // "tx,tz" -> Set<objectId>
 export const chunkToTerrain = new Map<string, Set<string>>(); // "tx,tz" -> Set<"x_z">
+export const dirtyTerrainChunks = new Set<string>(); // "tx,tz"

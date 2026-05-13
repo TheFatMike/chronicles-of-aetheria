@@ -75,14 +75,7 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
               if (!chunkToObjects.has(localKey)) chunkToObjects.set(localKey, new Set());
               chunkToObjects.get(localKey)!.add(id);
 
-              if (mergedObj.type.startsWith("npc_")) {
-                const entityId = `npc-${id}`;
-                if (!entities.has(entityId)) {
-                  const npcEntity = createNPCEntity(entityId, id, mergedObj.type, mergedObj.pos, mergedObj.rot, mergedObj);
-                  entities.set(entityId, npcEntity as any);
-                  updateInGrid(entityGrid, entityId, null, mergedObj.pos);
-                }
-              } else if (mergedObj.type.startsWith("spawner_")) {
+              if (mergedObj.type.startsWith("spawner_")) {
                 const { registerSpawnerFromObject } = await import("../spawners");
                 await registerSpawnerFromObject(mergedObj);
               }
@@ -90,10 +83,8 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
 
             const { io } = await import("../../../server") as any;
             const newObjs = Array.from(Object.keys(chunkData)).map(id => worldObjects.get(id)).filter(Boolean);
-            const newEnts = Array.from(Object.keys(chunkData)).map(id => entities.get(`npc-${id}`)).filter(Boolean);
-
+            
             if (newObjs.length > 0) io.emit("world_objects_sync", newObjs);
-            if (newEnts.length > 0) io.emit("entities_sync", newEnts);
           }
           
           loadedChunksLocal.add(localKey);

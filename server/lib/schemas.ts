@@ -18,6 +18,10 @@ export const MovePayloadSchema = z.object({
   isGrounded: z.boolean().optional(),
 });
 
+export const TeleportPayloadSchema = z.object({
+  pos: PositionSchema,
+});
+
 export const ChatPayloadSchema = z.string().min(1).max(256);
 
 export const PromotePayloadSchema = z.object({

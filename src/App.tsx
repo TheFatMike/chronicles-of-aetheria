@@ -145,6 +145,17 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Synchronize local character state with the Store to ensure optimistic updates (like gold) reflect in UI
+  const players = useGameStore(s => s.players);
+  useEffect(() => {
+    if (socket?.id && players[socket.id] && selectedCharacter) {
+      const storeData = players[socket.id];
+      if (storeData.gold !== selectedCharacter.gold || storeData.inventory !== selectedCharacter.inventory) {
+        setSelectedCharacter(prev => prev ? { ...prev, gold: storeData.gold, inventory: storeData.inventory } : null);
+      }
+    }
+  }, [players, socket?.id, selectedCharacter?.id]);
+
   // Initial Data Fetch
   useEffect(() => {
     if (user && !loading && !charsLoading && characters.length === 0 && !selectedCharacter && !isCreating && !initialFetchAttempted.current) {

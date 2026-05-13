@@ -63,6 +63,12 @@ export const TeleportMenu = () => {
     ];
     
     requestTeleport(targetPos);
+
+    // 3. Emit to Server to bypass anti-cheat and sync with other players
+    const socket = (window as any).socket;
+    if (socket) {
+      socket.emit("teleport", { pos: targetPos });
+    }
   };
 
   return (
