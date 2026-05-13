@@ -1,12 +1,12 @@
 /**
  * @file src/data/passives.ts
  * @description Defines the passive skill tree nodes for each character class.
- * Maps tree branches (e.g., Juggernaut vs Slayer) to specific stat and combat bonuses.
+ * Maps tree branches (e.g., Bulwark vs Vanguard) to specific stat and combat bonuses.
  */
 import { PassiveNode } from "../types";
 
 export const PASSIVE_NODES: PassiveNode[] = [
-  // --- WARRIOR: JUGGERNAUT (TANK) ---
+  // --- WARRIOR: BULWARK (TANK) ---
   {
     id: "war_tank_1",
     name: "Toughened Hide",
@@ -15,7 +15,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { stamina: 2 },
     class: "warrior",
-    branch: "Juggernaut",
+    branch: "Bulwark",
     position: { x: 200, y: 100 }
   },
   {
@@ -27,7 +27,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { healthBonus: 0.05 },
     dependencies: ["war_tank_1"],
     class: "warrior",
-    branch: "Juggernaut",
+    branch: "Bulwark",
     position: { x: 200, y: 250 }
   },
   {
@@ -39,11 +39,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { damageMultiplier: -0.02 },
     dependencies: ["war_tank_2"],
     class: "warrior",
-    branch: "Juggernaut",
+    branch: "Bulwark",
     position: { x: 200, y: 400 }
   },
 
-  // --- WARRIOR: SLAYER (DAMAGE) ---
+  // --- WARRIOR: VANGUARD (DAMAGE) ---
   {
     id: "war_dmg_1",
     name: "Brute Force",
@@ -52,7 +52,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { strength: 2 },
     class: "warrior",
-    branch: "Slayer",
+    branch: "Vanguard",
     position: { x: 400, y: 100 }
   },
   {
@@ -64,7 +64,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { critChance: 0.02 },
     dependencies: ["war_dmg_1"],
     class: "warrior",
-    branch: "Slayer",
+    branch: "Vanguard",
     position: { x: 400, y: 250 }
   },
   {
@@ -76,11 +76,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { damageMultiplier: 0.03 },
     dependencies: ["war_dmg_2"],
     class: "warrior",
-    branch: "Slayer",
+    branch: "Vanguard",
     position: { x: 400, y: 400 }
   },
 
-  // --- PRIEST: HOLY (HEALING) ---
+  // --- PRIEST: DIVINE (HEALING) ---
   {
     id: "pri_heal_1",
     name: "Divine Wisdom",
@@ -89,7 +89,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { wisdom: 2 },
     class: "priest",
-    branch: "Holy",
+    branch: "Divine",
     position: { x: 200, y: 100 }
   },
   {
@@ -101,7 +101,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { healingMultiplier: 0.05 },
     dependencies: ["pri_heal_1"],
     class: "priest",
-    branch: "Holy",
+    branch: "Divine",
     position: { x: 200, y: 250 }
   },
   {
@@ -113,11 +113,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { cooldownReduction: 0.04 },
     dependencies: ["pri_heal_2"],
     class: "priest",
-    branch: "Holy",
+    branch: "Divine",
     position: { x: 200, y: 400 }
   },
 
-  // --- PRIEST: SHADOW (DAMAGE) ---
+  // --- PRIEST: VOID (DAMAGE) ---
   {
     id: "pri_dmg_1",
     name: "Dark Thoughts",
@@ -126,7 +126,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { intelligence: 2 },
     class: "priest",
-    branch: "Shadow",
+    branch: "Void",
     position: { x: 400, y: 100 }
   },
   {
@@ -138,23 +138,23 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { critChance: 0.02 },
     dependencies: ["pri_dmg_1"],
     class: "priest",
-    branch: "Shadow",
+    branch: "Void",
     position: { x: 400, y: 250 }
   },
   {
     id: "pri_dmg_3",
-    name: "Shadowform",
+    name: "Void Aura",
     description: "Increases shadow damage dealt by 4% per point.",
     icon: "🌑",
     maxPoints: 5,
     bonuses: { damageMultiplier: 0.04 },
     dependencies: ["pri_dmg_2"],
     class: "priest",
-    branch: "Shadow",
+    branch: "Void",
     position: { x: 400, y: 400 }
   },
 
-  // --- MAGE: ARCANE (UTILITY) ---
+  // --- MAGE: AETHERIAL (UTILITY) ---
   {
     id: "mag_util_1",
     name: "Arcane Flow",
@@ -163,23 +163,23 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { intelligence: 2 },
     class: "mage",
-    branch: "Arcane",
+    branch: "Aetherial",
     position: { x: 200, y: 100 }
   },
   {
     id: "mag_util_2",
-    name: "Mana Shield",
+    name: "Aether Barrier",
     description: "Increases maximum mana by 10% per point.",
     icon: "🌀",
     maxPoints: 3,
     bonuses: { manaBonus: 0.10 },
     dependencies: ["mag_util_1"],
     class: "mage",
-    branch: "Arcane",
+    branch: "Aetherial",
     position: { x: 200, y: 250 }
   },
 
-  // --- MAGE: FIRE (DAMAGE) ---
+  // --- MAGE: PYROMANCY (DAMAGE) ---
   {
     id: "mag_dmg_1",
     name: "Ignite",
@@ -188,7 +188,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     bonuses: { damageMultiplier: 0.03 },
     class: "mage",
-    branch: "Fire",
+    branch: "Pyromancy",
     position: { x: 400, y: 100 }
   },
   {
@@ -200,10 +200,10 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { critChance: 0.04 },
     dependencies: ["mag_dmg_1"],
     class: "mage",
-    branch: "Fire",
+    branch: "Pyromancy",
     position: { x: 400, y: 250 }
   },
-  // --- RANGER: MARKSMAN (DAMAGE) ---
+  // --- RANGER: SHARPSHOOTER (DAMAGE) ---
   {
     id: "ran_dmg_1",
     name: "Eagle Eye",
@@ -212,7 +212,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { dexterity: 2 },
     class: "ranger",
-    branch: "Marksman",
+    branch: "Sharpshooter",
     position: { x: 200, y: 100 }
   },
   {
@@ -224,7 +224,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { critChance: 0.01 }, // Using crit as a stand-in for range bonus logic
     dependencies: ["ran_dmg_1"],
     class: "ranger",
-    branch: "Marksman",
+    branch: "Sharpshooter",
     position: { x: 200, y: 250 }
   },
   {
@@ -236,11 +236,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { damageMultiplier: 0.05 },
     dependencies: ["ran_dmg_2"],
     class: "ranger",
-    branch: "Marksman",
+    branch: "Sharpshooter",
     position: { x: 200, y: 400 }
   },
 
-  // --- RANGER: BEASTMASTER (UTILITY) ---
+  // --- RANGER: WARDEN (UTILITY) ---
   {
     id: "ran_util_1",
     name: "Wild Survival",
@@ -249,7 +249,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { stamina: 2 },
     class: "ranger",
-    branch: "Beastmaster",
+    branch: "Warden",
     position: { x: 400, y: 100 }
   },
   {
@@ -261,11 +261,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { healthBonus: 0.08 },
     dependencies: ["ran_util_1"],
     class: "ranger",
-    branch: "Beastmaster",
+    branch: "Warden",
     position: { x: 400, y: 250 }
   },
 
-  // --- ROGUE: ASSASSINATION (DAMAGE) ---
+  // --- ROGUE: STALKER (DAMAGE) ---
   {
     id: "rog_dmg_1",
     name: "Lethality",
@@ -274,7 +274,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { dexterity: 2 },
     class: "rogue",
-    branch: "Assassination",
+    branch: "Stalker",
     position: { x: 200, y: 100 }
   },
   {
@@ -286,11 +286,11 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { damageMultiplier: 0.04 },
     dependencies: ["rog_dmg_1"],
     class: "rogue",
-    branch: "Assassination",
+    branch: "Stalker",
     position: { x: 200, y: 250 }
   },
 
-  // --- ROGUE: SUBTLETY (CRIT) ---
+  // --- ROGUE: INFILTRATOR (CRIT) ---
   {
     id: "rog_crit_1",
     name: "Shadowstep",
@@ -299,22 +299,22 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     bonuses: { critChance: 0.03 },
     class: "rogue",
-    branch: "Subtlety",
+    branch: "Infiltrator",
     position: { x: 400, y: 100 }
   },
   {
     id: "rog_crit_2",
-    name: "Eviscerate",
+    name: "Precision Strike",
     description: "Increases Critical Strike damage by 15% per point.",
     icon: "🩸",
     maxPoints: 3,
     bonuses: { damageMultiplier: 0.06 },
     dependencies: ["rog_crit_1"],
     class: "rogue",
-    branch: "Subtlety",
+    branch: "Infiltrator",
     position: { x: 400, y: 250 }
   },
-  // --- PALADIN: PROTECTION (TANK) ---
+  // --- PALADIN: GUARDIAN (TANK) ---
   {
     id: "pal_tank_1",
     name: "Divine Bastion",
@@ -323,7 +323,7 @@ export const PASSIVE_NODES: PassiveNode[] = [
     maxPoints: 5,
     stats: { stamina: 2 },
     class: "paladin",
-    branch: "Protection",
+    branch: "Guardian",
     position: { x: 200, y: 100 }
   },
   {
@@ -335,32 +335,32 @@ export const PASSIVE_NODES: PassiveNode[] = [
     bonuses: { damageMultiplier: -0.03 },
     dependencies: ["pal_tank_1"],
     class: "paladin",
-    branch: "Protection",
+    branch: "Guardian",
     position: { x: 200, y: 250 }
   },
 
-  // --- PALADIN: RETRIBUTION (DAMAGE) ---
+  // --- PALADIN: CRUSADER (DAMAGE) ---
   {
     id: "pal_dmg_1",
-    name: "Crusader's Might",
+    name: "Herald's Might",
     description: "Increases Strength by 2 per point.",
     icon: "⚔️",
     maxPoints: 5,
     stats: { strength: 2 },
     class: "paladin",
-    branch: "Retribution",
+    branch: "Crusader",
     position: { x: 400, y: 100 }
   },
   {
     id: "pal_dmg_2",
-    name: "Righteous Fury",
+    name: "Celestial Focus",
     description: "Increases critical strike chance by 2% per point.",
     icon: "✨",
     maxPoints: 5,
     bonuses: { critChance: 0.02 },
     dependencies: ["pal_dmg_1"],
     class: "paladin",
-    branch: "Retribution",
+    branch: "Crusader",
     position: { x: 400, y: 250 }
   }
 ];

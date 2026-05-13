@@ -108,15 +108,17 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   // Calculate amount
   const stats = calculateTotalStats(player.stats || {}, player.equipment || {});
   let amount = 0;
-  if (skill.id === 'fireball' || skill.id === 'heal') {
+
+  if (skill.scalingType === 'magic') {
     amount = Math.floor(calculateMagicDamage(stats) * (skill.damageMultiplier || skill.healingMultiplier || 1));
   } else {
     amount = Math.floor(calculatePhysicalDamage(stats) * (skill.damageMultiplier || 1));
   }
+  
   if (isNaN(amount) || amount <= 0) amount = 1;
 
   // Healing
-  if (skill.healingMultiplier) {
+  if (skill.isHealing || skill.healingMultiplier) {
     let target = players.get(validated.targetId || socket.id);
     if (target) {
       target.hp = Math.min(target.maxHp || 100, target.hp + amount);

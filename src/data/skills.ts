@@ -19,13 +19,14 @@ export const ALL_SKILLS: Skill[] = [
     damageMultiplier: 1.0,
     range: 3,
     targetType: "target",
-    levelRequired: 1
+    levelRequired: 1,
+    scalingType: "physical"
   },
 
   // --- WARRIOR ---
   {
-    id: "shield_slam",
-    name: "Shield Slam",
+    id: "aegis_bash",
+    name: "Aegis Bash",
     description: "Slam your target with your shield, dealing damage based on strength.",
     icon: "🛡️",
     type: "active",
@@ -35,11 +36,12 @@ export const ALL_SKILLS: Skill[] = [
     range: 3,
     targetType: "target",
     levelRequired: 1,
-    class: "warrior"
+    class: "warrior",
+    scalingType: "physical"
   },
   {
-    id: "whirlwind",
-    name: "Whirlwind",
+    id: "steel_tempest",
+    name: "Steel Tempest",
     description: "Spin rapidly, dealing massive damage to your target.",
     icon: "🌪️",
     type: "active",
@@ -49,13 +51,14 @@ export const ALL_SKILLS: Skill[] = [
     range: 4,
     targetType: "target",
     levelRequired: 5,
-    class: "warrior"
+    class: "warrior",
+    scalingType: "physical"
   },
 
   // --- MAGE ---
   {
-    id: "fireball",
-    name: "Fireball",
+    id: "ember_bolt",
+    name: "Ember Bolt",
     description: "Launch a ball of fire that deals high magic damage.",
     icon: "🔥",
     type: "active",
@@ -67,11 +70,12 @@ export const ALL_SKILLS: Skill[] = [
     targetType: "target",
     animation: "cast_fire",
     levelRequired: 1,
-    class: "mage"
+    class: "mage",
+    scalingType: "magic"
   },
   {
-    id: "frostbolt",
-    name: "Frostbolt",
+    id: "glacial_spike",
+    name: "Glacial Spike",
     description: "Shoot a bolt of ice that freezes the air around your target.",
     icon: "❄️",
     type: "active",
@@ -82,13 +86,14 @@ export const ALL_SKILLS: Skill[] = [
     castTime: 1200,
     targetType: "target",
     levelRequired: 3,
-    class: "mage"
+    class: "mage",
+    scalingType: "magic"
   },
 
   // --- RANGER ---
   {
-    id: "arrow_shot",
-    name: "Steady Shot",
+    id: "trueflight_shot",
+    name: "Trueflight Shot",
     description: "A focused shot that deals increased damage.",
     icon: "🏹",
     type: "active",
@@ -98,11 +103,12 @@ export const ALL_SKILLS: Skill[] = [
     range: 20,
     targetType: "target",
     levelRequired: 1,
-    class: "ranger"
+    class: "ranger",
+    scalingType: "physical"
   },
   {
-    id: "multishot",
-    name: "Multi-Shot",
+    id: "arrow_volley",
+    name: "Arrow Volley",
     description: "Fire a volley of arrows at your target.",
     icon: "🎯",
     type: "active",
@@ -112,14 +118,15 @@ export const ALL_SKILLS: Skill[] = [
     range: 20,
     targetType: "target",
     levelRequired: 4,
-    class: "ranger"
+    class: "ranger",
+    scalingType: "physical"
   },
 
   // --- ROGUE ---
   {
-    id: "backstab",
-    name: "Backstab",
-    description: "A swift strike from the shadows.",
+    id: "vitals_strike",
+    name: "Vitals Strike",
+    description: "A swift strike from the shadows, dealing high burst damage.",
     icon: "🔪",
     type: "active",
     cooldown: 8,
@@ -128,13 +135,92 @@ export const ALL_SKILLS: Skill[] = [
     range: 2,
     targetType: "target",
     levelRequired: 1,
-    class: "rogue"
+    class: "rogue",
+    scalingType: "physical"
+  },
+  {
+    id: "quick_blade",
+    name: "Quick Blade",
+    description: "A quick, dirty blow that deals moderate damage.",
+    icon: "🗡️",
+    type: "active",
+    cooldown: 2,
+    manaCost: 10,
+    damageMultiplier: 1.6,
+    range: 3,
+    targetType: "target",
+    levelRequired: 3,
+    class: "rogue",
+    scalingType: "physical"
+  },
+  {
+    id: "final_incision",
+    name: "Final Incision",
+    description: "A lethal finishing move that deals massive damage.",
+    icon: "🩸",
+    type: "active",
+    cooldown: 15,
+    manaCost: 40,
+    damageMultiplier: 5.5,
+    range: 2,
+    targetType: "target",
+    levelRequired: 6,
+    class: "rogue",
+    scalingType: "physical"
+  },
+
+  // --- PALADIN ---
+  {
+    id: "sunfury_strike",
+    name: "Sunfury Strike",
+    description: "Infuse your weapon with holy light to strike the target.",
+    icon: "⚔️",
+    type: "active",
+    cooldown: 5,
+    manaCost: 10,
+    damageMultiplier: 1.8,
+    range: 3,
+    targetType: "target",
+    levelRequired: 1,
+    class: "paladin",
+    scalingType: "physical"
+  },
+  {
+    id: "celestial_decree",
+    name: "Celestial Decree",
+    description: "Unleash divine judgment upon a distant target.",
+    icon: "⚖️",
+    type: "active",
+    cooldown: 8,
+    manaCost: 20,
+    damageMultiplier: 2.2,
+    range: 12,
+    targetType: "target",
+    levelRequired: 3,
+    class: "paladin",
+    scalingType: "magic"
+  },
+  {
+    id: "ancestral_breath",
+    name: "Ancestral Breath",
+    description: "Heal yourself or an ally for a massive amount.",
+    icon: "🖐️",
+    type: "active",
+    cooldown: 60,
+    manaCost: 50,
+    healingMultiplier: 8.0,
+    range: 5,
+    targetType: "target",
+    levelRequired: 5,
+    class: "paladin",
+    scalingType: "magic",
+    isHealing: true
   },
 
   // --- PRIEST ---
   {
-    id: "heal",
-    name: "Lesser Heal",
+    id: "essence_mend",
+    name: "Essence Mend",
     description: "Heal yourself or an ally for a moderate amount.",
     icon: "✨",
     type: "active",
@@ -145,11 +231,13 @@ export const ALL_SKILLS: Skill[] = [
     castTime: 2000,
     targetType: "target",
     levelRequired: 1,
-    class: "priest"
+    class: "priest",
+    scalingType: "magic",
+    isHealing: true
   },
   {
-    id: "smite",
-    name: "Holy Smite",
+    id: "radiant_burst",
+    name: "Radiant Burst",
     description: "Strike down the target with divine energy.",
     icon: "☀️",
     type: "active",
@@ -159,7 +247,9 @@ export const ALL_SKILLS: Skill[] = [
     range: 12,
     targetType: "target",
     levelRequired: 3,
-    class: "priest"
+    class: "priest",
+    scalingType: "magic",
+    isHealing: false
   }
 ];
 

@@ -52,6 +52,8 @@ export interface Skill {
   animation?: string;
   levelRequired?: number;
   class?: string;
+  scalingType?: 'physical' | 'magic';
+  isHealing?: boolean;
 }
 
 export interface Character {

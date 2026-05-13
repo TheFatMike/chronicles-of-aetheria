@@ -62,6 +62,35 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         serverLogger.info("net", `Restored position from Redis for ${charData.name}: ${redisPos}`);
       }
 
+      // MIGRATION: Update legacy skill IDs to new Aetheria names
+      const skillIdMap: Record<string, string> = {
+        "shield_slam": "aegis_bash",
+        "whirlwind": "steel_tempest",
+        "fireball": "ember_bolt",
+        "frostbolt": "glacial_spike",
+        "arrow_shot": "trueflight_shot",
+        "multishot": "arrow_volley",
+        "backstab": "vitals_strike",
+        "sinister_strike": "quick_blade",
+        "eviscerate": "final_incision",
+        "holy_strike": "sunfury_strike",
+        "judgment": "celestial_decree",
+        "lay_on_hands": "ancestral_breath",
+        "heal": "essence_mend",
+        "smite": "radiant_burst"
+      };
+
+      const migratedSkills = (charData.skills || []).map((sid: string) => skillIdMap[sid] || sid);
+      const migratedHotbar = (charData.hotbar || Array(10).fill(null)).map((slot: any) => {
+        if (slot && slot.type === 'skill' && slot.data && skillIdMap[slot.data.id]) {
+          return {
+            ...slot,
+            data: { ...slot.data, id: skillIdMap[slot.data.id] }
+          };
+        }
+        return slot;
+      });
+
       players.set(socket.id, {
         id: socket.id,
         userId: userId,
@@ -80,7 +109,8 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         equipment: charData.equipment,
         inventory: charData.inventory || Array(30).fill(null),
         bank: charData.bank || [],
-        hotbar: charData.hotbar || Array(10).fill(null),
+        hotbar: migratedHotbar,
+        skills: migratedSkills,
         quests: charData.quests || {},
         gold: charData.gold || 0,
         level: charData.level || 1,
