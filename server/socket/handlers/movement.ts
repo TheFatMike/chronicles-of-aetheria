@@ -7,8 +7,8 @@
 import { Socket, Server } from "socket.io";
 import { players, terrainData } from "../../state";
 import { serverLogger } from "../../logger";
-import { resolveWorldCollision, updateInGrid, entityGrid, getNearbyGridKeys } from "../../systems/spatial";
-import { getInterpolatedHeight } from "../../lib/terrainUtils";
+import { getGroundHeight, resolveWorldCollision, updateInGrid, entityGrid, getNearbyGridKeys, filterNearby } from "../../systems/spatial";
+import { chunkLastAccess, worldObjects, playerKnownObjects } from "../../state";
 import { markPlayerDirty } from "../../lib/stateUtils";
 import { loadTerrainRegion } from "../../systems/persistence";
 import { updatePlayerPositionRedis } from "../../redis";
@@ -55,7 +55,6 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
 
     // 1. Fly Detection: Check if player is suspended in air for too long
     // Get authoritative ground height (terrain + objects)
-    const { getGroundHeight } = await import("../../systems/spatial");
     const groundY = await getGroundHeight(validated.pos, terrainData);
     const heightAboveGround = validated.pos[1] - groundY;
 
@@ -76,7 +75,6 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   let finalPos = await resolveWorldCollision(oldPos, validated.pos);
   
   // Ground Enforcement: Keep players from falling THROUGH the ground or objects
-  const { getGroundHeight } = await import("../../systems/spatial");
   const currentGroundY = await getGroundHeight(finalPos, terrainData);
   if (finalPos[1] < currentGroundY - 0.5) {
     finalPos[1] = currentGroundY;
@@ -108,14 +106,10 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
 
   if (oldChunkX !== newChunkX || oldChunkZ !== newChunkZ) {
     loadTerrainRegion(finalPos[0], finalPos[2]);
-    const { chunkLastAccess } = await import("../../state");
     chunkLastAccess.set(`${newChunkX},${newChunkZ}`, Date.now());
 
     // Incremental World Object Sync (AoI)
     // Only send objects the player hasn't seen yet to save bandwidth
-    const { filterNearby } = await import("../../systems/spatial");
-    const { worldObjects, playerKnownObjects } = await import("../../state");
-    
     const nearbyObjects = filterNearby(Array.from(worldObjects.values()), finalPos, 150, 'object');
     let known = playerKnownObjects.get(socket.id);
     if (!known) {

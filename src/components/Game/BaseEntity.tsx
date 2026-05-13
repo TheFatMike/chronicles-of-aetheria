@@ -34,6 +34,7 @@ interface BaseEntityProps {
   entityClass?: string;
   className?: string; // For display in target UI
   isDead?: boolean;
+  isGrounded?: boolean;
   scale?: number;
 }
 
@@ -55,6 +56,7 @@ export const BaseEntity = memo(({
   onInteract,
   onAttack,
   isDead,
+  isGrounded = true,
   scale = 1
 }: BaseEntityProps) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -70,7 +72,7 @@ export const BaseEntity = memo(({
   const isTargeted = currentTargetId === id;
 
   // Handle network sync/smoothing
-  useEntitySync(groupRef, { position, rotation });
+  useEntitySync(groupRef, { position, rotation, isGrounded });
 
   // Zero-latency visibility management
   useFrame((state) => {

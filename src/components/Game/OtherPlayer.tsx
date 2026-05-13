@@ -30,6 +30,7 @@ export const OtherPlayer = memo(({ id }: OtherPlayerProps) => {
       rotation={player.rot}
       color={player.color}
       role={player.class}
+      isGrounded={player.isGrounded}
       nameOffset={1.8}
     >
       <Humanoid 

@@ -15,6 +15,7 @@ interface SyncProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   lerpSpeed?: number;
+  isGrounded?: boolean;
 }
 
 export const useEntitySync = (
@@ -22,7 +23,8 @@ export const useEntitySync = (
   { 
     position, 
     rotation = [0, 0, 0], 
-    lerpSpeed = GAME_CONFIG.NETWORK.INTERPOLATION_SPEED 
+    lerpSpeed = GAME_CONFIG.NETWORK.INTERPOLATION_SPEED,
+    isGrounded = true
   }: SyncProps
 ) => {
   const targetPos = useRef(new THREE.Vector3(...position));
@@ -62,7 +64,12 @@ export const useEntitySync = (
       lastGroundPos.current = [targetPos.current.x, targetPos.current.z];
     }
     
-    targetPos.current.y = cachedGroundY.current;
+    // Vertical Correction: Only snap to terrain if the entity is marked as grounded
+    // This allows jumping/flying players to maintain their height while ensuring
+    // walking NPCs/players follow the slopes perfectly.
+    if (isGrounded) {
+      targetPos.current.y = cachedGroundY.current;
+    }
 
     // Frame-independent lerp
     const lerpFactor = 1 - Math.exp(-lerpSpeed * delta);
