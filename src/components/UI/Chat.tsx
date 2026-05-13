@@ -15,9 +15,36 @@ interface ChatProps {
 
 export const Chat = memo(({ onSendMessage }: ChatProps) => {
   const messages = useGameStore((state) => state.messages);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(true); 
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        const isInputActive = document.activeElement === inputRef.current;
+        if (!isInputActive) {
+          e.preventDefault();
+          setIsOpen(true);
+          // Wait for animation/render
+          setTimeout(() => inputRef.current?.focus(), 50);
+        } else {
+          // Input is active, enter is pressed
+          if (!inputValue.trim()) {
+            inputRef.current?.blur();
+          }
+        }
+      } else if (e.key === "Escape") {
+        if (document.activeElement === inputRef.current) {
+          inputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeydown);
+    return () => window.removeEventListener("keydown", handleGlobalKeydown);
+  }, [inputValue, isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -30,18 +57,22 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
     if (inputValue.trim()) {
       onSendMessage(inputValue.trim());
       setInputValue("");
+      inputRef.current?.blur();
     }
   };
 
   return (
-    <div className={`fixed bottom-8 left-4 lg:left-8 z-100 transition-all duration-300 pointer-events-auto ${isOpen ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96" : "w-12 h-12"}`}>
+    <div 
+      onClick={() => isOpen && inputRef.current?.focus()}
+      className={`fixed bottom-8 left-4 lg:left-8 z-100 transition-all duration-300 pointer-events-auto ${isOpen ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96" : "w-12 h-12"}`}
+    >
       <AnimatePresence>
         {isOpen ? (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
+            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[300px] lg:h-[400px] max-h-[85%] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
@@ -102,6 +133,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             <form onSubmit={handleSubmit} className="p-2 sm:p-3 bg-black/40 border-t border-[#4a3a2a]">
               <div className="relative">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -122,7 +154,10 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              setIsOpen(true);
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
             className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-2xl flex items-center justify-center text-[#c2a472] hover:border-[#c2a472] transition-all"
           >
             <MessageSquare size={20} />

@@ -272,7 +272,6 @@ export const MenuManager = ({
               }
             } else if (option.action === 'bank') {
               setBankOpen(true, npcId);
-              setInventoryOpen(true);
               setActiveDialogue(null);
             }
           }}

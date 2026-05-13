@@ -143,7 +143,7 @@ export const Bank = React.memo(({
               <Landmark className="w-6 h-6 text-[#fbbf24]" />
             </div>
             <div>
-              <h2 className="text-xl font-display font-black text-[#f4e4bc] uppercase tracking-tighter">Vault of Aetheria</h2>
+              <h2 className="text-xl font-display font-black text-[#f4e4bc] uppercase tracking-tighter">Bank</h2>
               <p className="text-[10px] text-[#8b6b4d] uppercase tracking-widest font-bold opacity-60">Personal Storage</p>
             </div>
           </div>

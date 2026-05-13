@@ -26,7 +26,17 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
     isQuestsOpen,
     setQuestsOpen,
     isSkillsOpen,
-    setSkillsOpen
+    setSkillsOpen,
+    isShopOpen,
+    setShopOpen,
+    isBankOpen,
+    setBankOpen,
+    activeLoot,
+    setActiveLoot,
+    activeTrade,
+    setActiveTrade,
+    contextMenu,
+    setContextMenu
   } = useGameStore();
 
   useEffect(() => {
@@ -47,12 +57,27 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
       
       // Escape first
       if (e.key === "Escape") {
-        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen) {
+        if (contextMenu) {
+          setContextMenu(null);
+          return;
+        }
+
+        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen || isShopOpen || isBankOpen || activeLoot || activeTrade) {
           setActiveMenu(null);
           setInventoryOpen(false);
           setCharacterOpen(false);
           setQuestsOpen(false);
           setSkillsOpen(false);
+          setShopOpen(false);
+          setBankOpen(false);
+          setActiveLoot(null);
+          
+          if (activeTrade) {
+            if ((window as any).socket) {
+              (window as any).socket.emit("trade_cancel", activeTrade.id);
+            }
+            setActiveTrade(null);
+          }
         } else if (currentTarget) {
           setTarget(null);
         } else {
@@ -93,5 +118,5 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape]);
+  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape, isInventoryOpen, isCharacterOpen, isQuestsOpen, isSkillsOpen, isShopOpen, isBankOpen, activeLoot, activeTrade, contextMenu]);
 };
