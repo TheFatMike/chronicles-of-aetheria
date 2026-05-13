@@ -34,6 +34,7 @@ interface BaseEntityProps {
   entityClass?: string;
   className?: string; // For display in target UI
   isDead?: boolean;
+  scale?: number;
 }
 
 export const BaseEntity = memo(({
@@ -53,7 +54,8 @@ export const BaseEntity = memo(({
   maxHp = 100,
   onInteract,
   onAttack,
-  isDead
+  isDead,
+  scale = 1
 }: BaseEntityProps) => {
   const groupRef = useRef<THREE.Group>(null);
   const _point = useRef(new THREE.Vector3());
@@ -131,7 +133,8 @@ export const BaseEntity = memo(({
     const dz = localPlayer.pos[2] - position[2];
     const distance = Math.sqrt(dx * dx + dz * dz);
 
-    const INTERACT_RANGE = 5;
+    const targetRadius = scale / 2;
+    const INTERACT_RANGE = 5 + targetRadius;
 
     if (distance > INTERACT_RANGE) {
       state.addMessage({
@@ -174,7 +177,8 @@ export const BaseEntity = memo(({
     const dz = localPlayer.pos[2] - position[2];
     const distance = Math.sqrt(dx * dx + dz * dz);
 
-    if (distance <= 5) {
+    const targetRadius = scale / 2;
+    if (distance <= 5 + targetRadius) {
       if (isDead && onInteract) onInteract();
       else if (type === 'npc' && onInteract) onInteract();
     }
@@ -247,7 +251,10 @@ export const BaseEntity = memo(({
           const distDz = localPlayer.pos[2] - position[2];
           const distance = Math.sqrt(distDx * distDx + distDz * distDz);
 
-          if (distance <= 5) {
+          const targetRadius = scale / 2;
+          const INTERACT_RANGE = 5 + targetRadius;
+
+          if (distance <= INTERACT_RANGE) {
             if (onInteract) onInteract();
             return; // Skip the secondary logic below
           }
@@ -259,7 +266,10 @@ export const BaseEntity = memo(({
           const distDz = localPlayer.pos[2] - position[2];
           const distance = Math.sqrt(distDx * distDx + distDz * distDz);
 
-          if (distance > 5) {
+          const targetRadius = scale / 2;
+          const INTERACT_RANGE = 5 + targetRadius;
+
+          if (distance > INTERACT_RANGE) {
             state.addMessage({
               id: "sys-" + Date.now(),
               sender: "SYSTEM",

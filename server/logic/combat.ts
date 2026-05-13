@@ -57,7 +57,13 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
       Math.pow(player.pos[0] - targetEntity.pos[0], 2) +
       Math.pow(player.pos[2] - targetEntity.pos[2], 2)
     );
-    if (skill.range && dist > skill.range + 1.5) {
+    
+    // Account for target size (radius) in the range check
+    // We add half the target's scale to the allowable range
+    const targetRadius = (targetEntity.scale || 1) / 2;
+    const maxRange = (skill.range || 3) + targetRadius + 1.5;
+    
+    if (dist > maxRange) {
       socket.emit("chat_message", { id: "sys-range", sender: "SYSTEM", text: "Target is out of range!", timestamp: Date.now(), color: "#ffaa00" });
       return;
     }

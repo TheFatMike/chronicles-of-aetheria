@@ -99,6 +99,7 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
             isMoving={ent.isMoving}
             isAttacking={ent.isAttacking}
             modelUrl={ent.modelUrl}
+            scale={ent.scale || 1}
             onInteract={() => {
               if (useGameStore.getState().isEditorOpen) return;
               
@@ -119,9 +120,9 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
           />
         ) : (
           ent.entityClass === 'Skeleton' ? (
-            <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} onAttack={onAttack} onLoot={onLoot} />
+            <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={ent.scale || 1} onAttack={onAttack} onLoot={onLoot} />
           ) : ent.entityClass === 'Goblin' ? (
-            <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} onAttack={onAttack} onLoot={onLoot} />
+            <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={ent.scale || 1} onAttack={onAttack} onLoot={onLoot} />
           ) : (
             <SlimeEnemy 
               key={ent.id}
@@ -132,6 +133,7 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
               hp={ent.hp}
               maxHp={ent.maxHp}
               isDead={ent.isDead}
+              scale={ent.scale || 1}
               color={ent.color || "#ef4444"}
               onAttack={onAttack}
               onLoot={onLoot}

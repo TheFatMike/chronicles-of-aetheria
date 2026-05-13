@@ -29,7 +29,11 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   
   const target = entities.get(validated.targetId);
   if (target && target.isDead) {
-    if (isWithinRange(player.pos, target.pos, 5)) { 
+    const distSq = Math.pow(player.pos[0] - target.pos[0], 2) + Math.pow(player.pos[2] - target.pos[2], 2);
+    const targetRadius = (target.scale || 1) / 2;
+    const maxRange = 5 + targetRadius;
+
+    if (distSq <= maxRange * maxRange) {
       // If the target doesn't have instantiated loot yet, generate it
       if (!target.lootInstances) {
         target.lootInstances = (target.loot || []).map((id: string) => generateItemInstance(id)).filter(Boolean);
