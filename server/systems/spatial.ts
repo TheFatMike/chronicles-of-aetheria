@@ -10,6 +10,14 @@ import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
 
 // Cache for loaded THREE groups associated with objects
 export const meshInstances = new Map<string, THREE.Group>();
+const REUSABLE_RAYCASTER = new THREE.Raycaster();
+(REUSABLE_RAYCASTER as any).firstHitOnly = true;
+
+const _tempVec = new THREE.Vector3();
+const _tempDir = new THREE.Vector3();
+const _tempPos = new THREE.Vector3();
+const _tempRot = new THREE.Euler();
+const _tempScale = new THREE.Vector3();
 
 export const GRID_SIZE = 50;
 
@@ -109,33 +117,42 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
       // 1. Try Mesh Collision first
       const loaded = await loadModelMesh(t);
       if (loaded) {
-        const mesh = loaded.mesh.clone();
-        mesh.position.set(pos[0], pos[1], pos[2]);
-        mesh.rotation.set(rot[0], rot[1], rot[2]);
+        const mesh = loaded.mesh;
+        
+        // Temporarily move the SHARED mesh to the object's position for collision check
+        // Since Node.js is single-threaded and we are in an async function, 
+        // we must be careful. However, we don't await between setting mesh pos and raycasting.
+        _tempPos.set(pos[0], pos[1], pos[2]);
+        _tempRot.set(rot[0], rot[1], rot[2]);
         const s = scale || 1;
-        mesh.scale.set(
+        _tempScale.set(
           Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
           Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
           Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
         );
+        
+        mesh.position.copy(_tempPos);
+        mesh.rotation.copy(_tempRot);
+        mesh.scale.copy(_tempScale);
         mesh.updateMatrixWorld();
 
         // Mesh-based pushback: check 8 directions around the player
-        const raycaster = new THREE.Raycaster();
         const directions = [
           [1,0,0], [-1,0,0], [0,0,1], [0,0,-1],
           [0.7,0,0.7], [-0.7,0,0.7], [0.7,0,-0.7], [-0.7,0,-0.7]
         ];
 
         for (const [dx, dy, dz] of directions) {
-          const dir = new THREE.Vector3(dx, dy, dz);
+          _tempDir.set(dx, dy, dz);
           // Cast from slightly above ground
-          raycaster.set(new THREE.Vector3(resolvedPos[0], resolvedPos[1] + 0.5, resolvedPos[2]), dir);
-          const intersects = raycaster.intersectObject(mesh, true);
+          _tempVec.set(resolvedPos[0], resolvedPos[1] + 0.5, resolvedPos[2]);
+          REUSABLE_RAYCASTER.set(_tempVec, _tempDir);
+          
+          const intersects = REUSABLE_RAYCASTER.intersectObject(mesh, true);
           if (intersects.length > 0 && intersects[0].distance < radius) {
             const pushDist = radius - intersects[0].distance;
-            resolvedPos[0] -= dir.x * pushDist;
-            resolvedPos[2] -= dir.z * pushDist;
+            resolvedPos[0] -= _tempDir.x * pushDist;
+            resolvedPos[2] -= _tempDir.z * pushDist;
           }
         }
         continue;
@@ -244,16 +261,20 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
       const t = (type || "").toLowerCase();
       const loaded = await loadModelMesh(t);
       if (loaded) {
-        const mesh = loaded.mesh.clone();
-        mesh.position.set(objPos[0], objPos[1], objPos[2]);
-        mesh.rotation.set(rot[0], rot[1], rot[2]);
+        const mesh = loaded.mesh;
+        _tempPos.set(objPos[0], objPos[1], objPos[2]);
+        _tempRot.set(rot[0], rot[1], rot[2]);
         
         const s = scale || 1;
-        mesh.scale.set(
+        _tempScale.set(
           Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
           Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
           Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
         );
+        
+        mesh.position.copy(_tempPos);
+        mesh.rotation.copy(_tempRot);
+        mesh.scale.copy(_tempScale);
         mesh.updateMatrixWorld();
 
         const meshY = getMeshHeightAt(mesh, pos);

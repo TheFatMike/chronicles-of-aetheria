@@ -84,8 +84,10 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   const driftZ = Math.abs(finalPos[2] - validated.pos[2]);
   const driftY = Math.abs(finalPos[1] - validated.pos[1]);
 
-  // Tightened sync thresholds
-  if (driftX > 5.0 || driftZ > 5.0 || driftY > 8.0) {
+  // Synchronize client if drift exceeds 1.0m (X/Z) or 2.0m (Y)
+  // This prevents the server and client from getting too far out of sync,
+  // which is the primary cause of rubber-banding.
+  if (driftX > 1.0 || driftZ > 1.0 || driftY > 2.0) {
     socket.emit("move_sync", { pos: finalPos, rot: validated.rot });
   }
 
