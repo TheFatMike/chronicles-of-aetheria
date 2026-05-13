@@ -115,7 +115,7 @@ export interface CombatSlice {
 export interface UISlice {
   messages: Message[];
   connected: boolean;
-  activeMenu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null;
+  activeMenu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | 'passives' | null;
   devMode: boolean;
   isEditorOpen: boolean;
   isTransforming: boolean;
@@ -131,6 +131,7 @@ export interface UISlice {
   isCharacterOpen: boolean;
   isQuestsOpen: boolean;
   isSkillsOpen: boolean;
+  isPassiveTreeOpen: boolean;
   isWorldLoading: boolean;
   uiScale: number;
   brightness: number;
@@ -155,11 +156,12 @@ export interface UISlice {
   showAllNames: boolean;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
-  setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
+  setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | 'passives' | null) => void;
   setInventoryOpen: (isOpen: boolean) => void;
   setCharacterOpen: (isOpen: boolean) => void;
   setQuestsOpen: (isOpen: boolean) => void;
   setSkillsOpen: (isOpen: boolean) => void;
+  setPassiveTreeOpen: (isOpen: boolean) => void;
   setWorldLoading: (isLoading: boolean) => void;
   setWorldReady: (isReady: boolean) => void;
   setAssetsReady: (isReady: boolean) => void;

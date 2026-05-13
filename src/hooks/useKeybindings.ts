@@ -27,6 +27,8 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
     setQuestsOpen,
     isSkillsOpen,
     setSkillsOpen,
+    isPassiveTreeOpen,
+    setPassiveTreeOpen,
     isShopOpen,
     setShopOpen,
     isBankOpen,
@@ -62,12 +64,13 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
           return;
         }
 
-        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen || isShopOpen || isBankOpen || activeLoot || activeTrade) {
+        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen || isPassiveTreeOpen || isShopOpen || isBankOpen || activeLoot || activeTrade) {
           setActiveMenu(null);
           setInventoryOpen(false);
           setCharacterOpen(false);
           setQuestsOpen(false);
           setSkillsOpen(false);
+          setPassiveTreeOpen(false);
           setShopOpen(false);
           setBankOpen(false);
           setActiveLoot(null);
@@ -112,11 +115,14 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
         case "k":
           setSkillsOpen(!isSkillsOpen);
           break;
+        case "n":
+          setPassiveTreeOpen(!isPassiveTreeOpen);
+          break;
       }
     };
 
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape, isInventoryOpen, isCharacterOpen, isQuestsOpen, isSkillsOpen, isShopOpen, isBankOpen, activeLoot, activeTrade, contextMenu]);
+  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape, isInventoryOpen, isCharacterOpen, isQuestsOpen, isSkillsOpen, isPassiveTreeOpen, isShopOpen, isBankOpen, activeLoot, activeTrade, contextMenu]);
 };

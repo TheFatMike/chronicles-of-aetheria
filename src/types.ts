@@ -15,6 +15,27 @@ export interface Stats {
 export type SkillType = 'active' | 'passive';
 export type SkillTarget = 'self' | 'target' | 'area';
 
+export interface PassiveNode {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  maxPoints: number;
+  stats?: Partial<Stats>;
+  bonuses?: {
+    damageMultiplier?: number;
+    healingMultiplier?: number;
+    cooldownReduction?: number;
+    critChance?: number;
+    healthBonus?: number;
+    manaBonus?: number;
+  };
+  dependencies?: string[]; // IDs of nodes that must be learned first
+  class?: string;
+  branch: string;
+  position: { x: number, y: number };
+}
+
 export interface Skill {
   id: string;
   name: string;
@@ -53,6 +74,8 @@ export interface Character {
   equipment?: EquipmentSlots;
   quests: Record<string, Quest>;
   skills: string[]; // IDs of learned skills
+  passivePoints: number;
+  passives: Record<string, number>; // nodeId: allocatedPoints
   gold: number;
   pos?: [number, number, number];
   rot?: [number, number, number];

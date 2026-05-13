@@ -75,6 +75,8 @@ export const handleCreateCharacter = async (socket: Socket, data: any, userId: s
         bank: Array(50).fill(null),
         hotbar: Array(10).fill(null),
         equipment: initialEquipment,
+        passivePoints: 0,
+        passives: {},
         role: userRole,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       };

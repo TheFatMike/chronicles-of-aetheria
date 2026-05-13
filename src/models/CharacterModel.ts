@@ -32,6 +32,8 @@ export class CharacterModel {
       equipment,
       quests: data.quests || {},
       skills: data.skills || [],
+      passivePoints: data.passivePoints || 0,
+      passives: data.passives || {},
       gold: data.gold || 0,
       role: accountRole,
       pos: this.ensureArray3(data.pos, [0, 1.5, 0]),

@@ -85,8 +85,23 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         gold: charData.gold || 0,
         level: charData.level || 1,
         exp: charData.exp || 0,
-        maxExp: charData.maxExp || 100
+        maxExp: charData.maxExp || 100,
+        passivePoints: charData.passivePoints || 0,
+        passives: charData.passives || {}
       });
+
+      // BACKFILL: Ensure existing players get points for their level (1 per level past 1)
+      const p = players.get(socket.id);
+      const expectedTotal = (p.level || 1) - 1;
+      const spent = Object.values(p.passives || {}).reduce((sum: number, val: any) => sum + val, 0);
+      const currentAvailable = p.passivePoints || 0;
+      
+      if (spent + currentAvailable < expectedTotal) {
+        const missing = expectedTotal - (spent + currentAvailable);
+        p.passivePoints = (p.passivePoints || 0) + missing;
+        serverLogger.info("net", `Backfilled ${missing} passive points for ${p.characterName} (Level ${p.level})`);
+      }
+
       characterNameToId.set(charData.name.toLowerCase(), socket.id);
       updateInGrid(entityGrid, socket.id, null, players.get(socket.id).pos);
     }
@@ -171,6 +186,8 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
           level: p.level || 1,
           exp: p.exp || 0,
           maxExp: p.maxExp || 100,
+          passivePoints: p.passivePoints || 0,
+          passives: p.passives || {},
           lastActive: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         

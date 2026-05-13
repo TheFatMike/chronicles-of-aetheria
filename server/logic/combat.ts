@@ -263,7 +263,8 @@ export function giveExperience(io: any, player: any, amount: number) {
     player.maxExp = player.level * 100;
     player.hp = player.maxHp; // Heal on level up
     player.mp = player.maxMp;
-    markPlayerDirty(player.id, ["level", "exp", "maxExp", "hp", "mp"]);
+    player.passivePoints = (player.passivePoints || 0) + 1;
+    markPlayerDirty(player.id, ["level", "exp", "maxExp", "hp", "mp", "passivePoints"]);
     
     io.to(player.id).emit("chat_message", { 
       sender: "SYSTEM", 
@@ -296,7 +297,8 @@ export function giveExperience(io: any, player: any, amount: number) {
     level: player.level,
     exp: player.exp,
     maxExp: player.maxExp,
-    gold: player.gold
+    gold: player.gold,
+    passivePoints: player.passivePoints
   });
-  markPlayerDirty(player.id, ["exp", "level", "gold", "hp", "mp"]);
+  markPlayerDirty(player.id, ["exp", "level", "gold", "hp", "mp", "passivePoints"]);
 }

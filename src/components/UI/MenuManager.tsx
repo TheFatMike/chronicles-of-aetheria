@@ -18,6 +18,7 @@ import { Shop } from "./Shop";
 import { SHOPS } from "../../data/shops";
 import { Bank } from "./Bank";
 import { QuestWindow } from "./QuestWindow";
+import { PassiveTree } from "./PassiveTree";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -56,6 +57,8 @@ export const MenuManager = ({
     setQuestsOpen,
     isSkillsOpen,
     setSkillsOpen,
+    isPassiveTreeOpen,
+    setPassiveTreeOpen,
     isShopOpen,
     setShopOpen,
     activeShop,
@@ -91,6 +94,8 @@ export const MenuManager = ({
     setQuestsOpen: s.setQuestsOpen,
     isSkillsOpen: s.isSkillsOpen,
     setSkillsOpen: s.setSkillsOpen,
+    isPassiveTreeOpen: s.isPassiveTreeOpen,
+    setPassiveTreeOpen: s.setPassiveTreeOpen,
     isShopOpen: s.isShopOpen,
     setShopOpen: s.setShopOpen,
     activeShop: s.activeShop,
@@ -540,6 +545,16 @@ export const MenuManager = ({
           onClose={() => setSkillsOpen(false)}
           playerClass={selectedCharacter.class}
           learnedSkills={selectedCharacter.skills || []}
+        />
+      )}
+      {isPassiveTreeOpen && (
+        <PassiveTree
+          key="passive-tree-window"
+          character={selectedCharacter}
+          onClose={() => setPassiveTreeOpen(false)}
+          onAllocate={(nodeId) => {
+            if (socket) socket.emit("allocate_passive", { nodeId });
+          }}
         />
       )}
       {activeQuestOffer && (

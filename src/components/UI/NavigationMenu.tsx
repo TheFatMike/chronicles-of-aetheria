@@ -6,7 +6,7 @@
  */
 import React from "react";
 import { motion } from "motion/react";
-import { Briefcase, User, Scroll, Shield, Map as MapIcon, Settings } from "lucide-react";
+import { Briefcase, User, Scroll, Shield, Map as MapIcon, Settings, Zap } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -25,7 +25,9 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
     isQuestsOpen,
     setQuestsOpen,
     isSkillsOpen,
-    setSkillsOpen
+    setSkillsOpen,
+    isPassiveTreeOpen,
+    setPassiveTreeOpen
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -36,13 +38,16 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
     isQuestsOpen: s.isQuestsOpen,
     setQuestsOpen: s.setQuestsOpen,
     isSkillsOpen: s.isSkillsOpen,
-    setSkillsOpen: s.setSkillsOpen
+    setSkillsOpen: s.setSkillsOpen,
+    isPassiveTreeOpen: s.isPassiveTreeOpen,
+    setPassiveTreeOpen: s.setPassiveTreeOpen
   })));
 
   const menuItems = [
     { id: 'menu', icon: <User size={20} />, label: 'Character', key: 'C' },
     { id: 'inventory', icon: <Briefcase size={20} />, label: 'Inventory', key: 'B' },
     { id: 'skills', icon: <Shield size={20} />, label: 'Skills', key: 'K' },
+    { id: 'passives', icon: <Zap size={20} />, label: 'Talents', key: 'N' },
     { id: 'quests', icon: <Scroll size={20} />, label: 'Quests', key: 'J' },
     { id: 'map', icon: <MapIcon size={20} />, label: 'Map', key: 'M' },
   ];
@@ -57,6 +62,7 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
             else if (item.id === 'menu') setCharacterOpen(!isCharacterOpen);
             else if (item.id === 'quests') setQuestsOpen(!isQuestsOpen);
             else if (item.id === 'skills') setSkillsOpen(!isSkillsOpen);
+            else if (item.id === 'passives') setPassiveTreeOpen(!isPassiveTreeOpen);
             else setActiveMenu(activeMenu === item.id ? null : item.id as any);
           }}
           className={`relative group p-2 rounded-full transition-all duration-300
@@ -64,6 +70,7 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
               (item.id === 'menu' && isCharacterOpen) || 
               (item.id === 'quests' && isQuestsOpen) ||
               (item.id === 'skills' && isSkillsOpen) ||
+              (item.id === 'passives' && isPassiveTreeOpen) ||
               activeMenu === item.id 
               ? 'bg-[#c2a472] text-[#1a140f] shadow-[0_0_15px_rgba(194,164,114,0.4)] scale-110' 
               : 'text-[#8b6b4d] hover:text-[#f4e4bc] hover:bg-white/5'

@@ -13,6 +13,7 @@ import { handlePartyInvite, handlePartyAccept, handlePartyLeave } from "./handle
 import { handleTradeRequest, handleTradeAccept, handleTradeCancel, handleTradeLock, handleTradeConfirm, handleTradeAddItem, handleTradeRemoveItem } from "./handlers/trade";
 import { handleDebugToggle } from "./handlers/debug";
 import { handlePromotePlayer } from "./handlers/staff";
+import { handleAllocatePassive } from "./handlers/passive";
 import { players, worldObjects, lastSkillUse, lastChatMessage } from "../state";
 import { filterNearby } from "../systems/spatial";
 
@@ -101,6 +102,9 @@ export const registerHandlers = (io: Server, socket: Socket) => {
 
   // Staff
   socket.on("promote_player", (data) => handlePromotePlayer(io, socket, data));
+
+  // Passives
+  socket.on("allocate_passive", (data) => handleAllocatePassive(socket, data));
 
   // Debug
   socket.on("debug_toggle", (data) => handleDebugToggle(io, socket, data));
