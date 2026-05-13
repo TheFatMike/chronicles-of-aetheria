@@ -37,7 +37,8 @@ export class CharacterModel {
       gold: data.gold || 0,
       role: accountRole,
       pos: this.ensureArray3(data.pos, [0, 1.5, 0]),
-      rot: this.ensureArray3(data.rot, [0, 0, 0])
+      rot: this.ensureArray3(data.rot, [0, 0, 0]),
+      discoveredTeleports: data.discoveredTeleports || []
     };
 
   }

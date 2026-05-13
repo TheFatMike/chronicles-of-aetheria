@@ -7,10 +7,11 @@
 import { memo, useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint } from "./Environment";
+import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint, TeleportCrystal } from "./Environment";
 import { Humanoid } from "./Humanoid";
 import { NPC } from "./NPC";
 import { GLBModel } from "./GLBModel";
+import { SelectionCircle } from "./SelectionCircle";
 import { useGameStore } from "../../store/useGameStore";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
 import { SAMPLE_QUESTS } from "../../data/quests";
@@ -33,18 +34,19 @@ export const ProceduralModel = memo(({
   obj?: any
 }) => {
   switch (type) {
-    case 'tree': return <Tree {...modelProps} />;
-    case 'rock': return <Rock {...modelProps} />;
-    case 'house': return <House {...modelProps} />;
-    case 'tent': return <Tent {...modelProps} />;
-    case 'bush': return <Bush {...modelProps} />;
-    case 'fence': return <Fence {...modelProps} />;
-    case 'campfire': return <Campfire {...modelProps} />;
-    case 'barrel': return <Barrel {...modelProps} />;
-    case 'dummy': return <Dummy {...modelProps} />;
-    case 'chest': return <Chest {...modelProps} />;
-    case 'well': return <Well {...modelProps} />;
-    case 'signpost': return <SignPost {...modelProps} />;
+    case 'tree': return <Tree {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'rock': return <Rock {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'house': return <House {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'tent': return <Tent {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'bush': return <Bush {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'fence': return <Fence {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'campfire': return <Campfire {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'barrel': return <Barrel {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'dummy': return <Dummy {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'chest': return <Chest {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'well': return <Well {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'signpost': return <SignPost {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'teleport_crystal': return <TeleportCrystal {...modelProps} modelUrl={obj?.modelUrl} />;
     case 'waypoint': 
       if (!isSelected && editorSelectedType !== 'waypoint') return null;
       return <Waypoint {...modelProps} />;
@@ -63,12 +65,15 @@ export const ProceduralModel = memo(({
               />
             </group>
           );
-        } else {
-          // NPCs are handled by EntityRenderer in game mode to allow for movement and better sync.
-          // In the editor, we still render the static preview above.
-          return null;
         }
+        return null;
       }
+      
+      // FALLBACK: If no custom procedural component, use the modelUrl if provided
+      if (obj?.modelUrl) {
+        return <GLBModel url={obj.modelUrl} {...modelProps} isCollidable={true} />;
+      }
+
       return null;
   }
 });
@@ -161,7 +166,7 @@ export const WorldObjectItem = memo(({
       const INTERACT_RANGE = 5;
       if (distance > INTERACT_RANGE) {
         state.addMessage({
-          id: "sys-" + Date.now(),
+          id: `sys-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
           sender: "SYSTEM",
           text: `You are too far away to interact with ${obj.name || "this NPC"}.`,
           timestamp: Date.now(),
@@ -171,7 +176,63 @@ export const WorldObjectItem = memo(({
       }
 
       const npcType = obj.type.replace('npc_', '');
-      const speakerName = obj.name || OBJECT_TEMPLATES[obj.type]?.label || "Villager";
+      const template = OBJECT_TEMPLATES[obj.type];
+      const speakerName = obj.name || template?.label || "Villager";
+      
+      // Special Interaction: Teleport Crystal
+      if (obj.type === 'teleport_crystal') {
+        const isDiscovered = state.discoveredTeleports.includes(obj.id);
+        
+        if (isDiscovered) {
+          state.setTeleportMenuOpen(true, obj.id);
+        } else {
+          // Check if already attuning
+          if (state.castState?.name === "Attuning Crystal") return;
+          
+          state.addMessage({
+            id: "sys-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9),
+            sender: "SYSTEM",
+            text: `Establishing magical link with ${speakerName}...`,
+            timestamp: Date.now(),
+            color: "#a855f7"
+          });
+          
+          state.startCast("Attuning Crystal", 5000);
+          
+          // Wait 5 seconds and then discover
+          setTimeout(() => {
+            // Re-fetch state to check if cast was cancelled
+            const latestState = useGameStore.getState();
+            if (latestState.castState?.name === "Attuning Crystal") {
+              latestState.discoverTeleport(obj.id);
+              latestState.completeCast();
+              latestState.setTeleportMenuOpen(true, obj.id);
+              
+              // Refresh Target UI color immediately
+              if (latestState.currentTarget?.id === obj.id) {
+                latestState.setTarget({
+                  id: obj.id,
+                  name: "Teleport Crystal ●",
+                  type: "teleport_crystal",
+                  level: 0,
+                  color: "#22c55e",
+                  hp: 100,
+                  maxHp: 100
+                });
+              }
+
+              latestState.addMessage({
+                id: "sys-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9),
+                sender: "SYSTEM",
+                text: `Successfully attuned to ${speakerName}!`,
+                timestamp: Date.now(),
+                color: "#22c55e"
+              });
+            }
+          }, 5000);
+        }
+        return;
+      }
       
       const dialogue = getNPCDialogue(obj.id, npcType, speakerName, {
         activeQuests: state.activeQuests,
@@ -188,8 +249,49 @@ export const WorldObjectItem = memo(({
       });
     },
     onClick: (e: any) => {
+      e.stopPropagation();
+      
+      // Strict Guard: If not in editor and not an interactable type, ignore completely
+      if (!isEditorOpen && !isNPC && obj.type !== 'teleport_crystal') {
+        return;
+      }
+
       if (!isEditorOpen) {
-        if (isNPC) modelProps.onInteract();
+        const state = useGameStore.getState();
+        const isTargeted = state.currentTarget?.id === obj.id;
+
+        if (!isTargeted) {
+          const isCrystal = obj.type === 'teleport_crystal';
+
+          if (isCrystal) {
+            const isDiscovered = state.discoveredTeleports.includes(obj.id);
+            const dotColor = isDiscovered ? "#22c55e" : "#ef4444";
+            
+            state.setTarget({
+              id: obj.id,
+              name: "Teleport Crystal ●",
+              type: "teleport_crystal",
+              level: 0,
+              color: dotColor,
+              hp: 100,
+              maxHp: 100
+            });
+          } else {
+            // Target it first (NPC)
+            state.setTarget({
+              id: obj.id,
+              name: obj.name || "Villager",
+              type: "npc",
+              level: 0,
+              color: "#facc15",
+              hp: 100,
+              maxHp: 100
+            });
+          }
+        } else {
+          // Already targeted, interact!
+          modelProps.onInteract();
+        }
         return;
       }
       
@@ -206,6 +308,9 @@ export const WorldObjectItem = memo(({
     }
   };
 
+  const isTargetedInGame = useGameStore(s => s.currentTarget?.id === obj.id);
+  const isSelectedFinal = isSelected || (isTargetedInGame && !isEditorOpen);
+
   const isWaypoint = obj.type === 'waypoint';
   const isWaypointActive = isWaypoint && (isSelected || editorSelectedType === 'waypoint');
 
@@ -217,33 +322,35 @@ export const WorldObjectItem = memo(({
       ref={groupRef}
       userData={{ isCollidable: !isSpawner }}
       {...({ isWorldObject: true } as any)}
+      onClick={(isEditorOpen || isNPC || obj.type === 'teleport_crystal') ? modelProps.onClick : undefined}
     >
+      {/* Selection Circle - Unified with BaseEntity */}
+      <SelectionCircle 
+        visible={isSelectedFinal} 
+        color={isNPC ? "#facc15" : (obj.type === 'teleport_crystal' ? (useGameStore.getState().discoveredTeleports.includes(obj.id) ? "#22c55e" : "#ef4444") : "#3b82f6")} 
+        scale={obj.scale * 1.5} 
+      />
+
       {/* Invisible Selection Hitbox: Makes small/thin objects easier to click */}
-      {isEditorOpen && (!isWaypoint || isWaypointActive) && (
+      {(!isWaypoint || isWaypointActive) && (
         <mesh 
           position={[0, 1, 0]} 
           visible={false} 
-          onClick={modelProps.onClick}
         >
           <boxGeometry args={[2, 4, 2]} />
           <meshBasicMaterial transparent opacity={0} />
         </mesh>
       )}
 
-        {/* Priority 1: Custom GLB Model */}
-        {obj.modelUrl ? (
-          <GLBModel url={obj.modelUrl} {...modelProps} isCollidable={true} />
-        ) : (
-          /* Priority 2: Built-in Procedural Models */
-          <ProceduralModel 
-            type={obj.type} 
-            modelProps={modelProps} 
-            isSelected={isSelected} 
-            editorSelectedType={editorSelectedType} 
-            isEditorOpen={isEditorOpen}
-            obj={obj}
-          />
-        )}
+        {/* Unified Model Selection: Checks procedural components first, then falls back to GLBModel */}
+        <ProceduralModel 
+          type={obj.type} 
+          modelProps={modelProps} 
+          isSelected={isSelectedFinal} 
+          editorSelectedType={editorSelectedType} 
+          isEditorOpen={isEditorOpen}
+          obj={obj}
+        />
 
         {(obj.type.startsWith('spawner_') || obj.type.startsWith('npc_')) && isEditorOpen && (
           <mesh {...modelProps}>
@@ -263,21 +370,9 @@ export const WorldObjectItem = memo(({
         </mesh>
       )}
 
-      {isSelected && (
+      {isSelectedFinal && isEditorOpen && (
         <>
-          {/* Pulsing Floor Ring (Inner Magic) */}
-          <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
-            <ringGeometry args={[1.4, 1.5, 64]} />
-            <meshBasicMaterial color="#0ea5e9" transparent opacity={0.9} depthWrite={false} />
-          </mesh>
-          
-          {/* Pulsing Floor Ring (Outer Glow) */}
-          <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
-            <ringGeometry args={[1.3, 1.6, 64]} />
-            <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} depthWrite={false} />
-          </mesh>
-
-          {/* Vertical Focus Beam (Magical Energy) */}
+          {/* Vertical Focus Beam (Magical Energy) - Editor Only */}
           <mesh position={[0, 10, 0]} name="editor_helper">
             <cylinderGeometry args={[0.02, 0.2, 20, 16]} />
             <meshBasicMaterial color="#0ea5e9" transparent opacity={0.4} depthWrite={false} />

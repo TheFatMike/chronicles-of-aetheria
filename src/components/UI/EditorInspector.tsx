@@ -89,6 +89,18 @@ export const EditorInspector = ({
                 </div>
               </div>
 
+              {/* Identity Section */}
+              <div className="space-y-2">
+                <label className="text-[7px] text-[#c2a472] font-black uppercase tracking-widest block px-1">Display Name / Label</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. Town Square Crystal"
+                  value={selectedObject.name || ''}
+                  onChange={(e) => updateSelected({ name: e.target.value })}
+                  className="w-full bg-black/40 text-[#f4e4bc] text-[10px] p-2.5 rounded-lg border border-[#4a3a2a]/30 outline-none focus:border-[#c2a472]/50 transition-all relative z-10"
+                />
+              </div>
+
               {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={duplicateSelected} className="flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-white/5 text-white py-3 rounded-xl text-[9px] font-black border border-white/5 transition-all uppercase tracking-widest group">

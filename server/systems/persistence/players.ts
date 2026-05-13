@@ -28,6 +28,7 @@ export const autosavePlayers = async () => {
         hotbar: JSON.stringify(p.hotbar),
         quests: JSON.stringify(p.quests),
         bank: JSON.stringify(p.bank || []),
+        discoveredTeleports: JSON.stringify(p.discoveredTeleports || []),
         lastActive: Date.now()
       };
       await redis.hset(`player:session:${p.characterId}`, redisData);
@@ -85,6 +86,7 @@ export const flushRedisToFirestore = async () => {
         if (data.hotbar) payload.hotbar = JSON.parse(data.hotbar);
         if (data.quests) payload.quests = JSON.parse(data.quests);
         if (data.bank) payload.bank = JSON.parse(data.bank);
+        if (data.discoveredTeleports) payload.discoveredTeleports = JSON.parse(data.discoveredTeleports);
       } catch (e: any) {
         serverLogger.error("persistence", `Failed to parse Redis data for ${data.characterName}: ${e.message}`);
       }

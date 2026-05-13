@@ -1,11 +1,5 @@
-/**
- * @file src/components/Game/GLBModel.tsx
- * @description A utility component for rendering external 3D models in GLB/GLTF format.
- * Handles model loading, cloning for multiple instances, and basic property application.
- * @importance Essential: Provides a flexible way to incorporate high-quality 3D assets into the game world.
- */
-import { memo, useMemo, Suspense, useEffect } from "react";
-import { useGLTF } from "@react-three/drei";
+import { memo, Suspense } from "react";
+import { useGLTF, Clone } from "@react-three/drei";
 import * as THREE from "three";
 
 interface GLBModelProps {
@@ -20,64 +14,43 @@ interface GLBModelProps {
   isCollidable?: boolean;
 }
 
-const ModelInner = ({ url, castShadow, receiveShadow, isGhost, isCollidable = true }: any) => {
-  const { scene } = useGLTF(url) as any;
-
-  // Clone the scene and apply settings safely
-  const clonedScene = useMemo(() => {
-    if (!scene) return new THREE.Group();
-    
-    const clone = scene.clone();
-    
-    // Apply shadows and fix frustum culling
-    clone.traverse((node: any) => {
-      if (node.isMesh) {
-        node.castShadow = castShadow;
-        node.receiveShadow = receiveShadow;
-        // Fix for models disappearing due to bad bounding boxes from exporters
-        node.frustumCulled = false; 
-        
-        // Ensure materials are rendered properly (double sided for single-plane walls)
-        if (node.material) {
-          // If it's an array of materials
-          if (Array.isArray(node.material)) {
-            node.material.forEach((mat: any) => { mat.side = THREE.DoubleSide; });
-          } else {
-            node.material.side = THREE.DoubleSide;
-          }
-        }
-        // Handle Ghost (Transparency)
-        if (isGhost && node.material) {
-          const mats = Array.isArray(node.material) ? node.material : [node.material];
-          mats.forEach((m: any) => {
-            m.transparent = true;
-            m.opacity = 0.5;
-            m.depthWrite = false; 
-          });
-        } else if (!isGhost) {
-          // Enable collision for real models (if requested)
-          node.userData.isCollidable = isCollidable;
-        }
-      }
-    });
-    
-    return clone;
-  }, [scene, castShadow, receiveShadow, isGhost, isCollidable]);
-
-  return <primitive object={clonedScene} />;
-};
-
-const LoadingFallback = () => (
+const LoadingFallback = ({ url }: { url: string }) => (
   <group>
-    {/* Small pulsing sphere instead of a giant cylinder */}
-    <mesh position={[0, 1, 0]}>
-      <sphereGeometry args={[0.3, 16, 16]} />
-      <meshStandardMaterial color="#3b82f6" wireframe transparent opacity={0.5} />
+    {/* Highly visible placeholder while model is loading */}
+    <mesh position={[0, 0.5, 0]}>
+      <boxGeometry args={[0.5, 1, 0.5]} />
+      <meshStandardMaterial color="#3b82f6" wireframe transparent opacity={0.3} />
     </mesh>
-    <pointLight position={[0, 1, 0]} intensity={1} color="#3b82f6" />
+    <pointLight position={[0, 1, 0]} intensity={2} color="#3b82f6" distance={5} />
   </group>
 );
 
+const GLBInner = ({ url, castShadow, receiveShadow, isGhost, isCollidable }: any) => {
+  const { scene } = useGLTF(url) as any;
+  return (
+    <Clone 
+      object={scene} 
+      castShadow={castShadow} 
+      receiveShadow={receiveShadow}
+      inject={(node) => {
+        if ((node as THREE.Mesh).isMesh) {
+          node.userData.isCollidable = isCollidable;
+          node.frustumCulled = false;
+          
+          if (isGhost && (node as THREE.Mesh).material) {
+            // Important: Clone the material for the ghost to avoid affecting other instances
+            const m = ((node as THREE.Mesh).material as THREE.MeshStandardMaterial).clone();
+            m.transparent = true;
+            m.opacity = 0.4;
+            m.depthWrite = false;
+            (node as THREE.Mesh).material = m;
+          }
+        }
+        return null;
+      }}
+    />
+  );
+};
 
 export const GLBModel = memo(({ 
   url, 
@@ -90,12 +63,6 @@ export const GLBModel = memo(({
   isGhost = false,
   isCollidable = true
 }: GLBModelProps) => {
-  
-  // Preload and monitor model status if needed
-  useEffect(() => {
-    // Silence is golden
-  }, [url]);
-
   return (
     <group 
       position={position} 
@@ -103,15 +70,18 @@ export const GLBModel = memo(({
       scale={typeof scale === 'number' ? [scale, scale, scale] : scale} 
       onClick={onClick}
     >
-      <Suspense fallback={<LoadingFallback />}>
-        <ModelInner url={url} castShadow={castShadow} receiveShadow={receiveShadow} isGhost={isGhost} isCollidable={isCollidable} />
+      <Suspense fallback={<LoadingFallback url={url} />}>
+        <GLBInner 
+          url={url} 
+          castShadow={castShadow} 
+          receiveShadow={receiveShadow} 
+          isGhost={isGhost} 
+          isCollidable={isCollidable} 
+        />
       </Suspense>
     </group>
   );
 });
 
 GLBModel.displayName = "GLBModel";
-
-// Preload the model so it's ready faster
-// But we only preload if url is static, here we just let it load on demand
 

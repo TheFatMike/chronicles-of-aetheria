@@ -81,6 +81,7 @@ export interface Character {
   gold: number;
   pos?: [number, number, number];
   rot?: [number, number, number];
+  discoveredTeleports: string[];
 }
 
 export type HotbarSlot = { type: 'item', data: InventoryItem } | { type: 'skill', data: Skill };
@@ -164,9 +165,10 @@ export interface PlayerData {
   level?: number;
   exp?: number;
   maxExp?: number;
+  discoveredTeleports?: string[];
 }
 
-export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'terrain_raise' | 'terrain_lower' | 'terrain_flatten' | 'terrain_paint_grass' | 'terrain_paint_dirt' | 'terrain_paint_stone' | 'terrain_paint_sand' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'npc_merchant' | 'npc_elder_thorne' | 'npc_merchant_silas' | 'npc_blacksmith_torin' | 'npc_banker' | 'npc_farmer_bob' | 'delete' | 'edit';
+export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'teleport_crystal' | 'terrain_raise' | 'terrain_lower' | 'terrain_flatten' | 'terrain_paint_grass' | 'terrain_paint_dirt' | 'terrain_paint_stone' | 'terrain_paint_sand' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'npc_merchant' | 'npc_elder_thorne' | 'npc_merchant_silas' | 'npc_blacksmith_torin' | 'npc_banker' | 'npc_farmer_bob' | 'delete' | 'edit' | (string & {});
 
 export interface WorldObject {
   id: string;
@@ -175,6 +177,7 @@ export interface WorldObject {
   rot: [number, number, number];
   scale: number;
   modelUrl?: string;
+  name?: string;
   waypointId?: string; // For pathing
   nextWaypointId?: string; // For linking
   pathId?: string; // For categorizing paths
@@ -185,7 +188,13 @@ export interface WorldObject {
   respawnTime?: number;
 }
 
-export type TargetType = "player" | "npc" | "enemy";
+export interface TeleportPoint {
+  id: string;
+  name: string;
+  pos: [number, number, number];
+}
+
+export type TargetType = "player" | "npc" | "enemy" | "teleport_crystal";
 
 export interface GameTarget {
   id: string;

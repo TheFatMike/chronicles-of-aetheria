@@ -33,6 +33,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         setSelectedCharacter(prev => prev ? { ...prev, ...confirmedState } : null);
         store.setActiveQuests(confirmedState.quests || {});
         if (confirmedState.pos) store.requestTeleport(confirmedState.pos);
+        if (confirmedState.discoveredTeleports) {
+          store.setDiscoveredTeleports(confirmedState.discoveredTeleports);
+        } else {
+          store.setDiscoveredTeleports([]);
+        }
         store.setPlayerId(socket.id || null);
       },
       "inventory_update": (data: any) => {

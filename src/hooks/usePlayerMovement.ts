@@ -202,6 +202,11 @@ export const usePlayerMovement = (
     // Determine movement state early for camera logic
     isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
+    // 2.1 Interrupt casting on movement
+    if (isMoving.current && state.castState?.active) {
+      state.cancelCast();
+    }
+
     if (store.isEditorOpen) {
       // First Person Fly Mode
       cameraState.current.radius = 0;

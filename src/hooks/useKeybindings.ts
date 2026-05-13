@@ -38,7 +38,9 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
     activeTrade,
     setActiveTrade,
     contextMenu,
-    setContextMenu
+    setContextMenu,
+    isTeleportMenuOpen,
+    setTeleportMenuOpen
   } = useGameStore();
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
           return;
         }
 
-        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen || isPassiveTreeOpen || isShopOpen || isBankOpen || activeLoot || activeTrade) {
+        if (activeMenu || isInventoryOpen || isCharacterOpen || isQuestsOpen || isSkillsOpen || isPassiveTreeOpen || isShopOpen || isBankOpen || activeLoot || activeTrade || isTeleportMenuOpen) {
           setActiveMenu(null);
           setInventoryOpen(false);
           setCharacterOpen(false);
@@ -74,6 +76,7 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
           setShopOpen(false);
           setBankOpen(false);
           setActiveLoot(null);
+          setTeleportMenuOpen(false);
           
           if (activeTrade) {
             if ((window as any).socket) {
@@ -124,5 +127,5 @@ export const useKeybindings = ({ enabled, onEscape, onHotbarUse }: KeybindingPro
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape, isInventoryOpen, isCharacterOpen, isQuestsOpen, isSkillsOpen, isPassiveTreeOpen, isShopOpen, isBankOpen, activeLoot, activeTrade, contextMenu]);
+  }, [enabled, activeMenu, currentTarget, setActiveMenu, setTarget, onEscape, isInventoryOpen, isCharacterOpen, isQuestsOpen, isSkillsOpen, isPassiveTreeOpen, isShopOpen, isBankOpen, activeLoot, activeTrade, contextMenu, isTeleportMenuOpen, setTeleportMenuOpen]);
 };

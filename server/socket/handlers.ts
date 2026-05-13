@@ -3,7 +3,7 @@ import { handleUpdateTerrain, handleRequestTerrainSync } from "./handlers/terrai
 import { handleJoin, handleDisconnect } from "./handlers/session";
 import { handleMove } from "./handlers/movement";
 import { handleCombatSkill } from "./handlers/combat";
-import { handleCreateCharacter, handleDeleteCharacter } from "./handlers/character";
+import { handleCreateCharacter, handleDeleteCharacter, handleUpdateCharacter } from "./handlers/character";
 import { handleLootEntity, handleTakeLootItem, handleTakeGold, handleTakeAllLoot, handleEquipItem, handleUnequipItem, handleMoveItem, handleSplitStack, handleDestroyItem, handleBankDeposit, handleBankWithdraw, handleBankMove, handleBankDepositAll } from "./handlers/inventory";
 import { handleSaveWorldObject, handleRemoveWorldObject, handleBatchSaveWorldObjects, handleSpawnerReload } from "./handlers/editor";
 import { handleAcceptQuest, handleTurnInQuest, handleAbandonQuest } from "./handlers/quest";
@@ -38,6 +38,7 @@ export const registerHandlers = (io: Server, socket: Socket) => {
   // Character
   socket.on("create_character", (data) => handleCreateCharacter(socket, data, userId, email));
   socket.on("delete_character", (charId) => handleDeleteCharacter(socket, charId, userId));
+  socket.on("character_update", (data) => handleUpdateCharacter(socket, data));
 
   // Inventory & Loot
   socket.on("loot_entity", (data) => handleLootEntity(io, socket, data));

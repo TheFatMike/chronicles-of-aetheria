@@ -73,7 +73,10 @@ export const MenuManager = ({
     showAllNames,
     activeQuestOffer,
     activeQuestNPCId,
-    setQuestOffer
+    setQuestOffer,
+    isTeleportMenuOpen,
+    setTeleportMenuOpen,
+    activeTeleportCrystalId
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -109,7 +112,11 @@ export const MenuManager = ({
     activeQuestOffer: s.activeQuestOffer,
     activeQuestNPCId: s.activeQuestNPCId,
     setQuestOffer: s.setQuestOffer,
+    isTeleportMenuOpen: s.isTeleportMenuOpen,
+    setTeleportMenuOpen: s.setTeleportMenuOpen,
+    activeTeleportCrystalId: s.activeTeleportCrystalId,
     entities: s.entities,
+    worldObjects: s.worldObjects,
     playerId: s.id
   })));
 
@@ -142,7 +149,7 @@ export const MenuManager = ({
         if (distSq > 64) { // 8 meters
           setBankOpen(false);
           addMessage({
-            id: "sys-bank-close",
+            id: `sys-bank-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
             sender: "SYSTEM",
             text: "Bank closed: You walked too far away.",
             timestamp: Date.now(),
@@ -152,6 +159,28 @@ export const MenuManager = ({
       }
     }
   }, [isBankOpen, activeBankNPCId, localPlayer?.pos, entities, setBankOpen, addMessage]);
+
+  // Teleport Menu Distance check
+  useEffect(() => {
+    if (isTeleportMenuOpen && activeTeleportCrystalId && localPlayer) {
+      const crystal = (useGameStore.getState().worldObjects as any)[activeTeleportCrystalId];
+      if (crystal) {
+        const dx = localPlayer.pos[0] - crystal.pos[0];
+        const dz = localPlayer.pos[2] - crystal.pos[2];
+        const distSq = dx*dx + dz*dz;
+        if (distSq > 64) { // 8 meters
+          setTeleportMenuOpen(false);
+          addMessage({
+            id: `sys-teleport-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+            sender: "SYSTEM",
+            text: "Network link lost: You walked too far away from the crystal.",
+            timestamp: Date.now(),
+            color: "#fbbf24"
+          });
+        }
+      }
+    }
+  }, [isTeleportMenuOpen, activeTeleportCrystalId, localPlayer?.pos, setTeleportMenuOpen, addMessage]);
 
   // Shop Distance check
   useEffect(() => {
@@ -164,7 +193,7 @@ export const MenuManager = ({
         if (distSq > 64) { // 8 meters
           setShopOpen(false);
           addMessage({
-            id: "sys-shop-close",
+            id: `sys-shop-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
             sender: "SYSTEM",
             text: "Shop closed: You walked too far away.",
             timestamp: Date.now(),
@@ -392,7 +421,7 @@ export const MenuManager = ({
 
                     if (dist > 5) {
                       addMessage({
-                        id: "sys-" + Date.now(),
+                        id: `sys-npc-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
                         sender: "SYSTEM",
                         text: `You are too far away to talk to ${contextMenu.title}.`,
                         timestamp: Date.now(),
@@ -438,7 +467,7 @@ export const MenuManager = ({
 
                     if (dist > 5) {
                       addMessage({
-                        id: "sys-" + Date.now(),
+                        id: `sys-shop-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
                         sender: "SYSTEM",
                         text: `You are too far away to shop with ${contextMenu.title}.`,
                         timestamp: Date.now(),
@@ -475,7 +504,7 @@ export const MenuManager = ({
 
                     if (dist > 5) {
                       addMessage({
-                        id: "sys-" + Date.now(),
+                        id: `sys-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                         sender: "SYSTEM",
                         text: `You are too far away to access the bank.`,
                         timestamp: Date.now(),

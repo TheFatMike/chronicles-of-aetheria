@@ -14,6 +14,8 @@ import { CLASS_STARTING_GEAR, generateItemInstance } from "../../data/items";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { getUserRole } from "../../lib/auth";
 import { removeCharacterSessionRedis } from "../../redis";
+import { players } from "../../state";
+import { markPlayerDirty } from "../../lib/stateUtils";
 
 export const handleCreateCharacter = async (socket: Socket, data: any, userId: string, email: string) => {
   try {
@@ -136,5 +138,34 @@ export const handleDeleteCharacter = async (socket: Socket, charId: string, user
   } catch (e: any) {
     serverLogger.error("net", "Character deletion failed", e.message);
     socket.emit("error", { message: "Failed to delete character." });
+  }
+};
+export const handleUpdateCharacter = async (socket: Socket, data: any) => {
+  try {
+    const player = players.get(socket.id);
+    if (!player) return;
+
+    // 1. Update In-Memory State
+    const allowedFields = ["discoveredTeleports", "hotbar", "role"];
+    const updates: string[] = [];
+
+    for (const key of Object.keys(data)) {
+      if (allowedFields.includes(key)) {
+        (player as any)[key] = data[key];
+        updates.push(key);
+      }
+    }
+
+    if (updates.length > 0) {
+      // 2. Mark as dirty for Redis/Firestore persistence
+      markPlayerDirty(socket.id, updates);
+      
+      // 3. Broadcast update to the client themselves (confirmation)
+      socket.emit("character_update", data);
+      
+      serverLogger.debug("net", `Updated character ${player.characterName} fields: ${updates.join(", ")}`);
+    }
+  } catch (e: any) {
+    serverLogger.error("net", "Character update failed", e.message);
   }
 };

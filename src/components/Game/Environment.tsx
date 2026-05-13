@@ -4,7 +4,9 @@
  * Includes trees, rocks, buildings, and other decorative elements that populate the world.
  * @importance Essential: Provides the visual foundation and atmosphere of the game world.
  */
-import { memo } from "react";
+import { memo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import { GLBModel } from "./GLBModel";
 
 
@@ -14,9 +16,13 @@ interface EnvironmentProps {
   scale?: number;
   onClick?: (e: any) => void;
   isGhost?: boolean;
+  modelUrl?: string;
 }
 
-export const Tree = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Tree = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -36,14 +42,22 @@ export const Tree = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, 
   );
 });
 
-export const Rock = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => (
-  <mesh position={position} rotation={rotation} scale={scale} castShadow={!isGhost} onClick={onClick}>
-    <dodecahedronGeometry args={[1]} />
-    <meshStandardMaterial color="#57534e" roughness={1} transparent={isGhost} opacity={isGhost ? 0.5 : 1} depthWrite={!isGhost} />
-  </mesh>
-));
+export const Rock = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
+  return (
+    <mesh position={position} rotation={rotation} scale={scale} castShadow={!isGhost} onClick={onClick}>
+      <dodecahedronGeometry args={[1]} />
+      <meshStandardMaterial color="#57534e" roughness={1} transparent={isGhost} opacity={isGhost ? 0.5 : 1} depthWrite={!isGhost} />
+    </mesh>
+  );
+});
 
-export const House = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const House = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -63,13 +77,13 @@ export const House = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick,
   );
 });
 
-export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
   return (
     <GLBModel 
-      url="assets/models/tent.glb"
+      url={modelUrl || "/assets/models/tent.glb"}
       position={position}
       rotation={rotation}
-      scale={scale * 0.01}
+      scale={scale * (modelUrl ? 1 : 0.01)}
       onClick={onClick}
       isGhost={isGhost}
     />
@@ -78,7 +92,10 @@ export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, 
 
 
 
-export const Bush = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Bush = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -94,7 +111,10 @@ export const Bush = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, 
   );
 });
 
-export const Fence = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Fence = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -132,11 +152,11 @@ export const Waypoint = memo(({ position, rotation = [0, 0, 0], scale = 1, onCli
   </group>
 ));
 
-export const Campfire = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Campfire = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <GLBModel 
-        url="assets/models/campfire.glb"
+        url={modelUrl || "/assets/models/campfire.glb"}
         position={[0, 0.05, 0]}
         rotation={[0, 0, 0]}
         scale={1}
@@ -149,7 +169,10 @@ export const Campfire = memo(({ position, rotation = [0, 0, 0], scale = 1, onCli
 });
 
 
-export const Barrel = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Barrel = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -169,7 +192,10 @@ export const Barrel = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick
   );
 });
 
-export const Dummy = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Dummy = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -189,7 +215,10 @@ export const Dummy = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick,
   );
 });
 
-export const Chest = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Chest = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -209,7 +238,10 @@ export const Chest = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick,
   );
 });
 
-export const Well = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const Well = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -237,7 +269,10 @@ export const Well = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, 
   );
 });
 
-export const SignPost = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+export const SignPost = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
+  if (modelUrl) {
+    return <GLBModel url={modelUrl} position={position} rotation={rotation} scale={scale} onClick={onClick} isGhost={isGhost} />;
+  }
   const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
   return (
     <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -252,3 +287,54 @@ export const SignPost = memo(({ position, rotation = [0, 0, 0], scale = 1, onCli
     </group>
   );
 });
+
+export const TeleportCrystal = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+  const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
+
+  return (
+    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
+      {/* Central Crystal Core */}
+      <mesh position={[0, 1.2, 0]} castShadow={!isGhost}>
+        <octahedronGeometry args={[0.8, 0]} />
+        <meshStandardMaterial 
+          color="#a855f7" 
+          emissive="#a855f7" 
+          emissiveIntensity={2} 
+          metalness={0.8} 
+          roughness={0.2} 
+          {...matProps} 
+        />
+      </mesh>
+
+      {/* Floating Shards */}
+      {[0, 1, 2, 3].map((i) => (
+        <mesh 
+          key={i} 
+          position={[
+            Math.sin(i * Math.PI * 0.5) * 1.2, 
+            1.2 + Math.cos(i * Math.PI * 0.5) * 0.5, 
+            Math.cos(i * Math.PI * 0.5) * 1.2
+          ]}
+          rotation={[Math.random(), Math.random(), Math.random()]}
+        >
+          <octahedronGeometry args={[0.2, 0]} />
+          <meshStandardMaterial color="#c084fc" emissive="#a855f7" {...matProps} />
+        </mesh>
+      ))}
+
+      {/* Magical Glow */}
+      {!isGhost && (
+        <pointLight position={[0, 1.8, 0]} color="#a855f7" intensity={2} distance={8} />
+      )}
+
+      {/* Invisible Hitbox: Makes clicking much easier */}
+      <mesh position={[0, 1, 0]}>
+        <cylinderGeometry args={[1, 1, 2, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+});
+
+
+

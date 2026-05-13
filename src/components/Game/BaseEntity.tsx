@@ -140,7 +140,7 @@ export const BaseEntity = memo(({
 
     if (distance > INTERACT_RANGE) {
       state.addMessage({
-        id: "sys-" + Date.now(),
+        id: `sys-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
         sender: "SYSTEM",
         text: `You are too far away to interact with ${name}.`,
         timestamp: Date.now(),
@@ -273,7 +273,7 @@ export const BaseEntity = memo(({
 
           if (distance > INTERACT_RANGE) {
             state.addMessage({
-              id: "sys-" + Date.now(),
+              id: `sys-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
               sender: "SYSTEM",
               text: `You are too far away to interact with ${name}.`,
               timestamp: Date.now(),

@@ -14,6 +14,7 @@ import { createUISlice } from './slices/uiSlice';
 import { createQuestSlice } from './slices/questSlice';
 import { createPartySlice } from './slices/partySlice';
 import { createTradeSlice } from './slices/tradeSlice';
+import { createTeleportSlice } from './slices/teleportSlice';
 
 import { subscribeWithSelector } from 'zustand/middleware';
 
@@ -27,5 +28,6 @@ export const useGameStore = create<GameState>()(
     ...createQuestSlice(...a),
     ...createPartySlice(...a),
     ...createTradeSlice(...a),
+    ...createTeleportSlice(...a),
   }))
 );

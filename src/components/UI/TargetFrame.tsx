@@ -67,34 +67,41 @@ export const TargetFrame = () => {
           </button>
 
           <div className="flex items-center space-x-4 mb-3">
-            <div className="relative">
-              <div 
-                className="w-12 h-12 rounded-lg border-2 border-[#c2a472]/30 shadow-lg overflow-hidden flex items-center justify-center bg-black/40"
-              >
+            {liveTarget.type !== 'teleport_crystal' && (
+              <div className="relative">
                 <div 
-                  className="w-full h-full opacity-40"
-                  style={{ backgroundColor: liveTarget.color || "#ccc" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                   {liveTarget.type === 'enemy' ? (
-                     <div className="w-6 h-6 bg-red-500/20 rounded-full border border-red-500/40 flex items-center justify-center text-red-500 text-[10px] font-black">!</div>
-                   ) : (
-                     <div className="w-6 h-6 bg-blue-500/20 rounded-full border border-blue-500/40 flex items-center justify-center text-blue-500 text-[10px] font-black">?</div>
-                   )}
+                  className="w-12 h-12 rounded-lg border-2 border-[#c2a472]/30 shadow-lg overflow-hidden flex items-center justify-center bg-black/40"
+                >
+                  <div 
+                    className="w-full h-full opacity-40"
+                    style={{ backgroundColor: liveTarget.color || "#ccc" }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                     {liveTarget.type === 'enemy' && (
+                       <div className="w-6 h-6 bg-red-500/20 rounded-full border border-red-500/40 flex items-center justify-center text-red-500 text-[10px] font-black">!</div>
+                     )}
+                     {liveTarget.type === 'npc' && (
+                       <div className="w-6 h-6 bg-blue-500/20 rounded-full border border-blue-500/40 flex items-center justify-center text-blue-500 text-[10px] font-black">?</div>
+                     )}
+                  </div>
+                </div>
+                <div className="absolute -bottom-1 -right-1 bg-[#c2a472] text-[#1a140f] font-mono font-black text-[9px] px-1.5 py-0.5 rounded border border-[#f4e4bc]/30 shadow-sm">
+                  {liveTarget.level || 1}
                 </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-[#c2a472] text-[#1a140f] font-mono font-black text-[9px] px-1.5 py-0.5 rounded border border-[#f4e4bc]/30 shadow-sm">
-                {liveTarget.level || 1}
-              </div>
-            </div>
+            )}
 
             <div className="flex-1 min-w-0">
               <div className="flex flex-col">
-                <span className="text-[#f4e4bc] font-display font-black text-xs uppercase tracking-tight truncate">
-                  {liveTarget.name}
+                <span className="font-display font-black text-xs uppercase tracking-tight truncate text-[#f4e4bc]">
+                  {liveTarget.type === 'teleport_crystal' ? (
+                    <>
+                      Teleport Crystal <span style={{ color: liveTarget.color }}>●</span>
+                    </>
+                  ) : liveTarget.name}
                 </span>
                 <span className="text-[8px] text-[#8b6b4d] font-black uppercase tracking-[0.2em] opacity-80">
-                   {liveTarget.class || liveTarget.type}
+                   {liveTarget.class || (liveTarget.type === 'teleport_crystal' ? "Travel Network" : liveTarget.type)}
                 </span>
               </div>
             </div>

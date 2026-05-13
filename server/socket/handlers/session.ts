@@ -117,7 +117,8 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         exp: charData.exp || 0,
         maxExp: charData.maxExp || 100,
         passivePoints: charData.passivePoints || 0,
-        passives: charData.passives || {}
+        passives: charData.passives || {},
+        discoveredTeleports: charData.discoveredTeleports || []
       });
 
       // BACKFILL: Ensure existing players get points for their level (1 per level past 1)
@@ -218,6 +219,7 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
           maxExp: p.maxExp || 100,
           passivePoints: p.passivePoints || 0,
           passives: p.passives || {},
+          discoveredTeleports: p.discoveredTeleports || [],
           lastActive: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         

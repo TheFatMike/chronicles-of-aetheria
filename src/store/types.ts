@@ -26,6 +26,7 @@ export interface PlayerState {
   exp?: number;
   maxExp?: number;
   gold?: number;
+  discoveredTeleports: string[];
   bank?: (import('../types').InventoryItem | null)[];
 }
 
@@ -277,4 +278,13 @@ export interface TradeSlice {
   setActiveTrade: (trade: TradeSlice['activeTrade']) => void;
 }
 
-export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice & PartySlice & TradeSlice;
+export interface TeleportSlice {
+  discoveredTeleports: string[];
+  isTeleportMenuOpen: boolean;
+  activeTeleportCrystalId: string | null;
+  discoverTeleport: (id: string) => void;
+  setTeleportMenuOpen: (open: boolean, crystalId?: string | null) => void;
+  setDiscoveredTeleports: (ids: string[]) => void;
+}
+
+export type GameState = PlayerSlice & EntitySlice & WorldSlice & CombatSlice & UISlice & QuestSlice & PartySlice & TradeSlice & TeleportSlice;

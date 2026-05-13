@@ -21,6 +21,7 @@ import { GameMenu } from "./GameMenu";
 import { LootWindow } from "./LootWindow";
 import { QuestTracker } from "./QuestTracker";
 import { DebugOverlay } from "./DebugOverlay";
+import { TeleportMenu } from "./TeleportMenu";
 import { useGameStore } from "../../store/useGameStore";
 import { Socket } from "socket.io-client";
 
@@ -142,6 +143,7 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
         />
 
         <DebugOverlay socket={socket} />
+        <TeleportMenu />
       </div>
     </motion.div>
   );
