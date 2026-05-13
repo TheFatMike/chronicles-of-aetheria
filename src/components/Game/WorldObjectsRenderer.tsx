@@ -43,15 +43,27 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
 
       const playerPos = new THREE.Vector3(localPlayer.pos[0], localPlayer.pos[1], localPlayer.pos[2]);
       
-      // If we haven't moved much and we have objects, skip (unless worldObjects changed)
+      const currentObjects = Object.values(state.worldObjects);
       const distMoved = playerPos.distanceTo(lastCullPos.current);
-      if (distMoved < 5 && nearbyObjects.length > 0) return;
+      
+      // Optimization: Only re-filter if we moved significantly OR if the object count changed
+      // However, we MUST allow updates if the selected object is being edited
+      if (distMoved < 5 && currentObjects.length === nearbyObjects.length && nearbyObjects.length > 0) {
+        // Even if we don't re-filter the whole list, we need to ensure the objects themselves are fresh
+        // The most robust way is to re-filter if any object in the current nearby list has changed
+        let anyChanged = false;
+        for (const obj of nearbyObjects) {
+          if (state.worldObjects[obj.id] !== obj) {
+            anyChanged = true;
+            break;
+          }
+        }
+        if (!anyChanged) return;
+      }
 
       lastCullPos.current.copy(playerPos);
       
       const CULL_DISTANCE_SQ = 300 * 300;
-      const currentObjects = Object.values(state.worldObjects);
-
       const filtered = currentObjects.filter(obj => {
         if (selectedWorldObjectId === obj.id) return true;
         const dx = obj.pos[0] - localPlayer.pos[0];

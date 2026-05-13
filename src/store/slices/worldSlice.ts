@@ -132,11 +132,23 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
       ? { ...(state.worldEditorBuffer[id] || {}), ...data }
       : null;
 
+    // Synchronize with entities slice if it exists (for real-time NPC feedback in editor)
+    const updatedEntities = state.entities[id] ? {
+      ...state.entities,
+      [id]: { 
+        ...state.entities[id], 
+        pos: updatedObject.pos, 
+        rot: updatedObject.rot, 
+        scale: updatedObject.scale 
+      }
+    } : state.entities;
+
     return {
       worldObjects: {
         ...state.worldObjects,
         [id]: updatedObject
       },
+      entities: updatedEntities,
       ...(updatedBuffer ? {
         worldEditorBuffer: {
           ...state.worldEditorBuffer,

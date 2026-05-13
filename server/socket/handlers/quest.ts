@@ -7,6 +7,7 @@
 import { Socket } from "socket.io";
 import { players } from "../../state";
 import { db } from "../../db";
+import admin from "firebase-admin";
 import { serverLogger } from "../../logger";
 import { SAMPLE_QUESTS } from "../../../src/data/quests";
 import { validateQuestState } from "../../logic/quest";
@@ -193,5 +194,31 @@ export const handleTurnInQuest = (io: any, socket: Socket, data: any) => {
     text: `Quest Completed: ${quest.title}!`,
     timestamp: Date.now(),
     color: "#22c55e"
+  });
+};
+
+export const handleAbandonQuest = (socket: Socket, data: any) => {
+  const player = players.get(socket.id);
+  if (!player || !player.quests) return;
+
+  const quest = player.quests[data.questId];
+  if (!quest) return;
+
+  delete player.quests[data.questId];
+  
+  // Sync to client
+  socket.emit("quest_update", player.quests);
+
+  // Persist to DB - Use FieldValue.delete() to ensure it's removed from the map
+  db.collection("users").doc(player.userId).collection("characters").doc(player.characterId).update({
+    [`quests.${data.questId}`]: admin.firestore.FieldValue.delete()
+  }).catch((e: any) => serverLogger.error("firestore", "Quest abandon failed", e.message));
+
+  socket.emit("chat_message", {
+    id: "sys-q-abandon-" + Date.now(),
+    sender: "QUEST",
+    text: `Abandoned Quest: ${quest.title}`,
+    timestamp: Date.now(),
+    color: "#ff4444"
   });
 };

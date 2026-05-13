@@ -219,7 +219,27 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         }
 
         // QUEST PROGRESS TRACKING
-        updateQuestProgress(socket, player, "kill", target.class);
+        if (player.partyId && parties.has(player.partyId)) {
+          const party = parties.get(player.partyId);
+          party.members.forEach((mId: string) => {
+            const member = players.get(mId);
+            if (member) {
+              const dist = Math.sqrt(
+                Math.pow(member.pos[0] - target.pos[0], 2) +
+                Math.pow(member.pos[2] - target.pos[2], 2)
+              );
+              // Shared credit range: 50 meters
+              if (dist < 50) {
+                const memberSocket = io.sockets.sockets.get(mId);
+                if (memberSocket) {
+                  updateQuestProgress(memberSocket, member, "kill", target.class);
+                }
+              }
+            }
+          });
+        } else {
+          updateQuestProgress(socket, player, "kill", target.class);
+        }
         
         // Cleanup corpse after 5 minutes
         setTimeout(() => {
@@ -250,6 +270,21 @@ export function giveExperience(io: any, player: any, amount: number) {
       text: `Congratulations! You have reached level ${player.level}!`, 
       color: "#facc15" 
     });
+
+    // SYNC PARTY ON LEVEL UP
+    if (player.partyId && parties.has(player.partyId)) {
+      const party = parties.get(player.partyId);
+      if (party) {
+        const updateData = {
+          ...party,
+          memberDetails: party.members.map((id: string) => {
+            const p = players.get(id);
+            return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
+          }).filter(Boolean)
+        };
+        party.members.forEach((mId: string) => io.to(mId).emit("party_update", updateData));
+      }
+    }
   }
   
   io.to(player.id).emit("player_stats", {

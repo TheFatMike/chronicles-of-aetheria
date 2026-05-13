@@ -11,45 +11,66 @@ import { Users, X, Shield, Star } from 'lucide-react';
 
 export const PartyFrames = () => {
   const party = useGameStore((state) => state.party);
+  const playerId = useGameStore((state) => state.id);
 
-  if (!party) return null;
+  if (!party || !party.memberDetails) return null;
+
+  // Filter out self
+  const otherMembers = party.memberDetails.filter(m => m.id !== playerId);
+
+  if (otherMembers.length === 0) return null;
 
   return (
     <div className="fixed left-6 top-24 z-40 flex flex-col gap-3 pointer-events-none">
-      {/* Active Party Frames */}
       <AnimatePresence>
-        {party.memberDetails?.map((member, i) => (
+        {otherMembers.map((member, i) => (
           <motion.div
             key={member.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="w-48 bg-slate-900/90 border border-slate-700/50 rounded-lg p-2 pointer-events-auto shadow-lg backdrop-blur-md"
+            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -20, scale: 0.95 }}
+            className="w-56 bg-[#1a140f]/90 backdrop-blur-xl border-2 border-[#c2a472]/30 rounded-xl p-3 pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.6)] relative overflow-hidden group"
           >
-            <div className="flex items-center justify-between mb-1">
+            {/* Glossy overlay */}
+            <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-2 relative z-10">
               <div className="flex items-center gap-2 overflow-hidden">
-                {party.leaderId === member.id && <Star size={10} className="text-amber-400 fill-amber-400 shrink-0" />}
-                <span className="text-[10px] font-bold text-white truncate uppercase tracking-tighter">{member.name}</span>
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-lg bg-black/40 border border-[#c2a472]/20 flex items-center justify-center text-[#f4e4bc] text-[10px] font-black uppercase">
+                    {member.name.charAt(0)}
+                  </div>
+                  {party.leaderId === member.id && (
+                    <div className="absolute -top-1 -left-1 bg-amber-500 rounded-full p-0.5 shadow-lg border border-amber-300">
+                      <Star size={8} className="text-white fill-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-[#f4e4bc] truncate uppercase tracking-tight">{member.name}</span>
+                  <span className="text-[7px] font-black text-[#8b6b4d] uppercase tracking-[0.15em] opacity-60">LVL {member.level || 1} • {member.class}</span>
+                </div>
               </div>
-              <span className="text-[8px] font-bold opacity-50 uppercase">{member.class}</span>
             </div>
 
-            {/* HP Bar */}
-            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden mb-1 border border-black/20">
-              <motion.div 
-                className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                initial={{ width: '100%' }}
-                animate={{ width: `${(member.hp / member.maxHp) * 100}%` }}
-              />
-            </div>
+            <div className="space-y-1.5 relative z-10">
+              {/* HP Bar */}
+              <div className="h-2 w-full bg-black/60 rounded-sm overflow-hidden border border-[#c2a472]/10 shadow-inner">
+                <motion.div 
+                  className="h-full bg-linear-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                  initial={{ width: '100%' }}
+                  animate={{ width: `${(member.hp / member.maxHp) * 100}%` }}
+                />
+              </div>
 
-            {/* MP Bar */}
-            <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden border border-black/20">
-              <motion.div 
-                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]"
-                initial={{ width: '100%' }}
-                animate={{ width: `${(member.mp / member.maxMp) * 100}%` }}
-              />
+              {/* MP Bar */}
+              <div className="h-1.5 w-full bg-black/60 rounded-sm overflow-hidden border border-[#c2a472]/10 shadow-inner">
+                <motion.div 
+                  className="h-full bg-linear-to-r from-blue-600 to-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                  initial={{ width: '100%' }}
+                  animate={{ width: `${(member.mp / member.maxMp) * 100}%` }}
+                />
+              </div>
             </div>
           </motion.div>
         ))}

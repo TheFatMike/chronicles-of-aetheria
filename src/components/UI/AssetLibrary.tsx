@@ -15,15 +15,6 @@ const CATEGORIES = [
   { id: 'spawners', label: 'Gameplay', icon: Activity },
 ];
 
-const SPAWNER_TOOLS = [
-  { id: 'spawner_guard', label: 'Guard Spawner', category: 'spawners' },
-  { id: 'npc_elder_thorne', label: 'Elder Thorne', category: 'npcs' },
-  { id: 'npc_merchant_silas', label: 'Merchant Silas', category: 'npcs' },
-  { id: 'npc_blacksmith_torin', label: 'Blacksmith Torin', category: 'npcs' },
-  { id: 'npc_guard_captain', label: 'Guard Captain', category: 'npcs' },
-  { id: 'npc_instructor_kael', label: 'Instructor Kael', category: 'npcs' },
-];
-
 const TERRAIN_TOOLS = [
   { id: 'terrain_raise', label: 'Raise Ground', category: 'terrain' },
   { id: 'terrain_lower', label: 'Lower Ground', category: 'terrain' },

@@ -17,6 +17,7 @@ import { SAMPLE_QUESTS } from "../../data/quests";
 import { Shop } from "./Shop";
 import { SHOPS } from "../../data/shops";
 import { Bank } from "./Bank";
+import { QuestWindow } from "./QuestWindow";
 
 interface MenuManagerProps {
   selectedCharacter: Character;
@@ -65,7 +66,11 @@ export const MenuManager = ({
     activeBankNPCId,
     setAutoAttackTarget,
     playerId,
-    entities
+    entities,
+    showAllNames,
+    activeQuestOffer,
+    activeQuestNPCId,
+    setQuestOffer
   } = useGameStore(useShallow((s) => ({
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
@@ -95,13 +100,32 @@ export const MenuManager = ({
     setBankOpen: s.setBankOpen,
     activeBankNPCId: s.activeBankNPCId,
     setAutoAttackTarget: s.setAutoAttackTarget,
-    playerId: s.id,
-    entities: s.entities
+    showAllNames: s.showAllNames,
+    activeQuestOffer: s.activeQuestOffer,
+    activeQuestNPCId: s.activeQuestNPCId,
+    setQuestOffer: s.setQuestOffer,
+    entities: s.entities,
+    playerId: s.id
   })));
 
   // Auto-close logic for distance-based windows
   const localPlayer = players[playerId || ""];
   
+  // Quest Offer Distance check
+  useEffect(() => {
+    if (activeQuestOffer && activeQuestNPCId && localPlayer) {
+      const npc = entities[activeQuestNPCId];
+      if (npc) {
+        const dx = localPlayer.pos[0] - npc.pos[0];
+        const dz = localPlayer.pos[2] - npc.pos[2];
+        const distSq = dx*dx + dz*dz;
+        if (distSq > 100) { // 10 meters
+          setQuestOffer(null);
+        }
+      }
+    }
+  }, [activeQuestOffer, activeQuestNPCId, localPlayer?.pos, entities, setQuestOffer]);
+
   // Bank Distance check
   useEffect(() => {
     if (isBankOpen && activeBankNPCId && localPlayer) {
@@ -146,6 +170,7 @@ export const MenuManager = ({
     }
   }, [isShopOpen, activeShopNPCId, localPlayer?.pos, entities, setShopOpen, addMessage]);
 
+
   return (
     <AnimatePresence>
       {activeMenu === 'map' && <Map key="map-window" localPlayerId={socket?.id || null} />}
@@ -155,21 +180,10 @@ export const MenuManager = ({
           key="dialogue-box"
           speaker={activeDialogue.speaker}
           text={activeDialogue.text}
-          quest={activeDialogue.quest}
           options={activeDialogue.options}
-          isQuestReady={activeDialogue.quest ? activeQuests[activeDialogue.quest.id]?.objectives.every((o: any) => o.completed) : false}
-          onAccept={() => {
-            if (activeDialogue.quest && socket) {
-              socket.emit("accept_quest", { questId: activeDialogue.quest.id });
-            }
+          onDecline={() => {
             setActiveDialogue(null);
-          }}
-          onDecline={() => setActiveDialogue(null)}
-          onComplete={() => {
-            if (activeDialogue.quest && socket) {
-              socket.emit("turn_in_quest", { questId: activeDialogue.quest.id });
-            }
-            setActiveDialogue(null);
+            setQuestOffer(null);
           }}
           onOptionSelect={(option) => {
             if (option.action === 'close') {
@@ -191,17 +205,18 @@ export const MenuManager = ({
                 npcType,
                 ...nextDialogue
               });
+            } else if (option.targetId === 'view_quest_offer' && activeDialogue.quest) {
+              setQuestOffer(activeDialogue.quest, activeDialogue.npcId);
+              setActiveDialogue(null);
             } else if (option.action === 'quest') {
-              if (option.targetId && SAMPLE_QUESTS[option.targetId]) {
-                const q = SAMPLE_QUESTS[option.targetId];
-                setActiveDialogue({
-                  speaker: speakerName,
-                  npcId,
-                  npcType,
-                  text: q.description,
-                  quest: q
-                });
-                return;
+              if (option.targetId) {
+                // Prioritize the active quest instance so progress is shown
+                const q = activeQuests[option.targetId] || SAMPLE_QUESTS[option.targetId];
+                if (q) {
+                  setQuestOffer(q, npcId);
+                  setActiveDialogue(null);
+                  return;
+                }
               }
 
               // Force search for quests by temporarily ignoring the dialogue tree
@@ -518,7 +533,7 @@ export const MenuManager = ({
         />
       )}
       {isQuestsOpen && (
-        <QuestLog key="quests-window" onClose={() => setQuestsOpen(false)} />
+        <QuestLog key="quests-window" onClose={() => setQuestsOpen(false)} socket={socket} />
       )}
       {isSkillsOpen && (
         <SkillBook
@@ -526,6 +541,29 @@ export const MenuManager = ({
           onClose={() => setSkillsOpen(false)}
           playerClass={selectedCharacter.class}
           learnedSkills={selectedCharacter.skills || []}
+        />
+      )}
+      {activeQuestOffer && (
+        <QuestWindow
+          key="quest-offer-window"
+          quest={activeQuestOffer}
+          isOffer={!activeQuests[activeQuestOffer.id]}
+          isComplete={activeQuests[activeQuestOffer.id]?.objectives.every(o => o.completed)}
+          onAccept={() => {
+            const isComplete = activeQuests[activeQuestOffer.id]?.objectives.every(o => o.completed);
+            if (socket) {
+              if (isComplete) {
+                socket.emit("turn_in_quest", { questId: activeQuestOffer.id });
+              } else {
+                socket.emit("accept_quest", { questId: activeQuestOffer.id });
+              }
+            }
+            setQuestOffer(null);
+            setActiveDialogue(null);
+          }}
+          onDecline={() => {
+            setQuestOffer(null);
+          }}
         />
       )}
     </AnimatePresence>

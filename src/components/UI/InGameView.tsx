@@ -19,6 +19,7 @@ import { MenuManager } from "./MenuManager";
 import { NavigationMenu } from "./NavigationMenu";
 import { GameMenu } from "./GameMenu";
 import { LootWindow } from "./LootWindow";
+import { QuestTracker } from "./QuestTracker";
 import { DebugOverlay } from "./DebugOverlay";
 import { useGameStore } from "../../store/useGameStore";
 import { Socket } from "socket.io-client";
@@ -127,6 +128,7 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
         <Chat onSendMessage={handleSendMessage} />
         <NotificationManager />
         <TradeWindow />
+        <QuestTracker />
         <LootWindow socket={socket} />
         <WorldEditor socket={socket} userEmail={userEmail} />
         

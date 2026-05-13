@@ -79,7 +79,7 @@ export const handlePartyAccept = (io: Server, socket: Socket, inviterId: string)
       ...party,
       memberDetails: party.members.map((id: string) => {
         const p = players.get(id);
-        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color } : null;
+        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
       }).filter(Boolean)
     });
   });
@@ -111,7 +111,7 @@ export const handlePartyLeave = (io: Server, socket: Socket) => {
       ...party,
       memberDetails: party.members.map((id: string) => {
         const p = players.get(id);
-        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color } : null;
+        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
       }).filter(Boolean)
     };
     party.members.forEach((mId: string) => io.to(mId).emit("party_update", updateData));

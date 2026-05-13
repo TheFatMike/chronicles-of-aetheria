@@ -141,7 +141,7 @@ export interface PlayerData {
   maxExp?: number;
 }
 
-export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'terrain_raise' | 'terrain_lower' | 'terrain_flatten' | 'terrain_paint_grass' | 'terrain_paint_dirt' | 'terrain_paint_stone' | 'terrain_paint_sand' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'npc_merchant' | 'npc_elder_thorne' | 'npc_merchant_silas' | 'npc_blacksmith_torin' | 'npc_banker' | 'delete' | 'edit';
+export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'terrain_raise' | 'terrain_lower' | 'terrain_flatten' | 'terrain_paint_grass' | 'terrain_paint_dirt' | 'terrain_paint_stone' | 'terrain_paint_sand' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'npc_merchant' | 'npc_elder_thorne' | 'npc_merchant_silas' | 'npc_blacksmith_torin' | 'npc_banker' | 'npc_farmer_bob' | 'delete' | 'edit';
 
 export interface WorldObject {
   id: string;

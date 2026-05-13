@@ -142,5 +142,19 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     respawnTime: 10,
     expReward: 0,
     lootTable: LOOT_TABLES.guard
+  },
+  farmer_bob: {
+    id: 'farmer_bob',
+    name: 'Farmer Bob',
+    class: 'Farmer',
+    type: 'npc',
+    baseStats: { strength: 20, dexterity: 15, wisdom: 20, intelligence: 10, stamina: 40 },
+    aggroRadius: 0,
+    attackRadius: 2.0,
+    leashRadius: 5,
+    moveSpeed: 0,
+    respawnTime: 10,
+    expReward: 0,
+    lootTable: LOOT_TABLES.guard
   }
 };

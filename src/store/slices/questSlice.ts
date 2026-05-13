@@ -9,13 +9,36 @@ import { GameState, QuestSlice } from '../types';
 
 export const createQuestSlice: StateCreator<GameState, [], [], QuestSlice> = (set) => ({
   activeDialogue: null,
+  activeQuestOffer: null,
+  activeQuestNPCId: null,
   activeQuests: {},
+  trackedQuestIds: [],
 
   setActiveDialogue: (dialogue) => set({ activeDialogue: dialogue }),
+  setQuestOffer: (quest, npcId) => set({ 
+    activeQuestOffer: quest,
+    activeQuestNPCId: npcId || null
+  }),
   setActiveQuests: (quests) => set({ activeQuests: quests }),
   
   addQuest: (quest) => set((state) => ({
-    activeQuests: { ...state.activeQuests, [quest.id]: { ...quest, status: 'active' } }
+    activeQuests: { ...state.activeQuests, [quest.id]: { ...quest, status: 'active' } },
+    trackedQuestIds: [...state.trackedQuestIds, quest.id] // Auto-track new quests
+  })),
+
+  abandonQuest: (questId) => set((state) => {
+    const nextQuests = { ...state.activeQuests };
+    delete nextQuests[questId];
+    return {
+      activeQuests: nextQuests,
+      trackedQuestIds: state.trackedQuestIds.filter(id => id !== questId)
+    };
+  }),
+
+  toggleQuestTracking: (questId) => set((state) => ({
+    trackedQuestIds: state.trackedQuestIds.includes(questId)
+      ? state.trackedQuestIds.filter(id => id !== questId)
+      : [...state.trackedQuestIds, questId]
   })),
 
   trackKill: (entityClass) => set((state) => {

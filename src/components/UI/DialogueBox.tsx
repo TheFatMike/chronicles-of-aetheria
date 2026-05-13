@@ -51,55 +51,6 @@ export const DialogueBox = memo(({
             "{text}"
           </p>
 
-          {quest && !isQuestReady && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-black/40 p-4 rounded-xl border border-amber-500/30 space-y-3"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <BookOpen size={14} className="text-amber-500" />
-                <h4 className="text-amber-500 font-black text-xs uppercase tracking-wider font-sans">{quest.title}</h4>
-              </div>
-              <p className="text-[#f4e4bc]/80 text-[11px] leading-relaxed font-sans">{quest.description}</p>
-              
-              <div className="flex gap-4 pt-2">
-                <button 
-                  onClick={onAccept}
-                  className="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-[#1a140f] font-black text-[10px] uppercase tracking-widest rounded transition-all shadow-lg active:scale-95"
-                >
-                  Accept Quest
-                </button>
-                <button 
-                  onClick={onDecline}
-                  className="px-4 py-2 border border-[#4a3a2a] text-[#8b6b4d] hover:text-[#f4e4bc] hover:border-[#f4e4bc] font-black text-[10px] uppercase tracking-widest rounded transition-all"
-                >
-                  Decline
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {isQuestReady && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-green-900/20 p-4 rounded-xl border border-green-500/30 flex items-center justify-between"
-            >
-              <div>
-                <h4 className="text-green-500 font-black text-xs uppercase tracking-wider">Quest Complete!</h4>
-                <p className="text-green-500/60 text-[9px] uppercase font-bold tracking-widest">Collect your reward</p>
-              </div>
-              <button 
-                onClick={onComplete}
-                className="px-6 py-2 bg-green-600 hover:bg-green-500 text-[#1a140f] font-black text-[10px] uppercase tracking-widest rounded transition-all shadow-lg active:scale-95 flex items-center gap-2"
-              >
-                <Check size={14} />
-                Complete
-              </button>
-            </motion.div>
-          )}
-
           {/* Dialogue Options (Selection Menu) */}
           {options && options.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-[#4a3a2a]/30">

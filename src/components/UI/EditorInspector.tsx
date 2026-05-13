@@ -156,12 +156,18 @@ export const EditorInspector = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest block px-1">Rotation (Y)</label>
+                    <label className="text-[7px] text-[#8b6b4d] font-black uppercase tracking-widest block px-1">Rotation (Y°)</label>
                     <input 
-                      type="number" step="0.1"
-                      value={Number((selectedObject.rot[1] ?? 0).toFixed(2))}
-                      onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
-                      className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono"
+                      type="number" step="1"
+                      value={Math.round((selectedObject.rot[1] ?? 0) * (180 / Math.PI))}
+                      onChange={(e) => {
+                        const deg = parseFloat(e.target.value) || 0;
+                        const rad = deg * (Math.PI / 180);
+                        const newRot = [...selectedObject.rot];
+                        newRot[1] = rad;
+                        updateSelected({ rot: newRot as [number, number, number] });
+                      }}
+                      className="w-full bg-black/40 text-[#f4e4bc] text-[10px] p-2.5 rounded-lg border border-[#4a3a2a]/30 outline-none focus:border-[#c2a472]/50 font-mono transition-all relative z-10"
                     />
                   </div>
                   <div className="space-y-2">

@@ -25,21 +25,24 @@ export const NPC_DIALOGUE_NODES: Record<string, Record<string, DialogueNode>> = 
       text: "You stand in the heart of Aetheria. It was once a land of floating islands and pure magic, until the Great Shattering. Now, we survivors cling to what remains.",
       options: [
         { label: "Tell me more about the Shattering.", action: "dialogue", targetId: "lore_2" },
-        { label: "Back to main topics.", action: "dialogue", targetId: "root" }
+        { label: "Back to main topics.", action: "dialogue", targetId: "root" },
+        { label: "Goodbye.", action: "close" }
       ]
     },
     "lore_2": {
       id: "lore_2",
       text: "The Shattering was caused by an imbalance in the Aether core. Some say it was an accident, others say it was a deliberate act of sabotage. Regardless, the world as we knew it ended that day.",
       options: [
-        { label: "I see. Back to topics.", action: "dialogue", targetId: "root" }
+        { label: "I see. Back to topics.", action: "dialogue", targetId: "root" },
+        { label: "Goodbye.", action: "close" }
       ]
     },
     "tutorial_1": {
       id: "tutorial_1",
       text: "To survive here, you must master your skills. Press 'I' for inventory, 'C' for character, and 'K' for your skill book. Use the number keys to activate skills in your hotbar.",
       options: [
-        { label: "Thanks for the tips.", action: "dialogue", targetId: "root" }
+        { label: "I see. Back to topics.", action: "dialogue", targetId: "root" },
+        { label: "Goodbye.", action: "close" }
       ]
     }
   },
@@ -56,7 +59,8 @@ export const NPC_DIALOGUE_NODES: Record<string, Record<string, DialogueNode>> = 
       id: "graveyard_lore",
       text: "Skeletons have been rising from their graves. We believe a necromancer is hiding in the shadows, but my guards are spread too thin to investigate properly.",
       options: [
-        { label: "I see. Back to topics.", action: "dialogue", targetId: "root" }
+        { label: "I see. Back to topics.", action: "dialogue", targetId: "root" },
+        { label: "Goodbye.", action: "close" }
       ]
     }
   },
@@ -105,6 +109,15 @@ export const NPC_DIALOGUE_NODES: Record<string, Record<string, DialogueNode>> = 
       options: [
         { label: "Impressive. I'll access my storage then.", action: "bank" },
         { label: "Good to know. Goodbye.", action: "close" }
+      ]
+    }
+  },
+  "farmer_bob": {
+    "root": {
+      id: "root",
+      text: "The slimes... they're eating everything. Can you help me?",
+      options: [
+        { label: "Maybe Later", action: "close" }
       ]
     }
   }
@@ -207,9 +220,9 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
     options.push({ label: `New Quest: ${q.title}`, action: 'quest', targetId: q.id });
   });
 
-  // Add Reminders for active quests
+  // Add Progress Checks for active quests
   currentlyActive.forEach(q => {
-    options.push({ label: `About my task: ${q.title}`, action: 'dialogue', targetId: `reminder_${q.id}` });
+    options.push({ label: `About my task: ${q.title}`, action: 'quest', targetId: q.id });
   });
 
   // Add Lore/Tutorial options if it's a dialogue tree
@@ -217,9 +230,14 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
     // We filter out the 'quest' option from the root node if we already added quests above
     // to avoid redundancy, but usually custom trees have their own 'Do you have tasks?' option.
     rootNode.options.forEach(opt => {
-      if (opt.action === 'quest') return; // Skip the generic quest button if we have specific ones
+      if (opt.action === 'quest') return; 
       options.push(opt);
     });
+  }
+
+  // Final check: if we have options but no close option, add one
+  if (options.length > 0 && !options.some(o => o.action === 'close' || o.label === 'Goodbye' || o.label === 'Maybe Later')) {
+    options.push({ label: "Maybe Later", action: "close" });
   }
 
   // --- 3. Decision Logic ---
@@ -250,7 +268,11 @@ export const getNPCDialogue = (npcId: string, npcType: string, npcName: string, 
     return {
       text: `${meta.greeting || "Greetings traveler."} ${q.description}`,
       quest: q,
-      type: 'offer'
+      type: 'offer',
+      options: [
+        { label: "New Quest", action: "quest", targetId: q.id },
+        { label: "Maybe Later", action: "close" }
+      ]
     };
   }
 

@@ -219,10 +219,16 @@ export interface QuestSlice {
     quest?: Quest | null;
     options?: DialogueOption[];
   } | null;
+  activeQuestOffer: Quest | null;
+  activeQuestNPCId: string | null;
   activeQuests: Record<string, Quest>;
+  trackedQuestIds: string[];
   setActiveDialogue: (dialogue: { speaker: string; text: string; npcId: string; npcType: string; quest?: Quest | null; options?: DialogueOption[] } | null) => void;
+  setQuestOffer: (quest: Quest | null, npcId?: string) => void;
   setActiveQuests: (quests: Record<string, Quest>) => void;
   addQuest: (quest: Quest) => void;
+  abandonQuest: (questId: string) => void;
+  toggleQuestTracking: (questId: string) => void;
   trackKill: (entityClass: string) => void;
 }
 
@@ -240,6 +246,7 @@ export interface PartySlice {
       maxMp: number;
       class: string;
       color: string;
+      level?: number;
     }[];
   } | null;
   partyInvite: { fromId: string; fromName: string } | null;
