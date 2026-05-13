@@ -150,8 +150,18 @@ export default function App() {
   useEffect(() => {
     if (socket?.id && players[socket.id] && selectedCharacter) {
       const storeData = players[socket.id];
-      if (storeData.gold !== selectedCharacter.gold || storeData.inventory !== selectedCharacter.inventory) {
-        setSelectedCharacter(prev => prev ? { ...prev, gold: storeData.gold, inventory: storeData.inventory } : null);
+      const hasGoldChange = storeData.gold !== undefined && storeData.gold !== selectedCharacter.gold;
+      const hasInventoryChange = storeData.inventory !== undefined && storeData.inventory !== selectedCharacter.inventory;
+      
+      if (hasGoldChange || hasInventoryChange) {
+        setSelectedCharacter(prev => {
+          if (!prev) return null;
+          return { 
+            ...prev, 
+            gold: storeData.gold !== undefined ? storeData.gold : prev.gold,
+            inventory: storeData.inventory !== undefined ? storeData.inventory : prev.inventory
+          };
+        });
       }
     }
   }, [players, socket?.id, selectedCharacter?.id]);

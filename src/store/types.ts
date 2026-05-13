@@ -26,6 +26,7 @@ export interface PlayerState {
   exp?: number;
   maxExp?: number;
   gold?: number;
+  inventory?: (import('../types').InventoryItem | null)[];
   discoveredTeleports: string[];
   bank?: (import('../types').InventoryItem | null)[];
 }

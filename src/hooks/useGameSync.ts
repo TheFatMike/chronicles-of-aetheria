@@ -42,9 +42,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       },
       "inventory_update": (data: any) => {
         setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
+        if (socket.id) store.updatePlayer(socket.id, { inventory: data.inventory });
       },
       "bank_update": (data: any) => {
         setSelectedCharacter(prev => prev ? { ...prev, bank: data.bank } : null);
+        if (socket.id) store.updatePlayer(socket.id, { bank: data.bank });
       },
       "player_stats": (data: any) => {
         if (data.id === socket.id) {
