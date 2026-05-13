@@ -57,11 +57,17 @@ export const createPlayerSlice: StateCreator<GameState, [], [], PlayerSlice> = (
       ? { ...state.currentTarget, name: updatedPlayer.characterName, color: updatedPlayer.color, class: updatedPlayer.class, role: updatedPlayer.role } 
       : state.currentTarget;
 
+    const isLocal = state.id === id;
+    const updatedLocalPlayer = isLocal && state.localPlayer 
+      ? { ...state.localPlayer, ...data } 
+      : state.localPlayer;
+
     return {
       players: {
         ...state.players,
         [id]: updatedPlayer
       },
+      localPlayer: updatedLocalPlayer,
       currentTarget: updatedTarget as any
     };
   }),

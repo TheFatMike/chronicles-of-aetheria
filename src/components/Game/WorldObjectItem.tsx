@@ -18,6 +18,7 @@ import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
 import { SAMPLE_QUESTS } from "@shared/data/quests";
 import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 import { getNPCDialogue } from "@shared/data/npcDialogues";
+import { getDistance2D } from "@shared/logic/math";
 
 export const ProceduralModel = memo(({ 
   type, 
@@ -163,9 +164,7 @@ export const WorldObjectItem = memo(({
       const localPlayer = state.players[state.id || ""];
       if (!localPlayer) return;
 
-      const dx = localPlayer.pos[0] - obj.pos[0];
-      const dz = localPlayer.pos[2] - obj.pos[2];
-      const distance = Math.sqrt(dx * dx + dz * dz);
+      const distance = getDistance2D(localPlayer.pos, obj.pos);
       
       const INTERACT_RANGE = 5;
       if (distance > INTERACT_RANGE) {
