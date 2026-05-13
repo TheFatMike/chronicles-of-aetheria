@@ -61,6 +61,30 @@ export function getNearbyGridKeys(pos: [number, number, number], radius: number 
 }
 
 /**
+ * Checks if at least one player is within the specified radius using the spatial grid.
+ * Extremely efficient for LOD checks.
+ */
+export function isAnyPlayerNearby(pos: [number, number, number], radius: number): boolean {
+  const nearbyKeys = getNearbyGridKeys(pos, radius);
+  const radiusSq = radius * radius;
+
+  for (const key of nearbyKeys) {
+    const occupantIds = entityGrid.get(key);
+    if (!occupantIds) continue;
+
+    for (const id of occupantIds) {
+      const player = players.get(id);
+      if (player) {
+        const dx = player.pos[0] - pos[0];
+        const dz = player.pos[2] - pos[2];
+        if (dx * dx + dz * dz < radiusSq) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Broadcasts a socket event only to players within a specific radius.
  */
 export function broadcastToNearbyPlayers(io: any, pos: [number, number, number], radius: number, event: string, payload: any, excludeId?: string) {
@@ -125,6 +149,11 @@ export function getObjectDimensions(type: string, scale: any) {
   return null;
 }
 
+const PUSHBACK_DIRECTIONS = [
+  [1,0,0], [-1,0,0], [0,0,1], [0,0,-1],
+  [0.7,0,0.7], [-0.7,0,0.7], [0.7,0,-0.7], [-0.7,0,-0.7]
+];
+
 export async function resolveWorldCollision(oldPos: [number, number, number], newPos: [number, number, number], radius: number = 0.25): Promise<[number, number, number]> {
   let resolvedPos: [number, number, number] = [...newPos];
   const nearbyKeys = getNearbyGridKeys(resolvedPos, 10);
@@ -143,14 +172,17 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
       // 1. Try Mesh Collision first
       const loaded = await loadModelMesh(t);
       if (loaded) {
+        // BROADPHASE: Skip if player is nowhere near the object's center
+        const distSq = getDistanceSq2D(resolvedPos, pos);
+        const s = normalizeScale(scale);
+        const maxDim = Math.max(s[0], s[1], s[2]) * 2; // Rough bounding sphere
+        if (distSq > (maxDim + radius) * (maxDim + radius)) continue;
+
         const mesh = loaded.mesh;
         
         // Temporarily move the SHARED mesh to the object's position for collision check
-        // Since Node.js is single-threaded and we are in an async function, 
-        // we must be careful. However, we don't await between setting mesh pos and raycasting.
         _tempPos.set(pos[0], pos[1], pos[2]);
         _tempRot.set(rot[0], rot[1], rot[2]);
-        const s = normalizeScale(scale);
         _tempScale.set(s[0], s[1], s[2]);
         
         mesh.position.copy(_tempPos);
@@ -159,12 +191,7 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
         mesh.updateMatrixWorld();
 
         // Mesh-based pushback: check 8 directions around the player
-        const directions = [
-          [1,0,0], [-1,0,0], [0,0,1], [0,0,-1],
-          [0.7,0,0.7], [-0.7,0,0.7], [0.7,0,-0.7], [-0.7,0,-0.7]
-        ];
-
-        for (const [dx, dy, dz] of directions) {
+        for (const [dx, dy, dz] of PUSHBACK_DIRECTIONS) {
           _tempDir.set(dx, dy, dz);
           // Cast from slightly above ground
           _tempVec.set(resolvedPos[0], resolvedPos[1] + 0.5, resolvedPos[2]);
@@ -281,22 +308,28 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
       const t = (type || "").toLowerCase();
       const loaded = await loadModelMesh(t);
       if (loaded) {
-        const mesh = loaded.mesh;
-        _tempPos.set(objPos[0], objPos[1], objPos[2]);
-        _tempRot.set(rot[0], rot[1], rot[2]);
-        
         const s = normalizeScale(scale);
-        _tempScale.set(s[0], s[1], s[2]);
+        const maxDim = Math.max(s[0], s[1], s[2]) * 5; // Search radius for the mesh
+        const distSq = getDistanceSq2D(pos, objPos);
         
-        mesh.position.copy(_tempPos);
-        mesh.rotation.copy(_tempRot);
-        mesh.scale.copy(_tempScale);
-        mesh.updateMatrixWorld();
+        if (distSq < maxDim * maxDim) {
+          const mesh = loaded.mesh;
+          _tempPos.set(objPos[0], objPos[1], objPos[2]);
+          _tempRot.set(rot[0], rot[1], rot[2]);
+          _tempScale.set(s[0], s[1], s[2]);
+          
+          mesh.position.copy(_tempPos);
+          mesh.rotation.copy(_tempRot);
+          mesh.scale.copy(_tempScale);
+          mesh.updateMatrixWorld();
 
-        const meshY = getMeshHeightAt(mesh, pos);
-        if (meshY !== null) {
-          groundHeight = Math.max(groundHeight, meshY);
-          continue; 
+          const meshY = getMeshHeightAt(mesh, pos);
+          if (meshY !== null) {
+            groundHeight = Math.max(groundHeight, meshY);
+            continue; 
+          }
+        } else {
+          continue; // Too far
         }
       }
 

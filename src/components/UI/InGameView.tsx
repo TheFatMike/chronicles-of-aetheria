@@ -22,6 +22,7 @@ import { LootWindow } from "./LootWindow";
 import { QuestTracker } from "./QuestTracker";
 import { DebugOverlay } from "./DebugOverlay";
 import { TeleportMenu } from "./TeleportMenu";
+import { Minimap } from "./Minimap";
 import { ScreenEffects } from "./ScreenEffects";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -53,7 +54,8 @@ export const InGameView = ({
     isEditorOpen,
     activeMenu,
     setActiveMenu,
-    devMode
+    devMode,
+    uiScale
   } = useGameStore(
     useShallow((s: GameState) => ({
       localPlayer: s.localPlayer,
@@ -61,6 +63,7 @@ export const InGameView = ({
       activeMenu: s.activeMenu,
       setActiveMenu: s.setActiveMenu,
       devMode: s.devMode,
+      uiScale: s.uiScale,
     }))
   );
 
@@ -104,6 +107,16 @@ export const InGameView = ({
         {!isEditorOpen && (
           <>
             <PlayerHUD character={localPlayer!} userEmail={userEmail} />
+            
+            {/* Right Side HUD: Minimap & Quest Tracker */}
+            <div 
+              className="fixed top-6 right-6 z-40 flex flex-col items-end gap-6 origin-top-right pointer-events-none"
+              style={{ transform: `scale(${uiScale})` }}
+            >
+              <Minimap />
+              <QuestTracker />
+            </div>
+
             <TargetFrame />
             <PartyFrames />
             <CastBar />
@@ -134,7 +147,6 @@ export const InGameView = ({
         <Chat onSendMessage={handleSendMessage} />
         <NotificationManager />
         <TradeWindow />
-        <QuestTracker />
         <LootWindow socket={socket} />
         <WorldEditor socket={socket} userEmail={userEmail} />
         

@@ -77,24 +77,24 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[300px] lg:h-[400px] max-h-[85%] overflow-hidden"
+            className="bg-aetheria-950/95 backdrop-blur-md border-2 border-aetheria-800 rounded shadow-2xl flex flex-col h-[300px] lg:h-[400px] max-h-[85%] overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
+            <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-aetheria-800 bg-black/20">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <MessageSquare size={14} className="text-[#c2a472]" />
+                  <MessageSquare size={14} className="text-aetheria-400" />
                 </div>
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setActiveTab('all')}
-                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'all' ? 'bg-[#c2a472] text-[#1a1410]' : 'text-[#8b6b4d] hover:text-[#f4e4bc]'}`}
+                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'all' ? 'bg-aetheria-400 text-aetheria-950' : 'text-aetheria-600 hover:text-aetheria-200'}`}
                   >
                     World
                   </button>
                   <button 
                     onClick={() => setActiveTab('combat')}
-                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'combat' ? 'bg-red-900 text-[#f4e4bc]' : 'text-[#8b6b4d] hover:text-red-400'}`}
+                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'combat' ? 'bg-red-900 text-aetheria-200' : 'text-aetheria-600 hover:text-red-400'}`}
                   >
                     Combat
                   </button>
@@ -102,7 +102,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors text-xs p-1"
+                className="text-aetheria-600 hover:text-aetheria-200 transition-colors text-xs p-1"
               >
                 _
               </button>
@@ -150,7 +150,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="p-2 sm:p-3 bg-black/40 border-t border-[#4a3a2a]">
+            <form onSubmit={handleSubmit} className="p-2 sm:p-3 bg-black/40 border-t border-aetheria-800">
               <div className="relative">
                 <input
                   ref={inputRef}
@@ -158,12 +158,12 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Whisper to the void..."
-                  className="w-full bg-black/60 border border-[#4a3a2a] p-2 sm:p-3 pr-10 text-xs sm:text-sm font-sans text-[#f4e4bc] placeholder:text-stone-700 focus:outline-none focus:border-[#c2a472] transition-colors rounded-sm"
+                  className="w-full bg-black/60 border border-aetheria-800 p-2 sm:p-3 pr-10 text-xs sm:text-sm font-sans text-aetheria-200 placeholder:text-stone-700 focus:outline-none focus:border-aetheria-400 transition-colors rounded-sm"
                 />
                 <button 
                   type="submit"
                   disabled={!inputValue.trim()}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a3a2a] hover:text-[#c2a472] disabled:hover:text-[#4a3a2a] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-aetheria-800 hover:text-aetheria-400 disabled:hover:text-aetheria-800 transition-colors"
                 >
                   <Send size={16} />
                 </button>
@@ -178,7 +178,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
               setIsOpen(true);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}
-            className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] border-2 border-[#4a3a2a] rounded shadow-2xl flex items-center justify-center text-[#c2a472] hover:border-[#c2a472] transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-aetheria-900 border-2 border-aetheria-800 rounded shadow-2xl flex items-center justify-center text-aetheria-400 hover:border-aetheria-400 transition-all"
           >
             <MessageSquare size={20} />
           </motion.button>

@@ -13,6 +13,18 @@
   --font-serif: "Almendra", serif;
   --font-display: "Cinzel", serif;
   --font-fantasy: "MedievalSharp", cursive;
+
+  /* Aetheria Brand Colors */
+  --color-aetheria-950: #1a140f;
+  --color-aetheria-900: #2d221a;
+  --color-aetheria-800: #4a3a2a;
+  --color-aetheria-600: #8b6b4d;
+  --color-aetheria-400: #c2a472;
+  --color-aetheria-200: #f4e4bc;
+
+  /* Custom Effects */
+  --shadow-aetheria-lg: 0 0 50px rgba(0, 0, 0, 0.8);
+  --shadow-gold-glow: 0 0 15px rgba(194, 164, 114, 0.4);
 }
 
 /* Fixed UI Scaling: 

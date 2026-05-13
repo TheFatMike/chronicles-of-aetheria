@@ -47,26 +47,26 @@ export const EditorOutliner = ({ socket }: { socket: any }) => {
       initial={{ opacity: 0, x: -50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="pointer-events-auto fixed left-80 ml-4 top-[15vh] w-64 bg-[#1a140f]/95 border-4 border-[#4a3a2a] rounded-xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md overflow-hidden flex flex-col h-[70vh]"
+      className="pointer-events-auto fixed left-80 ml-4 top-[15vh] w-64 bg-aetheria-950/95 border-4 border-aetheria-800 rounded-xl shadow-aetheria-lg backdrop-blur-md overflow-hidden flex flex-col h-[70vh]"
     >
       <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
-      <div className="bg-slate-900/50 p-4 border-b border-slate-800 space-y-3">
+      <div className="bg-aetheria-950/50 p-4 border-b border-aetheria-800 space-y-3">
         <div className="flex items-center gap-2">
-          <List size={18} className="text-blue-500" />
-          <h3 className="text-white font-bold text-xs uppercase tracking-widest">Outliner</h3>
-          <span className="ml-auto text-[9px] text-slate-500 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+          <List size={18} className="text-aetheria-400" />
+          <h3 className="text-aetheria-200 font-bold text-xs uppercase tracking-widest">Outliner</h3>
+          <span className="ml-auto text-[9px] text-aetheria-600 font-mono bg-black/40 px-1.5 py-0.5 rounded border border-aetheria-800/50">
             {objectList.length}
           </span>
         </div>
 
         <div className="relative">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-aetheria-600" />
           <input 
             type="text"
             placeholder="Search scene..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-900 text-white text-[10px] pl-8 pr-3 py-2 rounded-lg border border-slate-800 outline-none focus:border-blue-500/50"
+            className="w-full bg-black/40 text-aetheria-200 text-[10px] pl-8 pr-3 py-2 rounded-lg border border-aetheria-800 outline-none focus:border-aetheria-400/50"
           />
         </div>
       </div>
@@ -79,40 +79,40 @@ export const EditorOutliner = ({ socket }: { socket: any }) => {
           </div>
         ) : (
           filteredObjects.map((obj: any) => (
-            <div 
-              key={obj.id}
-              onClick={() => setSelectedId(obj.id)}
-              className={`group flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer border relative z-10 ${
-                selectedId === obj.id 
-                  ? 'bg-[#c2a472]/20 border-[#c2a472]/50' 
-                  : 'border-transparent hover:bg-black/30'
-              }`}
-            >
-              <div className={`p-1.5 rounded-md ${selectedId === obj.id ? 'bg-[#c2a472] text-[#1a140f]' : 'bg-black/40 text-[#8b6b4d] group-hover:text-[#c2a472]'}`}>
+              <div 
+                key={obj.id}
+                onClick={() => setSelectedId(obj.id)}
+                className={`group flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer border relative z-10 ${
+                  selectedId === obj.id 
+                    ? 'bg-aetheria-400/20 border-aetheria-400/50 shadow-[inset_0_0_10px_rgba(var(--color-aetheria-400-rgb),0.1)]' 
+                    : 'border-transparent hover:bg-black/30'
+                }`}
+              >
+                <div className={`p-1.5 rounded-md ${selectedId === obj.id ? 'bg-aetheria-400 text-aetheria-950' : 'bg-black/40 text-aetheria-600 group-hover:text-aetheria-400'}`}>
                 {TYPE_ICONS[obj.type] || <Ghost size={12} />}
               </div>
               
-              <div className="flex flex-col min-w-0">
-                <span className={`text-[9px] font-black uppercase truncate ${selectedId === obj.id ? 'text-[#f4e4bc]' : 'text-[#8b6b4d]'}`}>
-                  {obj.type.replace(/_/g, ' ')}
-                </span>
-                <span className="text-[7px] text-[#8b6b4d]/60 font-mono truncate">{obj.id.slice(0, 8)}...</span>
-              </div>
+                <div className="flex flex-col min-w-0">
+                  <span className={`text-[9px] font-black uppercase truncate ${selectedId === obj.id ? 'text-aetheria-200' : 'text-aetheria-600'}`}>
+                    {obj.type.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-[7px] text-aetheria-600/60 font-mono truncate">{obj.id.slice(0, 8)}...</span>
+                </div>
 
-              <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleFocus(obj); }}
-                  className="p-1 hover:text-blue-400 text-slate-500"
-                >
-                  <Target size={12} />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); useGameStore.getState().markObjectDeleted(obj.id); }}
-                  className="p-1 hover:text-red-400 text-slate-500"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
+                <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleFocus(obj); }}
+                    className="p-1 hover:text-aetheria-400 text-aetheria-800"
+                  >
+                    <Target size={12} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); useGameStore.getState().markObjectDeleted(obj.id); }}
+                    className="p-1 hover:text-red-400 text-aetheria-800"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
             </div>
           ))
         )}

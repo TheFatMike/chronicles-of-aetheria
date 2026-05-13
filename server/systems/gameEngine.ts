@@ -45,7 +45,7 @@ export const startHeartbeat = (io: Server) => {
 
       // 3. Broadcast (True Delta Syncing)
       if (players.size > 0) {
-        // OPTIMIZATION: Only iterate over dirty entity IDs
+        // OPTIMIZATION: Collect dirty entities once
         const dirtyEntityList: any[] = [];
         for (const id of dirtyEntities) {
           const entity = entities.get(id);
@@ -57,65 +57,51 @@ export const startHeartbeat = (io: Server) => {
           const lastCell = playerLastGridCell.get(player.id);
           
           if (currentCell !== lastCell || dirtyEntityList.length > 0) {
-            if (currentCell !== lastCell) {
-              playerLastGridCell.set(player.id, currentCell);
-            }
+            if (currentCell !== lastCell) playerLastGridCell.set(player.id, currentCell);
             
+            // Only fetch nearby entities if cell changed or we have dirty updates
             const nearbyEntities = filterNearby(entities, player.pos, 150, 'entity');
             const known = playerKnownEntities.get(player.id) || new Set<string>();
             
-            // OPTIMIZATION: Efficiently identify new and left entities without expensive array conversions
             const nearbyIds = new Set<string>();
             const newEntities = [];
             for (const e of nearbyEntities) {
               nearbyIds.add(e.id);
-              if (!known.has(e.id)) {
-                newEntities.push(e);
-              }
+              if (!known.has(e.id)) newEntities.push(e);
             }
 
             const leftEntities = [];
             for (const id of known) {
-              if (!nearbyIds.has(id)) {
-                leftEntities.push(id);
-              }
+              if (!nearbyIds.has(id)) leftEntities.push(id);
             }
             
             if (newEntities.length > 0 || leftEntities.length > 0) {
-              // Create a new Set only if changes occurred
               const updatedKnown = new Set(known);
               for (const e of newEntities) updatedKnown.add(e.id);
               for (const id of leftEntities) updatedKnown.delete(id);
               playerKnownEntities.set(player.id, updatedKnown);
-            }
 
-            if (newEntities.length > 0) {
-              io.to(player.id).emit("entities_discover", newEntities);
-            }
-            if (leftEntities.length > 0) {
-              io.to(player.id).emit("entities_remove", leftEntities);
+              if (newEntities.length > 0) io.to(player.id).emit("entities_discover", newEntities);
+              if (leftEntities.length > 0) io.to(player.id).emit("entities_remove", leftEntities);
             }
 
             if (dirtyEntityList.length > 0) {
-              const newlyDiscoveredIds = new Set(newEntities.map(e => e.id));
               const updatePayload = [];
               for (const e of dirtyEntityList) {
-                if (known.has(e.id) && !newlyDiscoveredIds.has(e.id)) {
+                // Only send updates for entities the player actually knows about
+                if (nearbyIds.has(e.id) && !newEntities.some(ne => ne.id === e.id)) {
                   updatePayload.push(e);
                 }
               }
-              
-              if (updatePayload.length > 0) {
-                io.to(player.id).emit("entities_update", updatePayload);
-              }
+              if (updatePayload.length > 0) io.to(player.id).emit("entities_update", updatePayload);
             }
-
           }
         }
       }
 
       // 4. Decoupled Subsystem: Stats Regen (Every 3 seconds)
       if (timeSinceLastStatsRegen >= 3000) {
+        const { broadcastToNearbyPlayers } = await import("./spatial");
         for (const player of players.values()) {
           if (!player.stats || !player.equipment) continue;
           const stats = calculateTotalStats(player.stats, player.equipment);
@@ -126,12 +112,11 @@ export const startHeartbeat = (io: Server) => {
             player.hp = Math.min(player.maxHp, player.hp + hpRegen);
             player.mp = Math.min(player.maxMp, player.mp + mpRegen);
             
-            const nearbyPlayers = filterNearby(players, player.pos, 100, 'entity');
-            for (const nearby of nearbyPlayers) {
-              io.to(nearby.id).emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
-            }
+            // Sync stats to self and nearby players efficiently
+            const publicStats = { id: player.id, hp: player.hp, mp: player.mp };
+            io.to(player.id).emit("player_stats", { ...publicStats, maxHp: player.maxHp, maxMp: player.maxMp });
+            broadcastToNearbyPlayers(io, player.pos, 100, "player_stats", publicStats, player.id);
             
-            // Mark as dirty so regen is persisted to Redis/Firestore
             markPlayerDirty(player.id, ["hp", "mp"]);
           }
         }
@@ -141,10 +126,7 @@ export const startHeartbeat = (io: Server) => {
       // 5. Decoupled Subsystem: Autosave (Every 60 seconds)
       if (timeSinceLastAutosave >= 60000) {
         autosavePlayers().catch(e => serverLogger.error("game", "Autosave failed", e.message));
-        
-        // Also perform Redis Ghost Cleanup to keep free-tier small
         import("../redis").then(m => m.cleanupGhostPlayers());
-        
         timeSinceLastAutosave -= 60000;
       }
 

@@ -49,24 +49,24 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-[#2d221a] border-4 border-[#4a3a2a] rounded shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-sm overflow-hidden"
+        className="bg-aetheria-900 border-4 border-aetheria-800 rounded shadow-aetheria-lg w-full max-w-sm overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 bg-[#1a1410] border-b-2 border-[#4a3a2a] flex justify-between items-center">
+        <div className="p-4 bg-aetheria-950 border-b-2 border-aetheria-800 flex justify-between items-center">
           <div className="flex items-center gap-2">
             {view === 'settings' && (
               <button 
                 onClick={() => setView('menu')}
-                className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors"
+                className="text-aetheria-600 hover:text-aetheria-200 transition-colors"
               >
                 <ArrowLeft size={18} />
               </button>
             )}
-            <span className="font-fantasy text-xs text-[#8b6b4d] uppercase tracking-[0.2em]">
+            <span className="font-fantasy text-xs text-aetheria-600 uppercase tracking-[0.2em]">
               {view === 'menu' ? 'Game Menu' : 'Settings'}
             </span>
           </div>
-          <button onClick={onClose} className="text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors">
+          <button onClick={onClose} className="text-aetheria-600 hover:text-aetheria-200 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -113,7 +113,7 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
                 onClick={() => setView('settings')} 
               />
               
-              <div className="pt-4 mt-4 border-t-2 border-[#4a3a2a]">
+              <div className="pt-4 mt-4 border-t-2 border-aetheria-800">
                 <MenuButton 
                   icon={<LogOut size={18} />} 
                   label="Log Out" 
@@ -125,7 +125,7 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
           ) : (
             <div className="space-y-6">
               <div className="space-y-3">
-                <div className="flex justify-between items-center text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">
+                <div className="flex justify-between items-center text-aetheria-200 font-fantasy text-[10px] uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <Maximize size={12} />
                     <span>UI Scale</span>
@@ -139,9 +139,9 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
                   step="0.05"
                   value={uiScale}
                   onChange={(e) => setUIScale(parseFloat(e.target.value))}
-                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-[#c2a472]"
+                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-aetheria-400"
                 />
-                <div className="flex justify-between text-[8px] text-[#6d5540] font-serif italic">
+                <div className="flex justify-between text-[8px] text-aetheria-800 font-serif italic">
                   <span>Small</span>
                   <span>Standard</span>
                   <span>Large</span>
@@ -149,7 +149,7 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
               </div>
 
               <div className="space-y-3">
-                <div className="flex justify-between items-center text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">
+                <div className="flex justify-between items-center text-aetheria-200 font-fantasy text-[10px] uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <Sun size={12} />
                     <span>Brightness</span>
@@ -163,37 +163,37 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
                   step="0.1"
                   value={brightness}
                   onChange={(e) => setBrightness(parseFloat(e.target.value))}
-                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-[#c2a472]"
+                  className="w-full h-1 bg-black/40 rounded-lg appearance-none cursor-pointer accent-aetheria-400"
                 />
-                <div className="flex justify-between text-[8px] text-[#6d5540] font-serif italic">
+                <div className="flex justify-between text-[8px] text-aetheria-800 font-serif italic">
                   <span>Dim</span>
                   <span>Normal</span>
                   <span>Brilliant</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-black/20 rounded border border-[#4a3a2a]/50">
-                <p className="text-[9px] text-[#8b6b4d] leading-relaxed">
+              <div className="p-3 bg-black/20 rounded border border-aetheria-800/50">
+                <p className="text-[9px] text-aetheria-600 leading-relaxed">
                   Adjusting the UI scale helps visibility on smaller displays or high-resolution monitors.
                 </p>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-[#4a3a2a]/50 hover:border-[#8b6b4d]/50 transition-colors cursor-pointer"
+              <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-aetheria-800/50 hover:border-aetheria-600/50 transition-colors cursor-pointer"
                 onClick={() => setShowAllNames(!showAllNames)}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">Show All Nameplates</span>
-                  <span className="text-[8px] text-[#8b6b4d] italic">Always show names for all entities</span>
+                  <span className="text-aetheria-200 font-fantasy text-[10px] uppercase tracking-wider">Show All Nameplates</span>
+                  <span className="text-[8px] text-aetheria-600 italic">Always show names for all entities</span>
                 </div>
-                <div className={`w-8 h-4 rounded-full transition-colors relative ${showAllNames ? 'bg-[#c2a472]' : 'bg-black/40'}`}>
-                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-[#f4e4bc] transition-all ${showAllNames ? 'left-[17px]' : 'left-0.5'}`} />
+                <div className={`w-8 h-4 rounded-full transition-colors relative ${showAllNames ? 'bg-aetheria-400' : 'bg-black/40'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-aetheria-200 transition-all ${showAllNames ? 'left-[17px]' : 'left-0.5'}`} />
                 </div>
               </div>
             </div>
           )}
         </div>
         
-        <div className="p-3 bg-black/20 text-center font-serif italic text-[10px] text-[#6d5540]">
+        <div className="p-3 bg-black/20 text-center font-serif italic text-[10px] text-aetheria-800">
           {view === 'menu' ? 'Thy journey persists in the ether...' : 'Calibrating the vision of the realm...'}
         </div>
       </motion.div>
@@ -214,10 +214,10 @@ const MenuButton = ({ icon, label, onClick, primary, danger }: MenuButtonProps) 
     onClick={onClick}
     className={`w-full flex items-center gap-4 p-4 rounded border-2 transition-all font-fantasy uppercase tracking-widest text-xs ${
       primary 
-        ? "bg-[#c2a472] border-[#f4e4bc] text-[#1a1410] hover:bg-[#d4b98a]" 
+        ? "bg-aetheria-400 border-aetheria-200 text-aetheria-950 hover:bg-aetheria-200" 
         : danger
           ? "border-red-900/30 bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500"
-          : "border-[#4a3a2a] bg-black/20 text-[#8b6b4d] hover:border-[#8b6b4d] hover:text-[#f4e4bc]"
+          : "border-aetheria-800 bg-black/20 text-aetheria-600 hover:border-aetheria-600 hover:text-aetheria-200"
     }`}
   >
     {icon}

@@ -22,7 +22,7 @@ const SPAWNER_COLORS: Record<string, { bg: string; border: string; text: string;
   guard:  { bg: 'bg-blue-900/40',   border: 'border-blue-700/50',   text: 'text-blue-400',   dot: 'bg-blue-400' },
   enemy:  { bg: 'bg-red-900/40',    border: 'border-red-700/50',    text: 'text-red-400',    dot: 'bg-red-400' },
   npc:    { bg: 'bg-blue-900/40',   border: 'border-blue-700/50',   text: 'text-blue-400',   dot: 'bg-blue-400' },
-  default:{ bg: 'bg-[#2d221a]',     border: 'border-[#4a3a2a]',     text: 'text-amber-400',  dot: 'bg-amber-400' },
+  default:{ bg: 'bg-aetheria-900',     border: 'border-aetheria-800',     text: 'text-amber-400',  dot: 'bg-amber-400' },
 };
 
 function getSpawnerColors(spawner: any) {
@@ -74,18 +74,18 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="fixed right-6 top-24 bottom-24 w-88 bg-[#1a140f]/97 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-2xl flex flex-col z-50 shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden"
+      className="fixed right-6 top-24 bottom-24 w-88 bg-aetheria-950/97 backdrop-blur-xl border-2 border-aetheria-800 rounded-2xl flex flex-col z-50 shadow-aetheria-lg overflow-hidden"
       style={{ width: '340px' }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-[#4a3a2a] flex items-center justify-between bg-linear-to-r from-red-900/20 to-transparent">
+      <div className="p-4 border-b border-aetheria-800 flex items-center justify-between bg-linear-to-r from-red-900/20 to-transparent">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center">
             <Target className="w-4 h-4 text-red-400" />
           </div>
           <div>
-            <h2 className="font-black text-[#f4e4bc] uppercase tracking-wider text-sm">Realm Spawners</h2>
-            <p className="text-[9px] text-[#8b6b4d] font-mono">SERVER MEMORY · LIVE</p>
+            <h2 className="font-black text-aetheria-200 uppercase tracking-wider text-sm">Realm Spawners</h2>
+            <p className="text-[9px] text-aetheria-600 font-mono">SERVER MEMORY · LIVE</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -105,25 +105,25 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
-          <button onClick={onClose} className="p-1.5 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors">
+          <button onClick={onClose} className="p-1.5 text-aetheria-600 hover:text-aetheria-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-px bg-[#4a3a2a]/40 border-b border-[#4a3a2a]">
-        <div className="bg-[#1a140f]/80 p-3 text-center">
-          <div className="text-lg font-black text-[#f4e4bc]">{spawners.length}</div>
-          <div className="text-[9px] text-[#8b6b4d] uppercase font-bold">Spawners</div>
+      <div className="grid grid-cols-3 gap-px bg-aetheria-800/40 border-b border-aetheria-800">
+        <div className="bg-aetheria-950/80 p-3 text-center">
+          <div className="text-lg font-black text-aetheria-200">{spawners.length}</div>
+          <div className="text-[9px] text-aetheria-600 uppercase font-bold">Spawners</div>
         </div>
-        <div className="bg-[#1a140f]/80 p-3 text-center">
+        <div className="bg-aetheria-950/80 p-3 text-center">
           <div className="text-lg font-black text-green-400">{activeSpawners}</div>
-          <div className="text-[9px] text-[#8b6b4d] uppercase font-bold">Active</div>
+          <div className="text-[9px] text-aetheria-600 uppercase font-bold">Active</div>
         </div>
-        <div className="bg-[#1a140f]/80 p-3 text-center">
+        <div className="bg-aetheria-950/80 p-3 text-center">
           <div className="text-lg font-black text-amber-400">{totalEntities}</div>
-          <div className="text-[9px] text-[#8b6b4d] uppercase font-bold">Entities</div>
+          <div className="text-[9px] text-aetheria-600 uppercase font-bold">Entities</div>
         </div>
       </div>
 
@@ -131,10 +131,10 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
       <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
         {spawners.length === 0 && (
           <div className="text-center py-12 space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-xl bg-[#2d221a] border-2 border-[#4a3a2a] flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-[#8b6b4d]" />
+            <div className="w-12 h-12 mx-auto rounded-xl bg-aetheria-900 border-2 border-aetheria-800 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-aetheria-600" />
             </div>
-            <div className="text-[#8b6b4d] italic text-sm">No spawners received from server.</div>
+            <div className="text-aetheria-600 italic text-sm">No spawners received from server.</div>
             <button
               onClick={handleRefresh}
               className="mx-auto flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-[10px] font-bold hover:bg-amber-500/20 transition-all"
@@ -171,7 +171,7 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
                     <span className={`font-bold text-xs uppercase truncate ${colors.text}`}>{spawner.name}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-[9px] font-mono text-[#8b6b4d] bg-black/30 px-1.5 py-0.5 rounded">
+                    <span className="text-[9px] font-mono text-aetheria-600 bg-black/30 px-1.5 py-0.5 rounded">
                       LVL {spawner.level}
                     </span>
                     <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${spawner.type === 'npc' ? 'border-blue-500/40 text-blue-400 bg-blue-900/20' : 'border-red-500/40 text-red-400 bg-red-900/20'}`}>
@@ -183,10 +183,10 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
                 {/* Entity fill bar */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] text-[#8b6b4d] font-bold uppercase flex items-center gap-1">
+                    <span className="text-[9px] text-aetheria-600 font-bold uppercase flex items-center gap-1">
                       <Activity className="w-2.5 h-2.5" /> Entities
                     </span>
-                    <span className="text-[9px] font-mono text-[#c2a472]">{liveCount} / {maxCount}</span>
+                    <span className="text-[9px] font-mono text-aetheria-400">{liveCount} / {maxCount}</span>
                   </div>
                   <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
                     <motion.div
@@ -198,7 +198,7 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
                 </div>
 
                 {/* Details grid */}
-                <div className="grid grid-cols-2 gap-1.5 text-[9px] text-[#8b6b4d]">
+                <div className="grid grid-cols-2 gap-1.5 text-[9px] text-aetheria-600">
                   <div className="flex items-center gap-1 bg-black/20 rounded px-2 py-1">
                     <Users className="w-2.5 h-2.5" />
                     <span className="truncate">{spawner.entityClass}</span>
@@ -217,7 +217,7 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
                 </div>
 
                 {/* Spawner ID */}
-                <div className="text-[8px] font-mono text-[#4a3a2a] truncate">{spawner.id}</div>
+                <div className="text-[8px] font-mono text-aetheria-800 truncate">{spawner.id}</div>
               </motion.div>
             );
           })}
@@ -225,10 +225,10 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
       </div>
 
       {/* Footer */}
-      <div className="p-3 bg-black/20 border-t border-[#4a3a2a] space-y-2">
+      <div className="p-3 bg-black/20 border-t border-aetheria-800 space-y-2">
         <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/20 rounded-lg p-2">
           <Shield className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-[9px] text-[#8b6b4d] leading-relaxed">
+          <p className="text-[9px] text-aetheria-600 leading-relaxed">
             Spawners are managed via the <span className="text-amber-400 font-bold">World Sculptor</span> (bottom-right). Place <span className="text-amber-400">spawner_slime</span>, <span className="text-amber-400">spawner_wolf</span>, or <span className="text-amber-400">spawner_guard</span> objects, then export &amp; restart the server.
           </p>
         </div>
@@ -236,7 +236,7 @@ export const SpawnerManager: React.FC<SpawnerManagerProps> = ({ onClose, playerP
           <div className="flex gap-2">
             <button
               onClick={handleRefresh}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#2d221a] hover:bg-[#3d2e23] text-amber-400 border border-amber-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-aetheria-900 hover:bg-aetheria-800 text-amber-400 border border-amber-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
             >
               <RefreshCw className="w-3 h-3" /> Sync
             </button>

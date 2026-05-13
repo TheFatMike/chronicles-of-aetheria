@@ -43,7 +43,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
 
   const renderIcon = (iconName: string) => {
     const IconComponent = (Icons as any)[iconName] || Box;
-    return <IconComponent size={20} className="text-[#c2a472]" />;
+    return <IconComponent size={20} className="text-aetheria-400" />;
   };
 
   return (
@@ -57,20 +57,20 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-2xl shadow-[0_60px_120px_-20px_rgba(0,0,0,1)] w-full max-w-5xl h-[85%] overflow-hidden flex flex-col relative pointer-events-auto"
+        className="bg-aetheria-950 border-4 border-aetheria-800 rounded-2xl shadow-aetheria-lg w-full max-w-5xl h-[85%] overflow-hidden flex flex-col relative pointer-events-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
 
         {/* Header */}
-        <div className="bg-[#2d221a] p-4 lg:p-8 border-b-4 border-[#4a3a2a] flex items-center justify-between relative z-10">
+        <div className="bg-aetheria-900 p-4 lg:p-8 border-b-4 border-aetheria-800 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#c2a472]/10 border-2 border-[#c2a472]/20 flex items-center justify-center shadow-inner">
-              <Scroll size={32} className="text-[#c2a472]" />
+            <div className="w-16 h-16 rounded-2xl bg-aetheria-400/10 border-2 border-aetheria-400/20 flex items-center justify-center shadow-inner">
+              <Scroll size={32} className="text-aetheria-400" />
             </div>
             <div>
-              <h2 className="text-[#f4e4bc] font-black uppercase tracking-[0.4em] text-2xl mb-1">Quest Journal</h2>
-              <p className="text-[#8b6b4d] text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+              <h2 className="text-aetheria-200 font-black uppercase tracking-[0.4em] text-2xl mb-1">Quest Journal</h2>
+              <p className="text-aetheria-600 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
                 <Book size={12} />
                 Tracking {questList.length} Active Missions
               </p>
@@ -78,7 +78,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
           </div>
           <button
             onClick={onClose}
-            className="p-3 text-[#8b6b4d] hover:text-[#f4e4bc] transition-all bg-black/40 rounded-xl border-2 border-[#4a3a2a] hover:border-[#c2a472]/50 active:scale-95"
+            className="p-3 text-aetheria-600 hover:text-aetheria-200 transition-all bg-black/40 rounded-xl border-2 border-aetheria-800 hover:border-aetheria-400/50 active:scale-95"
           >
             <X size={24} />
           </button>
@@ -88,17 +88,17 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
         <div className="flex-1 flex overflow-hidden relative z-10">
 
           {/* Left Column: Quest List */}
-          <div className="w-64 lg:w-96 border-r-4 border-[#4a3a2a] bg-black/20 flex flex-col shrink-0">
-            <div className="p-4 bg-black/40 border-b-2 border-[#4a3a2a]/50">
-              <p className="text-[10px] text-[#c2a472] font-black uppercase tracking-widest text-center">Active Objectives</p>
+          <div className="w-64 lg:w-96 border-r-4 border-aetheria-800 bg-black/20 flex flex-col shrink-0">
+            <div className="p-4 bg-black/40 border-b-2 border-aetheria-800/50">
+              <p className="text-[10px] text-aetheria-400 font-black uppercase tracking-widest text-center">Active Objectives</p>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
               {questList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4 opacity-40">
-                  <div className="w-16 h-16 rounded-full border-2 border-[#4a3a2a] flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full border-2 border-aetheria-800 flex items-center justify-center">
                     <Book size={24} />
                   </div>
-                  <p className="text-[#f4e4bc] font-sans font-medium opacity-50 italic">Your journal is empty, adventurer.</p>
+                  <p className="text-aetheria-200 font-sans font-medium opacity-50 italic">Your journal is empty, adventurer.</p>
                 </div>
               ) : (
                 questList.map((quest) => (
@@ -106,13 +106,13 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                     key={quest.id}
                     onClick={() => setSelectedQuestId(quest.id)}
                     className={`w-full text-left p-5 rounded-xl border-2 transition-all relative overflow-hidden group ${selectedQuestId === quest.id
-                      ? 'bg-[#c2a472] border-[#f4e4bc] shadow-lg'
-                      : 'bg-[#1a140f] border-[#4a3a2a] hover:border-[#c2a472]/50 hover:bg-[#2d221a]'
+                      ? 'bg-aetheria-400 border-aetheria-200 shadow-lg'
+                      : 'bg-aetheria-950 border-aetheria-800 hover:border-aetheria-400/50 hover:bg-aetheria-900'
                       }`}
                   >
                     <div className="relative z-10">
                       <div className="flex justify-between items-start mb-1">
-                        <h4 className={`font-black uppercase tracking-wider text-xs ${selectedQuestId === quest.id ? 'text-[#1a140f]' : 'text-[#f4e4bc]'
+                        <h4 className={`font-black uppercase tracking-wider text-xs ${selectedQuestId === quest.id ? 'text-aetheria-950' : 'text-aetheria-200'
                           }`}>
                           {quest.title}
                         </h4>
@@ -123,10 +123,10 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                           </div>
                         )}
                         {quest.objectives.every(o => o.completed) && (
-                          <CheckCircle2 size={14} className={selectedQuestId === quest.id ? 'text-[#1a140f]' : 'text-green-500'} />
+                          <CheckCircle2 size={14} className={selectedQuestId === quest.id ? 'text-aetheria-950' : 'text-green-500'} />
                         )}
                       </div>
-                      <p className={`text-[9px] font-bold uppercase tracking-widest ${selectedQuestId === quest.id ? 'text-[#1a140f]/60' : 'text-[#8b6b4d]'
+                      <p className={`text-[9px] font-bold uppercase tracking-widest ${selectedQuestId === quest.id ? 'text-aetheria-950/60' : 'text-aetheria-600'
                         }`}>
                         Level {quest.level}
                       </p>
@@ -152,16 +152,16 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <span className="px-3 py-1 bg-amber-500 text-black font-black text-[9px] uppercase rounded-md">Quest</span>
-                      <div className="h-px flex-1 bg-[#4a3a2a]" />
+                      <div className="h-px flex-1 bg-aetheria-800" />
                     </div>
-                    <h2 className="text-[#f4e4bc] font-black text-2xl lg:text-4xl uppercase tracking-tighter">{selectedQuest.title}</h2>
-                    <div className="flex items-center gap-6 text-[#8b6b4d] text-[11px] font-black uppercase tracking-widest">
+                    <h2 className="text-aetheria-200 font-black text-2xl lg:text-4xl uppercase tracking-tighter">{selectedQuest.title}</h2>
+                    <div className="flex items-center gap-6 text-aetheria-600 text-[11px] font-black uppercase tracking-widest">
                       <div className="flex items-center gap-2">
-                        <User size={14} className="text-[#c2a472]" />
+                        <User size={14} className="text-aetheria-400" />
                         {selectedQuest.giverName}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Sword size={14} className="text-[#c2a472]" />
+                        <Sword size={14} className="text-aetheria-400" />
                         Level {selectedQuest.level}
                       </div>
                     </div>
@@ -169,26 +169,26 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
 
                   {/* Description Section */}
                   <div className="space-y-4">
-                    <h3 className="text-[#c2a472] font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+                    <h3 className="text-aetheria-400 font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
                       Description
-                      <div className="h-px flex-1 bg-[#c2a472]/20" />
+                      <div className="h-px flex-1 bg-aetheria-400/20" />
                     </h3>
-                    <p className="text-[#f4e4bc] font-sans font-medium text-xl leading-relaxed opacity-90">
+                    <p className="text-aetheria-200 font-sans font-medium text-xl leading-relaxed opacity-90">
                       "{selectedQuest.description}"
                     </p>
                   </div>
 
                   {/* Objectives Section */}
                   <div className="space-y-6">
-                    <h3 className="text-[#c2a472] font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+                    <h3 className="text-aetheria-400 font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
                       Objectives
-                      <div className="h-px flex-1 bg-[#c2a472]/20" />
+                      <div className="h-px flex-1 bg-aetheria-400/20" />
                     </h3>
                     <div className="grid gap-3">
                       {selectedQuest.objectives.map((obj) => (
                         <div key={obj.id} className={`p-6 rounded-2xl border-2 transition-all flex items-center justify-between ${obj.completed
                           ? 'bg-green-900/10 border-green-500/20 opacity-60'
-                          : 'bg-black/40 border-[#4a3a2a] shadow-lg'
+                          : 'bg-black/40 border-aetheria-800 shadow-lg'
                           }`}>
                           <div className="flex items-center gap-4">
                             {obj.completed ? (
@@ -196,12 +196,12 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                                 <CheckCircle2 size={18} className="text-green-500" />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-[#c2a472]/10 border-2 border-[#4a3a2a] flex items-center justify-center">
-                                <Circle size={18} className="text-[#4a3a2a]" />
+                              <div className="w-8 h-8 rounded-full bg-aetheria-400/10 border-2 border-aetheria-800 flex items-center justify-center">
+                                <Circle size={18} className="text-aetheria-800" />
                               </div>
                             )}
                             <div>
-                              <p className={`font-bold text-sm ${obj.completed ? 'text-green-500 line-through' : 'text-[#f4e4bc]'}`}>
+                              <p className={`font-bold text-sm ${obj.completed ? 'text-green-500 line-through' : 'text-aetheria-200'}`}>
                                 {obj.type === 'kill' ? `Slay ${obj.targetName}` :
                                   obj.type === 'collect' ? `Retrieve ${obj.targetName}` :
                                     obj.type === 'talk' ? `Speak with ${obj.targetName}` :
@@ -209,14 +209,14 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                                         `Acquire ${obj.targetName}`}
                               </p>
                               {!obj.completed && (
-                                <p className="text-[10px] text-[#8b6b4d] font-black uppercase tracking-widest mt-0.5">
+                                <p className="text-[10px] text-aetheria-600 font-black uppercase tracking-widest mt-0.5">
                                   Progressing through the Aetheria realm
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className={`font-mono text-lg font-black ${obj.completed ? 'text-green-500' : 'text-[#c2a472]'}`}>
+                            <span className={`font-mono text-lg font-black ${obj.completed ? 'text-green-500' : 'text-aetheria-400'}`}>
                               {obj.currentCount} <span className="text-xs opacity-40">/</span> {obj.count}
                             </span>
                             {!obj.completed && (
@@ -224,7 +224,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{ width: `${(obj.currentCount / obj.count) * 100}%` }}
-                                  className="h-full bg-[#c2a472] shadow-[0_0_10px_rgba(194,164,114,0.5)]"
+                                  className="h-full bg-aetheria-400 shadow-[0_0_10px_rgba(194,164,114,0.5)]"
                                 />
                               </div>
                             )}
@@ -236,9 +236,9 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
 
                   {/* Rewards Section */}
                   <div className="space-y-6 pt-4">
-                    <h3 className="text-[#c2a472] font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+                    <h3 className="text-aetheria-400 font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
                       Rewards
-                      <div className="h-px flex-1 bg-[#c2a472]/20" />
+                      <div className="h-px flex-1 bg-aetheria-400/20" />
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                       {selectedQuest.reward.exp && (
@@ -247,7 +247,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                             <Sparkles size={24} className="text-indigo-400" />
                           </div>
                           <div>
-                            <p className="text-[#8b6b4d] text-[9px] uppercase font-black tracking-widest">Experience</p>
+                            <p className="text-aetheria-600 text-[9px] uppercase font-black tracking-widest">Experience</p>
                             <p className="text-indigo-300 font-black text-lg">{selectedQuest.reward.exp}</p>
                           </div>
                         </div>
@@ -258,7 +258,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                             <Coins size={24} className="text-amber-400" />
                           </div>
                           <div>
-                            <p className="text-[#8b6b4d] text-[9px] uppercase font-black tracking-widest">Gold Coins</p>
+                            <p className="text-aetheria-600 text-[9px] uppercase font-black tracking-widest">Gold Coins</p>
                             <p className="text-amber-300 font-black text-lg">{selectedQuest.reward.gold}</p>
                           </div>
                         </div>
@@ -271,25 +271,25 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                             key={i}
                             onMouseEnter={(e) => handleItemHover(item as any, e)}
                             onMouseLeave={() => setHoveredItem(null)}
-                            className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-[#c2a472]/20 hover:border-[#c2a472]/50 transition-all group cursor-help"
+                            className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-aetheria-400/20 hover:border-aetheria-400/50 transition-all group cursor-help"
                           >
-                            <div className="w-8 h-8 rounded bg-black/60 border border-[#4a3a2a] flex items-center justify-center relative overflow-hidden">
+                            <div className="w-8 h-8 rounded bg-black/60 border border-aetheria-800 flex items-center justify-center relative overflow-hidden">
                               {renderIcon(item.icon)}
                               <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none" />
                             </div>
-                            <span className="text-[#f4e4bc] text-xs font-bold group-hover:text-[#c2a472] transition-colors">{item.name}</span>
+                            <span className="text-aetheria-200 text-xs font-bold group-hover:text-aetheria-400 transition-colors">{item.name}</span>
                           </div>
                         );
                       })}
                     </div>
                   </div>
                     {/* Action Buttons */}
-                    <div className="flex gap-4 pt-6 mt-8 border-t border-[#4a3a2a]/30">
+                    <div className="flex gap-4 pt-6 mt-8 border-t border-aetheria-800/30">
                       <button
                         onClick={() => toggleQuestTracking(selectedQuest.id)}
                         className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-black uppercase tracking-widest text-xs border-2 transition-all active:scale-95 ${trackedQuestIds.includes(selectedQuest.id)
                           ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
-                          : 'bg-black/40 border-[#4a3a2a] text-[#8b6b4d] hover:border-[#c2a472]/50 hover:text-[#f4e4bc]'
+                          : 'bg-black/40 border-aetheria-800 text-aetheria-600 hover:border-aetheria-400/50 hover:text-aetheria-200'
                           }`}
                       >
                         <Icons.Eye size={18} />

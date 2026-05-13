@@ -15,12 +15,12 @@ interface NavigationMenuProps {
 }
 
 export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
-  const { 
-    activeMenu, 
-    setActiveMenu, 
-    isInventoryOpen, 
-    setInventoryOpen, 
-    isCharacterOpen, 
+  const {
+    activeMenu,
+    setActiveMenu,
+    isInventoryOpen,
+    setInventoryOpen,
+    isCharacterOpen,
     setCharacterOpen,
     isQuestsOpen,
     setQuestsOpen,
@@ -53,7 +53,7 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
   ];
 
   return (
-    <div className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-[#1a140f]/90 backdrop-blur-md rounded-lg border-2 border-[#4a3a2a] shadow-2xl pointer-events-auto">
+    <div className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 bg-aetheria-950/90 backdrop-blur-md rounded-lg border-2 border-aetheria-800 shadow-2xl pointer-events-auto">
       {menuItems.map((item) => (
         <button
           key={item.id}
@@ -66,32 +66,32 @@ export const NavigationMenu = ({ onOpenSettings }: NavigationMenuProps) => {
             else setActiveMenu(activeMenu === item.id ? null : item.id as any);
           }}
           className={`relative group p-2 rounded-full transition-all duration-300
-            ${(item.id === 'inventory' && isInventoryOpen) || 
-              (item.id === 'menu' && isCharacterOpen) || 
+            ${(item.id === 'inventory' && isInventoryOpen) ||
+              (item.id === 'menu' && isCharacterOpen) ||
               (item.id === 'quests' && isQuestsOpen) ||
               (item.id === 'skills' && isSkillsOpen) ||
               (item.id === 'passives' && isPassiveTreeOpen) ||
-              activeMenu === item.id 
-              ? 'bg-[#c2a472] text-[#1a140f] shadow-[0_0_15px_rgba(194,164,114,0.4)] scale-110' 
-              : 'text-[#8b6b4d] hover:text-[#f4e4bc] hover:bg-white/5'
+              activeMenu === item.id
+              ? 'bg-aetheria-400 text-aetheria-950 shadow-gold-glow scale-110'
+              : 'text-aetheria-600 hover:text-aetheria-200 hover:bg-white/5'
             }
           `}
         >
           {item.icon}
-          
+
           {/* Tooltip */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-[#1a140f] border border-[#4a3a2a] rounded text-[10px] font-fantasy uppercase tracking-widest text-[#f4e4bc] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
-            {item.label} <span className="text-[#8b6b4d] ml-1">[{item.key}]</span>
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#4a3a2a]" />
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-aetheria-950 border border-aetheria-800 rounded text-[10px] font-fantasy uppercase tracking-widest text-aetheria-200 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
+            {item.label} <span className="text-aetheria-600 ml-1">[{item.key}]</span>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-aetheria-800" />
           </div>
         </button>
       ))}
-      
-      <div className="w-px h-6 bg-[#4a3a2a] mx-1" />
-      
+
+      <div className="w-px h-6 bg-aetheria-800 mx-1" />
+
       <button
         onClick={onOpenSettings}
-        className="p-2 text-[#8b6b4d] hover:text-[#f4e4bc] hover:bg-white/5 rounded-full transition-all"
+        className="p-2 text-aetheria-600 hover:text-aetheria-200 hover:bg-white/5 rounded-full transition-all"
       >
         <Settings size={20} />
       </button>

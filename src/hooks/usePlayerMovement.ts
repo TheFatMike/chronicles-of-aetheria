@@ -327,12 +327,20 @@ export const usePlayerMovement = (
         // Update local store for distance checks and UI only if moved
         const state = useGameStore.getState();
         const currentPos = state.players[state.id || ""]?.pos;
+        const currentRot = state.players[state.id || ""]?.rot;
+        const newRot: [number, number, number] = [0, meshRef.current.rotation.y, 0];
+        
         if (!currentPos || 
             Math.abs(currentPos[0] - physicsPosition.current.x) > 0.01 ||
-            Math.abs(currentPos[2] - physicsPosition.current.z) > 0.01) {
+            Math.abs(currentPos[2] - physicsPosition.current.z) > 0.01 ||
+            !currentRot ||
+            Math.abs(currentRot[1] - newRot[1]) > 0.01) {
           state.updatePlayer(
             state.id || "", 
-            { pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z] }
+            { 
+              pos: [physicsPosition.current.x, physicsPosition.current.y, physicsPosition.current.z],
+              rot: newRot
+            }
           );
         }
 

@@ -90,28 +90,28 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="bg-[#1a140f]/90 p-3 sm:p-4 rounded-xl border-2 sm:border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-sm flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
+        className="bg-aetheria-950/90 p-3 sm:p-4 rounded-xl border-2 sm:border-4 border-aetheria-800 shadow-aetheria-lg pointer-events-auto relative w-full max-w-sm flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
       >
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none rounded-lg" />
         
-        <div className="flex items-center justify-between mb-4 border-b border-[#4a3a2a] pb-2 relative z-10">
+        <div className="flex items-center justify-between mb-4 border-b border-aetheria-800 pb-2 relative z-10">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-[#c2a472]" />
-            <h2 className="text-sm font-display font-black text-[#f4e4bc] uppercase tracking-widest">Inventory</h2>
+            <Briefcase className="w-5 h-5 text-aetheria-400" />
+            <h2 className="text-sm font-display font-black text-aetheria-200 uppercase tracking-widest">Inventory</h2>
           </div>
           <div 
-            className="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-full border border-[#fbbf24]/30 cursor-help"
+            className="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-full border border-aetheria-400/30 cursor-help"
             title={`${formatGoldDetailed(gold)} Gold`}
           >
-            <Icons.Coins className="w-3 h-3 text-[#fbbf24]" />
-            <span className="text-[#fbbf24] font-mono font-bold text-xs">{formatGold(gold)}</span>
+            <Icons.Coins className="w-3 h-3 text-aetheria-400" />
+            <span className="text-aetheria-400 font-mono font-bold text-xs">{formatGold(gold)}</span>
           </div>
           <button onClick={onClose} className="ml-2 hover:text-white transition-colors">
-            <X className="w-4 h-4 text-[#8b6b4d]" />
+            <X className="w-4 h-4 text-aetheria-600" />
           </button>
         </div>
 
-        <div className="grid grid-cols-5 gap-2 relative z-10 bg-black/20 p-2 rounded border border-[#4a3a2a]/30">
+        <div className="grid grid-cols-5 gap-2 relative z-10 bg-black/20 p-2 rounded border border-aetheria-800/30">
           {slots.map((item, i) => (
             <InventorySlot
               key={i}
@@ -172,7 +172,7 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
                   sender: "SYSTEM",
                   text: `${contextMenu.item.name}: ${contextMenu.item.description}`,
                   timestamp: Date.now(),
-                  color: "#c2a472"
+                  color: "var(--color-aetheria-400)"
                 });
                 setContextMenu(null);
               }

@@ -16,39 +16,30 @@ export const autosaveTerrain = async (): Promise<void> => {
   let count = 0;
 
   for (const chunkKey of chunksToSave) {
-    const [tx, tz] = chunkKey.split(',').map(Number);
-    const terrainId = `chunk_${tx}_${tz}`;
+    const terrainId = `chunk_${chunkKey.replace(',', '_')}`;
     
-    // Collect all terrain points in this chunk
+    // Collect all terrain points in this chunk using the efficient mapping
     const chunkData: Record<string, any> = {};
     const terrainKeys = chunkToTerrain.get(chunkKey);
     
-    if (terrainKeys) {
+    if (terrainKeys && terrainKeys.size > 0) {
       for (const tKey of terrainKeys) {
         const data = terrainData.get(tKey);
         if (data) chunkData[tKey] = data;
       }
-    } else {
-       // Fallback: search terrainData if mapping is missing
-       // This is expensive so we ideally avoid it
-       for (const [key, val] of terrainData.entries()) {
-          const [x, z] = key.split('_').map(Number);
-          if (Math.floor(x / 100) === tx && Math.floor(z / 100) === tz) {
-             chunkData[key] = val;
-          }
-       }
     }
 
+    // Only add to batch if there is actually data to save
     if (Object.keys(chunkData).length > 0) {
-      const charRef = db.collection("terrain_chunks").doc(terrainId);
-      batch.set(charRef, { data: chunkData }, { merge: true });
+      const docRef = db.collection("terrain_chunks").doc(terrainId);
+      batch.set(docRef, { data: chunkData }, { merge: true });
       count++;
     }
 
     if (count >= 450) {
       await batch.commit();
       serverLogger.info("system", `Autosaved ${count} terrain chunks to Firestore.`);
-      // Continue with a new batch if needed
+      // Continue with remaining chunks if any
       return autosaveTerrain(); 
     }
   }

@@ -28,10 +28,10 @@ export const CreationForm = ({
   handleComplete
 }: CreationFormProps) => {
   return (
-    <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-2 sm:border-4 border-[#4a3a2a] rounded p-6 sm:p-10 flex flex-col justify-start shadow-2xl relative h-fit">
+    <div className="col-span-12 lg:col-span-5 bg-[#251b14] border-2 sm:border-4 border-aetheria-800 rounded p-6 sm:p-10 flex flex-col justify-start shadow-2xl relative h-fit">
       <div className="space-y-8 sm:space-y-12">
         <div>
-          <h3 className="text-[10px] sm:text-sm border-b-2 border-[#4a3a2a] pb-2 sm:pb-3 mb-6 sm:mb-8 flex items-center gap-2 sm:gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+          <h3 className="text-[10px] sm:text-sm border-b-2 border-aetheria-800 pb-2 sm:pb-3 mb-6 sm:mb-8 flex items-center gap-2 sm:gap-3 font-fantasy text-aetheria-400 uppercase tracking-widest">
             <User size={14} className="sm:w-4 sm:h-4" />
             Vessel Identity
           </h3>
@@ -42,14 +42,13 @@ export const CreationForm = ({
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Enter Name..."
               disabled={isLoading}
-              className={`w-full bg-black/40 border-2 p-5 font-serif text-lg text-[#f4e4bc] placeholder:text-[#4a3a2a] focus:outline-none transition-colors tracking-wide ${
-                displayError ? "border-red-900 focus:border-red-500" : "border-[#4a3a2a] focus:border-[#c2a472]"
-              } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`w-full bg-black/40 border-2 p-5 font-serif text-lg text-aetheria-200 placeholder:text-aetheria-800 focus:outline-none transition-colors tracking-wide ${displayError ? "border-red-900 focus:border-red-500" : "border-aetheria-800 focus:border-aetheria-400"
+                } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               maxLength={20}
             />
             <AnimatePresence>
               {displayError && (
-                <motion.p 
+                <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -64,7 +63,7 @@ export const CreationForm = ({
         </div>
 
         <div>
-          <h3 className="text-sm border-b-2 border-[#4a3a2a] pb-3 mb-6 flex items-center gap-3 font-fantasy text-[#c2a472] uppercase tracking-widest">
+          <h3 className="text-sm border-b-2 border-aetheria-800 pb-3 mb-6 flex items-center gap-3 font-fantasy text-aetheria-400 uppercase tracking-widest">
             <Shield size={16} />
             Ascension Path
           </h3>
@@ -73,14 +72,13 @@ export const CreationForm = ({
               <button
                 key={c.id}
                 onClick={() => setSelectedClassIdx(i)}
-                className={`w-full p-4 flex justify-between items-center border-2 transition-all group ${
-                  selectedClassIdx === i 
-                    ? "border-[#c2a472] bg-[#c2a472] text-[#1a1410]" 
-                    : "border-[#4a3a2a] bg-black/20 text-[#6d5540] hover:border-[#6d5540]"
-                }`}
+                className={`w-full p-4 flex justify-between items-center border-2 transition-all group ${selectedClassIdx === i
+                    ? "border-aetheria-400 bg-aetheria-400 text-[#1a1410]"
+                    : "border-aetheria-800 bg-black/20 text-[#6d5540] hover:border-[#6d5540]"
+                  }`}
               >
                 <span className="text-sm font-fantasy uppercase tracking-widest">{c.name}</span>
-                {selectedClassIdx === i ? <ChevronRight size={18} /> : <div className="w-1.5 h-1.5 bg-[#4a3a2a] rotate-45 group-hover:bg-[#6d5540]" />}
+                {selectedClassIdx === i ? <ChevronRight size={18} /> : <div className="w-1.5 h-1.5 bg-aetheria-800 rotate-45 group-hover:bg-[#6d5540]" />}
               </button>
             ))}
           </div>
@@ -91,11 +89,10 @@ export const CreationForm = ({
         <button
           onClick={handleComplete}
           disabled={characterName.length < 3 || isLoading}
-          className={`w-full py-6 text-sm font-fantasy uppercase tracking-[0.4em] transition-all shadow-xl flex items-center justify-center gap-3 ${
-            characterName.length >= 3 && !isLoading
-            ? "bg-[#c2a472] text-[#1a1410] hover:bg-[#d4b98a] active:scale-[0.98] border-t-2 border-t-[#f4e4bc] border-b-2 border-b-[#8b6b4d]"
-            : "bg-[#1a1410] text-[#4a3a2a] cursor-not-allowed border-2 border-[#4a3a2a]"
-          }`}
+          className={`w-full py-6 text-sm font-fantasy uppercase tracking-[0.4em] transition-all shadow-xl flex items-center justify-center gap-3 ${characterName.length >= 3 && !isLoading
+              ? "bg-aetheria-400 text-[#1a1410] hover:bg-[#d4b98a] active:scale-[0.98] border-t-2 border-t-aetheria-200 border-b-2 border-b-aetheria-600"
+              : "bg-[#1a1410] text-aetheria-800 cursor-not-allowed border-2 border-aetheria-800"
+            }`}
         >
           {isLoading ? (
             <>

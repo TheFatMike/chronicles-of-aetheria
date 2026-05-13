@@ -69,8 +69,8 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
             className="absolute inset-0 pointer-events-none z-0"
-            style={{ 
-              background: `radial-gradient(circle at 50% 50%, ${selectedClass.color} 0%, transparent 80%)` 
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${selectedClass.color} 0%, transparent 80%)`
             }}
           />
         </AnimatePresence>,
@@ -78,30 +78,30 @@ export const CharacterCreation = memo(({ onComplete, onCancel, error, isLoading,
       )}
 
       <ParticleEffect />
-      
+
       {/* Back Button */}
       {canCancel && (
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={onCancel}
-          className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 sm:gap-3 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors z-60 group px-2 sm:px-4 py-1.5 sm:py-2 border-2 border-[#4a3a2a]/20 hover:border-[#4a3a2a] rounded bg-black/40 backdrop-blur-sm"
+          className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 sm:gap-3 text-aetheria-600 hover:text-aetheria-200 transition-colors z-60 group px-2 sm:px-4 py-1.5 sm:py-2 border-2 border-aetheria-800/20 hover:border-aetheria-800 rounded bg-black/40 backdrop-blur-sm"
         >
           <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform sm:w-5 sm:h-5" />
           <span className="font-fantasy text-[10px] sm:text-xs uppercase tracking-[0.3em]">Back</span>
         </motion.button>
       )}
-      
+
       <div className="absolute inset-0 overflow-y-auto custom-scrollbar pt-8">
         <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 py-8 lg:py-12">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-5xl w-full grid grid-cols-12 gap-4 lg:gap-6 relative z-10"
           >
             <ClassPreview selectedClass={selectedClass} />
-            
-            <CreationForm 
+
+            <CreationForm
               characterName={characterName}
               handleNameChange={handleNameChange}
               isLoading={isLoading || false}

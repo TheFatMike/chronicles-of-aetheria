@@ -18,11 +18,11 @@ interface HotbarProps {
 
 const getRarityGlow = (rarity: ItemRarity) => {
   switch (rarity) {
-    case "uncommon": return "shadow-[0_0_10px_rgba(52,211,153,0.3)] border-[#34d399]/50";
-    case "rare": return "shadow-[0_0_10px_rgba(96,165,250,0.3)] border-[#60a5fa]/50";
-    case "epic": return "shadow-[0_0_10px_rgba(168,85,247,0.3)] border-[#a855f7]/50";
-    case "legendary": return "shadow-[0_0_15px_rgba(251,191,36,0.4)] border-[#fbbf24]/50";
-    default: return "border-[#4a3a2a]";
+    case "uncommon": return "shadow-[0_0_10px_rgba(74,222,128,0.3)] border-green-400/50";
+    case "rare": return "shadow-[0_0_10px_rgba(96,165,250,0.3)] border-blue-400/50";
+    case "epic": return "shadow-[0_0_10px_rgba(168,85,247,0.3)] border-purple-400/50";
+    case "legendary": return "shadow-gold-glow/40 border-aetheria-400/50";
+    default: return "border-aetheria-800";
   }
 };
 
@@ -127,7 +127,8 @@ const HotbarSlot = React.memo(({
     return `${slot.data.type} skill`;
   };
 
-  const rarityClass = (slot?.type === 'item') ? getRarityGlow(slot.data.rarity) : "border-[#c2a472] shadow-[0_0_10px_rgba(194,164,114,0.2)]";
+  const subtext = getSubtext();
+  const rarityClass = (slot?.type === 'item') ? getRarityGlow(slot.data.rarity) : "border-aetheria-400 shadow-gold-glow/20";
 
   return (
     <div
@@ -145,18 +146,18 @@ const HotbarSlot = React.memo(({
     >
       <motion.div
         whileHover={slot ? { y: -4, scale: 1.05 } : { scale: 1.02 }}
-        className={`relative group w-10 h-10 sm:w-12 sm:h-12 bg-[#1a140f]/90 border rounded flex items-center justify-center cursor-pointer transition-all duration-200
-          ${isOver ? "bg-[#2d221a] border-[#f4e4bc] scale-110 shadow-2xl z-20" : ""}
-          ${slot ? rarityClass : "border-[#4a3a2a] hover:border-[#c2a472]"}
+        className={`relative group w-10 h-10 sm:w-12 sm:h-12 bg-aetheria-950/90 border rounded flex items-center justify-center cursor-pointer transition-all duration-200
+          ${isOver ? "bg-aetheria-900 border-aetheria-200 scale-110 shadow-aetheria-lg z-20" : ""}
+          ${slot ? rarityClass : "border-aetheria-800 hover:border-aetheria-400"}
         `}
       >
-        <div className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#2d221a] border border-[#4a3a2a] rounded shadow text-[7px] sm:text-[9px] flex items-center justify-center font-mono text-[#8b6b4d] group-hover:text-[#f4e4bc]">
+        <div className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-aetheria-900 border border-aetheria-800 rounded shadow text-[7px] sm:text-[9px] flex items-center justify-center font-mono text-aetheria-600 group-hover:text-aetheria-200">
           {label}
         </div>
         
         {slot ? (
           <div className="relative w-full h-full flex items-center justify-center">
-            <div className={`text-[#f4e4bc] drop-shadow-lg ${cooldownPercent < 1 && slot.type === 'skill' ? 'opacity-40 grayscale' : ''}`}>
+            <div className={`text-aetheria-200 drop-shadow-lg ${cooldownPercent < 1 && slot.type === 'skill' ? 'opacity-40 grayscale' : ''}`}>
               {renderIcon()}
             </div>
             {slot.type === 'item' && slot.data.quantity && slot.data.quantity > 1 && (
@@ -178,8 +179,7 @@ const HotbarSlot = React.memo(({
             )}
           </div>
         ) : (
-
-          <div className="text-[#4a3a2a] opacity-30">
+          <div className="text-aetheria-800 opacity-30">
             <Icons.Plus size={14} />
           </div>
         )}
@@ -187,9 +187,9 @@ const HotbarSlot = React.memo(({
         {/* Info on hover */}
         {slot && (
           <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-            <div className="bg-[#1a140f] border border-[#4a3a2a] px-2 py-1 rounded shadow-2xl whitespace-nowrap">
-              <p className="text-[10px] font-display font-black text-[#f4e4bc] leading-none">{getName()}</p>
-              <p className="text-[7px] text-[#8b6b4d] font-fantasy uppercase tracking-tight mt-0.5">{getSubtext()}</p>
+            <div className="bg-aetheria-950 border border-aetheria-800 px-2 py-1 rounded shadow-aetheria-lg whitespace-nowrap">
+              <p className="text-[10px] font-display font-black text-aetheria-200 leading-none">{getName()}</p>
+              <p className="text-[7px] text-aetheria-600 font-fantasy uppercase tracking-tight mt-0.5">{getSubtext()}</p>
             </div>
           </div>
         )}
@@ -218,7 +218,7 @@ export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarPr
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-70 flex flex-col items-center gap-2 pointer-events-auto">
       {/* Experience Bar above Hotbar */}
       {localPlayer && (
-        <div className="w-full max-w-[400px] h-1.5 sm:h-2 bg-black/40 rounded-full overflow-hidden border border-[#4a3a2a]/30 shadow-inner group relative" title={`Experience: ${localPlayer.exp || 0}/${localPlayer.maxExp || 100}`}>
+        <div className="w-full max-w-[400px] h-1.5 sm:h-2 bg-black/40 rounded-full overflow-hidden border border-aetheria-800/30 shadow-inner group relative" title={`Experience: ${localPlayer.exp || 0}/${localPlayer.maxExp || 100}`}>
           <motion.div 
             className="h-full bg-linear-to-r from-amber-500 to-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
             initial={{ width: 0 }}
@@ -232,7 +232,7 @@ export const Hotbar = React.memo(({ slots, onSlotAction, onClearSlot }: HotbarPr
         </div>
       )}
 
-      <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-[#1a140f]/40 backdrop-blur-sm rounded-lg border border-[#4a3a2a]/20 shadow-2xl overflow-x-auto max-w-[95vw] no-scrollbar">
+      <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-aetheria-950/40 backdrop-blur-sm rounded-lg border border-aetheria-800/20 shadow-aetheria-lg overflow-x-auto max-w-[95vw] no-scrollbar">
         {safeSlots.map((slot, i) => (
           <HotbarSlot 
             key={i} 

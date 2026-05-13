@@ -22,7 +22,7 @@ export const QuestTracker = () => {
   if (trackedQuests.length === 0) return null;
 
   return (
-    <div className="fixed top-32 right-6 z-40 w-64 max-h-[60%] overflow-y-auto custom-scrollbar pr-2 pointer-events-none">
+    <div className="w-64 max-h-[60%] overflow-y-auto custom-scrollbar pr-2 pointer-events-none">
       <div className="space-y-6 pointer-events-auto">
         <AnimatePresence mode="popLayout">
           {trackedQuests.map((quest) => (
@@ -31,12 +31,12 @@ export const QuestTracker = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-[#1a140f]/60 backdrop-blur-md border-l-4 border-[#c2a472] p-4 rounded-r-xl shadow-2xl relative overflow-hidden group pointer-events-auto"
+              className="bg-aetheria-950/60 backdrop-blur-md border-l-4 border-aetheria-400 p-4 rounded-r-xl shadow-2xl relative overflow-hidden group pointer-events-auto"
             >
               {/* Background Glow */}
-              <div className="absolute inset-0 bg-linear-to-r from-[#c2a472]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-linear-to-r from-aetheria-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
-              <h4 className="text-[#f4e4bc] font-black uppercase tracking-widest text-[10px] mb-3 border-b border-[#4a3a2a]/50 pb-2">
+              <h4 className="text-aetheria-200 font-black uppercase tracking-widest text-[10px] mb-3 border-b border-aetheria-800/50 pb-2">
                 {quest.title}
               </h4>
 
@@ -47,13 +47,13 @@ export const QuestTracker = () => {
                       {obj.completed ? (
                         <CheckCircle2 size={12} className="text-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
                       ) : (
-                        <Circle size={10} className="text-[#8b6b4d]" />
+                        <Circle size={10} className="text-aetheria-600" />
                       )}
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-baseline gap-2">
                         <p className={`text-[11px] leading-tight font-bold ${
-                          obj.completed ? 'text-[#8b6b4d] line-through' : 'text-[#e2d1b0]'
+                          obj.completed ? 'text-aetheria-600 line-through' : 'text-[#e2d1b0]'
                         }`}>
                           {obj.type === 'kill' ? `Slay ${obj.targetName}` : 
                            obj.type === 'collect' ? `Collect ${obj.targetName}` :
@@ -61,7 +61,7 @@ export const QuestTracker = () => {
                            obj.targetName}
                         </p>
                         {!obj.completed && (
-                          <span className="text-[10px] font-mono font-black text-[#c2a472]">
+                          <span className="text-[10px] font-mono font-black text-aetheria-400">
                             {obj.currentCount}/{obj.count}
                           </span>
                         )}
@@ -72,7 +72,7 @@ export const QuestTracker = () => {
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${(obj.currentCount / obj.count) * 100}%` }}
-                            className="h-full bg-linear-to-r from-[#c2a472] to-[#f4e4bc]"
+                            className="h-full bg-linear-to-r from-aetheria-400 to-aetheria-200"
                           />
                         </div>
                       )}

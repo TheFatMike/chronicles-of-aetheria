@@ -31,7 +31,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
     if (sortBy === "name") comparison = a.name.localeCompare(b.name);
     else if (sortBy === "level") comparison = a.level - b.level;
     else if (sortBy === "class") comparison = a.class.localeCompare(b.class);
-    
+
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
@@ -85,55 +85,54 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
   return (
     <div className="w-full h-full relative overflow-hidden flex flex-col">
       {/* Background Ambience - localized to provide some depth even within scaffold */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-[#4a3420]/10 via-transparent to-transparent pointer-events-none" />
-      
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-aetheria-900/10 via-transparent to-transparent pointer-events-none" />
+
       <ParticleEffect />
 
       {/* Top Left Logout Button */}
-      <motion.button 
+      <motion.button
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         onClick={onLogout}
-        className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 px-4 py-2 border border-[#4a3a2a]/40 text-[#8b6b4d] hover:border-red-500 hover:text-red-500 transition-all font-fantasy text-[10px] uppercase tracking-widest bg-black/40 backdrop-blur-sm rounded z-50 group shadow-lg"
+        className="fixed top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 px-4 py-2 border border-aetheria-800/40 text-aetheria-600 hover:border-red-500 hover:text-red-500 transition-all font-fantasy text-[10px] uppercase tracking-widest bg-black/40 backdrop-blur-sm rounded z-50 group shadow-lg"
       >
         <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
         Log Out
       </motion.button>
-      
+
       <div className="relative z-10 w-full h-full flex flex-col items-center max-w-5xl mx-auto px-4 py-6 sm:py-10 overflow-hidden">
         {/* Header Section (Fixed) */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6 shrink-0"
         >
-          <h1 className="text-3xl sm:text-5xl font-display font-black text-[#f4e4bc] mb-1 sm:mb-2 tracking-widest uppercase drop-shadow-[0_0_15px_rgba(194,164,114,0.3)]">
+          <h1 className="text-3xl sm:text-5xl font-display font-black text-aetheria-200 mb-1 sm:mb-2 tracking-widest uppercase drop-shadow-gold-glow/30">
             Character Select
           </h1>
-          <p className="text-[#8b6b4d] font-serif italic text-sm sm:text-lg opacity-80">
+          <p className="text-aetheria-600 font-serif italic text-sm sm:text-lg opacity-80">
             Choose a character to continue your journey
           </p>
-          
-          <div className="h-px w-32 bg-linear-to-r from-transparent via-[#4a3a2a] to-transparent mx-auto mt-4" />
+
+          <div className="h-px w-32 bg-linear-to-r from-transparent via-aetheria-800 to-transparent mx-auto mt-4" />
         </motion.div>
 
         {/* Sort Bar (Fixed) */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
           className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 shrink-0"
         >
-          <span className="text-[8px] sm:text-[10px] font-fantasy text-[#4a3a2a] uppercase tracking-[0.2em] self-center mr-1 sm:mr-2">Sort By:</span>
+          <span className="text-[8px] sm:text-[10px] font-fantasy text-aetheria-800 uppercase tracking-[0.2em] self-center mr-1 sm:mr-2">Sort By:</span>
           {(["name", "level", "class"] as const).map((field) => (
             <button
               key={field}
               onClick={() => toggleSort(field)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded border transition-all font-fantasy text-[8px] sm:text-[10px] uppercase tracking-widest ${
-                sortBy === field 
-                  ? "bg-[#c2a472]/10 border-[#c2a472] text-[#f4e4bc] shadow-[0_0_10px_rgba(194,164,114,0.1)]" 
-                  : "border-[#4a3a2a] text-[#6d5540] hover:border-[#8b6b4d] bg-black/20"
-              }`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded border transition-all font-fantasy text-[8px] sm:text-[10px] uppercase tracking-widest ${sortBy === field
+                  ? "bg-aetheria-400/10 border-aetheria-400 text-aetheria-200 shadow-gold-glow/10"
+                  : "border-aetheria-800 text-aetheria-800 hover:border-aetheria-600 bg-black/20"
+                }`}
             >
               {field}
               {sortBy === field && (
@@ -148,7 +147,7 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
           ))}
         </motion.div>
 
-        <motion.div 
+        <motion.div
           variants={container}
           initial="hidden"
           animate="show"
@@ -174,9 +173,9 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
               <motion.button
                 whileHover={{ y: -5 }}
                 onClick={onNew}
-                className="border-2 border-dashed border-[#4a3a2a] rounded p-6 flex flex-col items-center justify-center text-[#8b6b4d] hover:border-[#c2a472] hover:text-[#c2a472] transition-all bg-black/20 group h-full min-h-[200px]"
+                className="border-2 border-dashed border-aetheria-800 rounded p-6 flex flex-col items-center justify-center text-aetheria-600 hover:border-aetheria-400 hover:text-aetheria-400 transition-all bg-black/20 group h-full min-h-[200px]"
               >
-                <div className="w-10 h-10 rounded-full border-2 border-dashed border-[#4a3a2a] flex items-center justify-center mb-4 group-hover:border-[#c2a472] transition-colors">
+                <div className="w-10 h-10 rounded-full border-2 border-dashed border-aetheria-800 flex items-center justify-center mb-4 group-hover:border-aetheria-400 transition-colors">
                   <Plus size={20} />
                 </div>
                 <span className="text-xs font-fantasy font-bold uppercase tracking-[0.3em] text-center">Embody New Hero</span>
@@ -184,38 +183,37 @@ export const CharacterSelection = memo(({ characters, onSelect, onNew, onDelete,
             )}
           </div>
         </motion.div>
-        
+
         {/* Footer Actions (Fixed) */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="mt-6 shrink-0 flex flex-col items-center gap-4 w-full"
         >
-          <div className="h-px w-full bg-linear-to-r from-transparent via-[#4a3a2a] to-transparent mb-1" />
-          
+          <div className="h-px w-full bg-linear-to-r from-transparent via-aetheria-800 to-transparent mb-1" />
+
           <div className="flex flex-col items-center gap-4">
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               disabled={!highlightedId}
               onClick={handleEnterWorld}
-              className={`px-20 py-4 text-xl font-fantasy uppercase tracking-[0.4em] transition-all shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded relative overflow-hidden group ${
-                highlightedId 
-                  ? "bg-[#c2a472] text-[#1a1410] hover:bg-[#d4b98a] border-y-2 border-[#f4e4bc]/40" 
-                  : "bg-black/40 text-[#4a3a2a] border border-[#4a3a2a] cursor-not-allowed opacity-50"
-              }`}
+              className={`px-20 py-4 text-xl font-fantasy uppercase tracking-[0.4em] transition-all shadow-aetheria-lg rounded relative overflow-hidden group ${highlightedId
+                  ? "bg-aetheria-400 text-aetheria-950 hover:bg-aetheria-200 border-y-2 border-aetheria-200/40"
+                  : "bg-black/40 text-aetheria-800 border border-aetheria-800 cursor-not-allowed opacity-50"
+                }`}
             >
               {highlightedId && (
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-sheen pointer-events-none"
                 />
               )}
               Enter World
             </motion.button>
           </div>
-          
-          <div className="text-[#4a3a2a] font-serif text-[8px] sm:text-[10px] uppercase tracking-widest opacity-60">
+
+          <div className="text-aetheria-800 font-serif text-[8px] sm:text-[10px] uppercase tracking-widest opacity-60">
             Chronicles of Aetheria &copy; 2026
           </div>
         </motion.div>

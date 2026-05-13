@@ -31,7 +31,7 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
 
   const renderIcon = (iconName: string) => {
     const IconComponent = (Icons as any)[iconName] || Box;
-    return <IconComponent size={24} className="text-[#c2a472]" />;
+    return <IconComponent size={24} className="text-aetheria-400" />;
   };
 
   const objectivesMet = quest.objectives.every(o => o.completed);
@@ -43,11 +43,11 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
       className="fixed inset-0 z-100 flex items-start justify-center p-4 pt-[10vh] pointer-events-none"
     >
-      <div className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] w-full max-w-lg max-h-[85%] overflow-hidden flex flex-col pointer-events-auto relative">
+      <div className="bg-aetheria-950 border-4 border-aetheria-800 rounded-xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] w-full max-w-lg max-h-[85%] overflow-hidden flex flex-col pointer-events-auto relative">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
         
         {/* Header */}
-        <div className="bg-[#2d221a] p-6 border-b-2 border-[#4a3a2a] flex items-center justify-between relative z-10">
+        <div className="bg-aetheria-900 p-6 border-b-2 border-aetheria-800 flex items-center justify-between relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-1">
               {isComplete ? (
@@ -57,16 +57,16 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
               ) : (
                 <span className="px-2 py-0.5 bg-blue-500 text-white font-black text-[8px] uppercase rounded">In Progress</span>
               )}
-              <h2 className="text-[#f4e4bc] font-black uppercase tracking-[0.2em] text-xl">{quest.title}</h2>
+              <h2 className="text-aetheria-200 font-black uppercase tracking-[0.2em] text-xl">{quest.title}</h2>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-px w-8 bg-[#c2a472]/40" />
-              <span className="text-[#c2a472] text-[10px] font-black uppercase tracking-widest">{quest.giverName}</span>
+              <div className="h-px w-8 bg-aetheria-400/40" />
+              <span className="text-aetheria-400 text-[10px] font-black uppercase tracking-widest">{quest.giverName}</span>
             </div>
           </div>
           <button 
             onClick={onDecline}
-            className="p-2 text-[#8b6b4d] hover:text-[#f4e4bc] transition-colors bg-black/20 rounded-lg border border-[#4a3a2a]"
+            className="p-2 text-aetheria-600 hover:text-aetheria-200 transition-colors bg-black/20 rounded-lg border border-aetheria-800"
           >
             <X size={20} />
           </button>
@@ -76,19 +76,19 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
         <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-[rgba(26,20,15,0.6)] relative z-10">
           {/* Description */}
           <section className="space-y-4">
-            <h3 className="text-[#c2a472] font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#c2a472]" />
+            <h3 className="text-aetheria-400 font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-aetheria-400" />
               {isComplete ? "Conclusion" : "The Mission"}
             </h3>
-            <p className="text-[#f4e4bc] font-sans font-medium text-lg leading-relaxed">
+            <p className="text-aetheria-200 font-sans font-medium text-lg leading-relaxed">
               "{quest.description}"
             </p>
           </section>
 
           {/* Objectives */}
           <section className="space-y-4">
-            <h3 className="text-[#c2a472] font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#c2a472]" />
+            <h3 className="text-aetheria-400 font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-aetheria-400" />
               Objectives
             </h3>
             <div className="space-y-3">
@@ -96,19 +96,19 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
                 <div key={i} className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
                   obj.completed 
                     ? 'bg-emerald-900/10 border-emerald-500/20' 
-                    : 'bg-black/20 border-[#4a3a2a]/30'
+                    : 'bg-black/20 border-aetheria-800/30'
                 }`}>
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    obj.completed ? 'border-emerald-500 bg-emerald-500/20' : 'border-[#4a3a2a]'
+                    obj.completed ? 'border-emerald-500 bg-emerald-500/20' : 'border-aetheria-800'
                   }`}>
                     {obj.completed ? (
                       <CheckCircle2 size={12} className="text-emerald-400" />
                     ) : (
-                      <span className="text-[10px] font-black text-[#c2a472]">{i + 1}</span>
+                      <span className="text-[10px] font-black text-aetheria-400">{i + 1}</span>
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className={`text-sm font-bold ${obj.completed ? 'text-emerald-400' : 'text-[#f4e4bc]'}`}>
+                    <p className={`text-sm font-bold ${obj.completed ? 'text-emerald-400' : 'text-aetheria-200'}`}>
                       {obj.type === 'kill' ? `Slay ${obj.count} ${obj.targetName}` : 
                        obj.type === 'talk' ? `Speak with ${obj.targetName}` :
                        obj.type === 'collect' ? `Retrieve ${obj.count} ${obj.targetName}` :
@@ -120,10 +120,10 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${(obj.currentCount / obj.count) * 100}%` }}
-                          className={`h-full ${obj.completed ? 'bg-emerald-500' : 'bg-[#c2a472]'}`} 
+                          className={`h-full ${obj.completed ? 'bg-emerald-500' : 'bg-aetheria-400'}`} 
                         />
                       </div>
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${obj.completed ? 'text-emerald-500' : 'text-[#8b6b4d]'}`}>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider ${obj.completed ? 'text-emerald-500' : 'text-aetheria-600'}`}>
                         {obj.currentCount} / {obj.count}
                       </span>
                     </div>
@@ -135,8 +135,8 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
 
           {/* Rewards */}
           <section className="space-y-4">
-            <h3 className="text-[#c2a472] font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#c2a472]" />
+            <h3 className="text-aetheria-400 font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-aetheria-400" />
               Rewards
             </h3>
             <div className="grid grid-cols-2 gap-3">
@@ -146,7 +146,7 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
                     <Sparkles size={20} className="text-indigo-400" />
                   </div>
                   <div>
-                    <p className="text-[#8b6b4d] text-[8px] uppercase font-black tracking-widest">Experience</p>
+                    <p className="text-aetheria-600 text-[8px] uppercase font-black tracking-widest">Experience</p>
                     <p className="text-indigo-300 font-black text-sm">{quest.reward.exp} XP</p>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
                     <Coins size={20} className="text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-[#8b6b4d] text-[8px] uppercase font-black tracking-widest">Currency</p>
+                    <p className="text-aetheria-600 text-[8px] uppercase font-black tracking-widest">Currency</p>
                     <p className="text-amber-300 font-black text-sm">{quest.reward.gold} Gold</p>
                   </div>
                 </div>
@@ -172,13 +172,13 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
                     onMouseLeave={() => setHoveredItem(null)}
                     className="col-span-2 flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 group hover:bg-white/10 transition-colors cursor-help"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-black/40 border border-[#4a3a2a] flex items-center justify-center relative overflow-hidden">
+                    <div className="w-12 h-12 rounded-lg bg-black/40 border border-aetheria-800 flex items-center justify-center relative overflow-hidden">
                       {renderIcon(item.icon)}
                       <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#8b6b4d] text-[8px] uppercase font-black tracking-widest">Reward Item</p>
-                      <p className="text-[#f4e4bc] font-black text-sm group-hover:text-[#c2a472] transition-colors">{item.name}</p>
+                      <p className="text-aetheria-600 text-[8px] uppercase font-black tracking-widest">Reward Item</p>
+                      <p className="text-aetheria-200 font-black text-sm group-hover:text-aetheria-400 transition-colors">{item.name}</p>
                     </div>
                   </div>
                 );
@@ -189,14 +189,14 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
 
         {/* Footer */}
         {(isOffer || isComplete) && (
-          <div className="bg-[#2d221a] p-6 border-t-2 border-[#4a3a2a] flex gap-4 relative z-10">
+          <div className="bg-aetheria-900 p-6 border-t-2 border-aetheria-800 flex gap-4 relative z-10">
             <button 
               onClick={onAccept}
               disabled={isComplete && !objectivesMet}
               className={`flex-1 h-14 font-black uppercase tracking-[0.2em] text-xs rounded-lg transition-all shadow-lg active:scale-95 border-b-4 ${
                 isComplete 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-800 text-[#1a140f] disabled:opacity-50 disabled:grayscale' 
-                  : 'bg-amber-600 hover:bg-amber-500 border-amber-800 text-[#1a140f]'
+                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-800 text-aetheria-950 disabled:opacity-50 disabled:grayscale' 
+                  : 'bg-amber-600 hover:bg-amber-500 border-amber-800 text-aetheria-950'
               }`}
             >
               {isComplete ? 'Complete Quest' : 'Accept Quest'}
@@ -204,7 +204,7 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
             {!isComplete && (
               <button 
                 onClick={onDecline}
-                className="px-8 h-14 bg-[#1a140f] hover:bg-[#2a241f] text-[#8b6b4d] hover:text-[#f4e4bc] font-black uppercase tracking-widest text-[10px] rounded-lg transition-all border-2 border-[#4a3a2a] active:scale-95"
+                className="px-8 h-14 bg-aetheria-950 hover:bg-aetheria-800 text-aetheria-600 hover:text-aetheria-200 font-black uppercase tracking-widest text-[10px] rounded-lg transition-all border-2 border-aetheria-800 active:scale-95"
               >
                 Maybe Later
               </button>

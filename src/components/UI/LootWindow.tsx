@@ -19,23 +19,23 @@ interface LootWindowProps {
 }
 
 const getRarityColor = (rarity: ItemRarity | undefined) => {
-  if (!rarity) return "border-[#4a3a2a]/20 text-[#c2a472]";
+  if (!rarity) return "border-aetheria-800/20 text-aetheria-400";
   switch (rarity) {
-    case "uncommon": return "border-[#34d399] text-[#34d399]";
-    case "rare": return "border-[#60a5fa] text-[#60a5fa]";
-    case "epic": return "border-[#a855f7] text-[#a855f7]";
-    case "legendary": return "border-[#fbbf24] text-[#fbbf24]";
-    default: return "border-[#4a3a2a] text-[#c2a472]";
+    case "uncommon": return "border-green-400 text-green-400";
+    case "rare": return "border-blue-400 text-blue-400";
+    case "epic": return "border-purple-400 text-purple-400";
+    case "legendary": return "border-aetheria-400 text-aetheria-400";
+    default: return "border-aetheria-800 text-aetheria-400";
   }
 };
 
 const getRarityBg = (rarity: ItemRarity | undefined) => {
   if (!rarity) return "bg-black/20 shadow-inner";
   switch (rarity) {
-    case "uncommon": return "bg-[#34d399]/10 shadow-[inset_0_0_10px_rgba(52,211,153,0.2)]";
-    case "rare": return "bg-[#60a5fa]/10 shadow-[inset_0_0_10px_rgba(96,165,250,0.2)]";
-    case "epic": return "bg-[#a855f7]/10 shadow-[inset_0_0_10px_rgba(168,85,247,0.2)]";
-    case "legendary": return "bg-[#fbbf24]/10 shadow-[inset_0_0_10px_rgba(251,191,36,0.2)]";
+    case "uncommon": return "bg-green-400/10 shadow-[inset_0_0_10px_rgba(74,222,128,0.2)]";
+    case "rare": return "bg-blue-400/10 shadow-[inset_0_0_10px_rgba(96,165,250,0.2)]";
+    case "epic": return "bg-purple-400/10 shadow-[inset_0_0_10px_rgba(192,132,252,0.2)]";
+    case "legendary": return "bg-aetheria-400/10 shadow-[inset_0_0_10px_rgba(var(--color-aetheria-400-rgb),0.2)]";
     default: return "bg-black/20 shadow-inner";
   }
 };
@@ -76,19 +76,19 @@ export const LootWindow: React.FC<LootWindowProps> = ({ socket }) => {
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-[#1a140f]/95 p-4 rounded-xl border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-[320px] flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
+        className="bg-aetheria-950/95 p-4 rounded-xl border-4 border-aetheria-800 shadow-aetheria-lg pointer-events-auto relative w-full max-w-[320px] flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
       >
         {/* Parchment Texture */}
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none rounded-lg" />
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 border-b border-[#4a3a2a] pb-2 relative z-10">
+        <div className="flex items-center justify-between mb-4 border-b border-aetheria-800 pb-2 relative z-10">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-display font-black text-[#f4e4bc] uppercase tracking-widest">Treasure</h3>
+            <h3 className="text-sm font-display font-black text-aetheria-200 uppercase tracking-widest">Treasure</h3>
           </div>
           <button 
             onClick={() => setActiveLoot(null)}
-            className="text-[#8b6b4d] hover:text-white transition-colors"
+            className="text-aetheria-600 hover:text-white transition-colors"
           >
             <X size={18} />
           </button>
@@ -100,16 +100,16 @@ export const LootWindow: React.FC<LootWindowProps> = ({ socket }) => {
           {activeLoot.gold > 0 && (
             <div 
               onClick={handleTakeGold}
-              className="flex items-center gap-2 bg-black/40 px-3 py-2 rounded-lg border border-[#fbbf24]/30 cursor-pointer hover:bg-[#fbbf24]/10 hover:border-[#fbbf24]/50 transition-all active:scale-95 group"
+              className="flex items-center gap-2 bg-black/40 px-3 py-2 rounded-lg border border-aetheria-400/30 cursor-pointer hover:bg-aetheria-400/10 hover:border-aetheria-400/50 transition-all active:scale-95 group"
             >
-              <Coins className="w-5 h-5 text-[#fbbf24] group-hover:scale-110 transition-transform" />
-              <span className="text-[#fbbf24] font-mono font-bold text-sm">{activeLoot.gold} Gold</span>
-              <span className="ml-auto text-[9px] text-[#fbbf24]/40 font-mono opacity-0 group-hover:opacity-100 transition-opacity">COLLECT</span>
+              <Coins className="w-5 h-5 text-aetheria-400" />
+              <span className="text-aetheria-400 font-mono font-bold text-sm">{activeLoot.gold} Gold</span>
+              <span className="ml-auto text-[9px] text-aetheria-400/40 font-mono opacity-0 group-hover:opacity-100 transition-opacity">COLLECT</span>
             </div>
           )}
 
           {/* Items Grid */}
-          <div className="grid grid-cols-4 gap-2 bg-black/20 p-2 rounded border border-[#4a3a2a]/30">
+          <div className="grid grid-cols-4 gap-2 bg-black/20 p-2 rounded border border-aetheria-800/30">
             {activeLoot.items.map((item: any, idx: number) => (
               <div 
                 key={idx}
@@ -119,7 +119,7 @@ export const LootWindow: React.FC<LootWindowProps> = ({ socket }) => {
                 onMouseLeave={() => setHoveredItem(null)}
                 className={`
                   aspect-square rounded border flex items-center justify-center relative transition-all
-                  ${item ? getRarityColor(item.rarity) : "border-[#4a3a2a]/20 bg-black/10"}
+                  ${item ? getRarityColor(item.rarity) : "border-aetheria-800/20 bg-black/10"}
                   ${item ? "cursor-pointer hover:bg-white/5 active:scale-95" : "opacity-30"}
                 `}
               >
@@ -139,7 +139,7 @@ export const LootWindow: React.FC<LootWindowProps> = ({ socket }) => {
               </div>
             ))}
             {activeLoot.items.length === 0 && !activeLoot.gold && (
-              <div className="col-span-4 py-8 text-center text-[#8b6b4d] text-xs italic opacity-50 font-display">
+              <div className="col-span-4 py-8 text-center text-aetheria-600 text-xs italic opacity-50 font-display">
                 The container is empty...
               </div>
             )}
@@ -149,7 +149,7 @@ export const LootWindow: React.FC<LootWindowProps> = ({ socket }) => {
           <button
             onClick={handleTakeAll}
             disabled={activeLoot.items.length === 0 && !activeLoot.gold}
-            className="w-full py-2.5 bg-[#4a3a2a] hover:bg-[#5a4a3a] text-[#f4e4bc] font-display font-black text-xs uppercase tracking-[0.2em] rounded border border-[#6b5b4a] shadow-lg transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+            className="w-full py-2.5 bg-aetheria-900 hover:bg-aetheria-800 text-aetheria-200 font-display font-black text-xs uppercase tracking-[0.2em] rounded border border-aetheria-800 shadow-lg transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
           >
             Loot All
           </button>

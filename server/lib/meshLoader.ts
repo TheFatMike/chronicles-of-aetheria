@@ -35,6 +35,16 @@ const meshCache = new Map<string, LoadedMesh>();
 
 const missingModels = new Set<string>();
 
+const loader = new GLTFLoader();
+
+// Reusable directions for collision checks
+const COLLISION_DIRECTIONS = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 0, 1],
+  [0, 0, -1]
+];
+
 /**
  * Loads a GLB model from the assets directory and prepares it for server-side raycasting.
  */
@@ -58,8 +68,6 @@ export async function loadModelMesh(modelName: string): Promise<LoadedMesh | nul
   try {
     const data = fs.readFileSync(filePath);
     const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-
-    const loader = new GLTFLoader();
     
     return new Promise((resolve, reject) => {
       // Silence THREE.js texture errors during parsing (server doesn't need textures)
@@ -86,6 +94,7 @@ export async function loadModelMesh(modelName: string): Promise<LoadedMesh | nul
         meshCache.set(modelName, loadedMesh);
         resolve(loadedMesh);
       }, (error) => {
+        console.error = originalConsoleError;
         console.error(`[MeshLoader] Error parsing GLB ${modelName}:`, error);
         reject(error);
       });
@@ -121,16 +130,7 @@ export function getMeshHeightAt(mesh: THREE.Group, worldPos: [number, number, nu
  * Helper to check if a point is colliding with a mesh (crude approximation).
  */
 export function checkMeshCollision(mesh: THREE.Group, worldPos: [number, number, number], radius: number = 0.5): boolean {
-  // For a proper mesh collision resolution, we'd need a more complex solver.
-  // For now, we can use a small sphere cast or multiple rays.
-  const directions = [
-    [1, 0, 0],
-    [-1, 0, 0],
-    [0, 0, 1],
-    [0, 0, -1]
-  ];
-
-  for (const [dx, dy, dz] of directions) {
+  for (const [dx, dy, dz] of COLLISION_DIRECTIONS) {
     _tempOrigin.set(worldPos[0], worldPos[1] + 0.5, worldPos[2]);
     _tempDirection.set(dx, dy, dz);
     REUSABLE_RAYCASTER.set(_tempOrigin, _tempDirection);

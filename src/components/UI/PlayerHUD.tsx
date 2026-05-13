@@ -17,17 +17,17 @@ export const PlayerHUD = ({ character, userEmail }: PlayerHUDProps) => {
   const role = getAccountRole(userEmail);
 
   return (
-    <div className="fixed top-2 left-2 lg:top-6 lg:left-6 z-60 bg-[#1a140f]/90 backdrop-blur-md p-2 lg:p-4 rounded-xl border-2 border-[#4a3a2a] text-[#c2a472] shadow-[0_0_30px_rgba(0,0,0,0.5)] select-none w-full max-w-48 lg:max-w-none lg:w-auto">
+    <div className="fixed top-2 left-2 lg:top-6 lg:left-6 z-60 bg-aetheria-950/90 backdrop-blur-md p-2 lg:p-4 rounded-xl border-2 border-aetheria-800 text-aetheria-400 shadow-aetheria-lg select-none w-full max-w-48 lg:max-w-none lg:w-auto">
       <div className="flex items-center gap-2 sm:gap-4">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2d221a] rounded border-2 border-[#4a3a2a] flex items-center justify-center font-black text-[#f4e4bc] text-xs sm:text-base shrink-0">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-aetheria-900 rounded border-2 border-aetheria-800 flex items-center justify-center font-black text-aetheria-200 text-xs sm:text-base shrink-0">
           {character.class?.[0]?.toUpperCase() || "?"}
         </div>
         <div className="min-w-0">
           <div className="flex gap-1 sm:gap-2 items-baseline flex-wrap min-w-0">
-            <h2 className="text-sm sm:text-lg font-black text-[#f4e4bc] uppercase tracking-tight truncate max-w-[80px] sm:max-w-none">
+            <h2 className="text-sm sm:text-lg font-black text-aetheria-200 uppercase tracking-tight truncate max-w-[80px] sm:max-w-none">
               {character.name}
             </h2>
-            <span className="text-[8px] sm:text-[10px] font-bold text-[#8b6b4d]">LVL {character.level}</span>
+            <span className="text-[8px] sm:text-[10px] font-bold text-aetheria-600">LVL {character.level}</span>
           </div>
           <div className="space-y-1 mt-1 min-w-[120px] sm:min-w-[180px]">
             {/* HP Bar */}

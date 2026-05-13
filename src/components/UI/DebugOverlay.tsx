@@ -65,13 +65,13 @@ export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
             initial={{ opacity: 0, x: 20, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 20, scale: 0.9 }}
-            className="absolute top-12 right-0 w-80 bg-[#1a1410]/95 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-xl shadow-2xl overflow-hidden"
+            className="absolute top-12 right-0 w-80 bg-aetheria-950/95 backdrop-blur-xl border-2 border-aetheria-800 rounded-xl shadow-aetheria-lg overflow-hidden"
           >
             {/* Header */}
-            <div className="p-4 bg-black/40 border-b border-[#4a3a2a] flex items-center justify-between">
+            <div className="p-4 bg-black/40 border-b border-aetheria-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Terminal size={16} className="text-red-500" />
-                <span className="font-fantasy text-xs uppercase tracking-widest text-[#f4e4bc]">Debug Control</span>
+                <span className="font-fantasy text-xs uppercase tracking-widest text-aetheria-200">Debug Control</span>
               </div>
               <button 
                 onClick={toggleGlobal}
@@ -86,7 +86,7 @@ export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-[#4a3a2a]">
+            <div className="flex border-b border-aetheria-800">
               <TabButton 
                 active={activeTab === 'client'} 
                 onClick={() => setActiveTab('client')}
@@ -118,10 +118,10 @@ export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
                     <FileDown size={14} /> DOWNLOAD LOG FILE (.TXT)
                   </button>
                   {logger.getBuffer().length === 0 ? (
-                    <div className="text-center py-8 text-[10px] text-[#6d5540] italic">No logs in buffer yet...</div>
+                    <div className="text-center py-8 text-[10px] text-aetheria-800 italic">No logs in buffer yet...</div>
                   ) : (
                     logger.getBuffer().slice().reverse().map((line, i) => (
-                      <div key={i} className="text-[9px] font-mono text-[#8b6b4d] wrap-break-word border-b border-white/5 pb-1 last:border-0 leading-tight">
+                      <div key={i} className="text-[9px] font-mono text-aetheria-600 wrap-break-word border-b border-white/5 pb-1 last:border-0 leading-tight">
                         {line}
                       </div>
                     ))
@@ -139,7 +139,7 @@ export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-1.5 h-1.5 rounded-full ${enabled ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-gray-600"}`} />
-                        <span className="text-[10px] font-mono text-[#8b6b4d] uppercase tracking-tighter">{category}</span>
+                        <span className="text-[10px] font-mono text-aetheria-600 uppercase tracking-tighter">{category}</span>
                       </div>
                       <button
                         onClick={() => toggleCategory(activeTab, category)}
@@ -157,9 +157,9 @@ export const DebugOverlay = ({ socket }: DebugOverlayProps) => {
             </div>
 
             {/* Footer */}
-            <div className="p-3 bg-black/40 border-t border-[#4a3a2a] flex items-center gap-2">
+            <div className="p-3 bg-black/40 border-t border-aetheria-800 flex items-center gap-2">
               <Activity size={12} className="text-green-500 animate-pulse" />
-              <span className="text-[9px] text-[#6d5540] font-mono">SYSTEM_STABLE // DEBUG_MODE_ACTIVE</span>
+              <span className="text-[9px] text-aetheria-800 font-mono">SYSTEM_STABLE // DEBUG_MODE_ACTIVE</span>
             </div>
           </motion.div>
         )}
@@ -172,7 +172,7 @@ const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick:
   <button 
     onClick={onClick}
     className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-fantasy uppercase tracking-widest transition-all ${
-      active ? "bg-[#2d221a] text-[#f4e4bc] border-b-2 border-red-500" : "text-[#8b6b4d] hover:bg-[#2d221a]/50"
+      active ? "bg-aetheria-900 text-aetheria-200 border-b-2 border-red-500" : "text-aetheria-600 hover:bg-aetheria-900/50"
     }`}
   >
     {icon}

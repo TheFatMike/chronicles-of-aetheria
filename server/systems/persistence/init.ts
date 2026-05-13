@@ -36,18 +36,39 @@ export const initializeWorld = async () => {
     }
 
     if (redis.status === 'ready') {
-      const terrainChunks = await db.collection("terrain_chunks").listDocuments();
-      const objectChunks = await db.collection("object_chunks").listDocuments();
-      const allChunkIds = new Set([...terrainChunks.map((d: any) => d.id), ...objectChunks.map((d: any) => d.id)]);
+      // 2a. Check if Interest Registry is already warmed up
+      const registrySize = await redis.scard("world:existing_chunks");
       
-      // Clear old registry before warming up
-      await redis.del("world:existing_chunks");
-      
-      if (allChunkIds.size > 0) {
-        await redis.sadd("world:existing_chunks", ...Array.from(allChunkIds));
-        serverLogger.info("redis", `Warmed up Interest Registry with ${allChunkIds.size} chunks.`);
+      if (registrySize > 0) {
+        serverLogger.info("redis", `Interest Registry already has ${registrySize} chunks. Skipping warmup.`);
       } else {
-        serverLogger.info("redis", "Interest Registry is empty (no modified chunks in Firestore).");
+        serverLogger.info("redis", "Warming up Interest Registry from Firestore...");
+        
+        // Use a more memory-efficient way to get IDs if possible. 
+        // listDocuments is okay for small-medium collections.
+        const [terrainChunks, objectChunks] = await Promise.all([
+          db.collection("terrain_chunks").listDocuments(),
+          db.collection("object_chunks").listDocuments()
+        ]);
+        
+        const allChunkIds = new Set([
+          ...terrainChunks.map((d: any) => d.id), 
+          ...objectChunks.map((d: any) => d.id)
+        ]);
+        
+        if (allChunkIds.size > 0) {
+          // Use a pipeline to avoid large sadd blocks if there are thousands of chunks
+          const pipeline = redis.pipeline();
+          const chunkArray = Array.from(allChunkIds);
+          // Batch SADD in chunks of 1000
+          for (let i = 0; i < chunkArray.length; i += 1000) {
+            pipeline.sadd("world:existing_chunks", ...chunkArray.slice(i, i + 1000));
+          }
+          await pipeline.exec();
+          serverLogger.info("redis", `Warmed up Interest Registry with ${allChunkIds.size} chunks.`);
+        } else {
+          serverLogger.info("redis", "Interest Registry is empty (no modified chunks in Firestore).");
+        }
       }
     }
 

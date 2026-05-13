@@ -81,7 +81,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
     const item = equipment[slot];
     return (
       <div 
-        className="group/slot flex items-center gap-3 bg-[#1a140f]/40 p-1.5 rounded-lg border border-[#4a3a2a]/30 hover:border-[#c2a472]/40 transition-colors cursor-pointer" 
+        className="group/slot flex items-center gap-3 bg-aetheria-950/40 p-1.5 rounded-lg border border-aetheria-800/30 hover:border-aetheria-400/40 transition-colors cursor-pointer" 
         onClick={() => {
           item && onUnequip(slot);
           setHoveredItem(null);
@@ -91,16 +91,16 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
         onMouseLeave={() => setHoveredItem(null)}
         onMouseMove={(e) => item && handleItemHover(item, e)}
       >
-        <div className={`w-10 h-10 rounded border ${item ? 'border-[#c2a472] bg-[#2d221a]' : 'border-[#4a3a2a]/40 bg-[#120e0a]'} flex items-center justify-center relative shrink-0`}>
+        <div className={`w-10 h-10 rounded border ${item ? 'border-aetheria-400 bg-aetheria-900' : 'border-aetheria-800/40 bg-aetheria-950'} flex items-center justify-center relative shrink-0`}>
           {item ? (
             <span className="text-xl select-none">{item.icon}</span>
           ) : (
-            <div className="text-[#4a3a2a] opacity-40">{getSlotIcon(slot as string)}</div>
+            <div className="text-aetheria-800 opacity-40">{getSlotIcon(slot as string)}</div>
           )}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-[8px] uppercase tracking-tighter text-[#8b6b4d] font-fantasy">{label}</span>
-          <span className={`text-[10px] font-bold truncate ${item ? 'text-[#f4e4bc]' : 'text-[#4a3a2a]'}`}>
+          <span className="text-[8px] uppercase tracking-tighter text-aetheria-600 font-fantasy">{label}</span>
+          <span className={`text-[10px] font-bold truncate ${item ? 'text-aetheria-200' : 'text-aetheria-800'}`}>
             {item ? item.name : "Empty Slot"}
           </span>
         </div>
@@ -115,14 +115,14 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className="fixed top-24 left-8 z-50 pointer-events-none"
     >
-      <div className="bg-[#1a140f]/95 border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-full max-w-3xl h-[85%] flex flex-col relative border-t-[#c2a472]/20">
+      <div className="bg-aetheria-950/95 border-2 border-aetheria-800 rounded-2xl overflow-hidden shadow-aetheria-lg pointer-events-auto w-full max-w-3xl h-[85%] flex flex-col relative border-t-aetheria-400/20">
         
         {/* Header Overlay */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-[#c2a472]/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-aetheria-400/10 to-transparent pointer-events-none" />
         
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#8b6b4d] hover:text-[#f4e4bc] p-2 z-20 hover:rotate-90 transition-all duration-300"
+          className="absolute top-4 right-4 text-aetheria-600 hover:text-aetheria-200 p-2 z-20 hover:rotate-90 transition-all duration-300"
         >
           <X className="w-5 h-5" />
         </button>
@@ -131,8 +131,8 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
         <div className="flex flex-1 overflow-hidden">
           
           {/* Left: Equipment List */}
-          <div className="w-56 p-5 flex flex-col gap-2 border-r border-[#4a3a2a]/30">
-            <h3 className="text-[10px] font-fantasy font-black text-[#8b6b4d] uppercase tracking-[0.3em] mb-2 border-b border-[#4a3a2a]/40 pb-2">Loadout</h3>
+          <div className="w-56 p-5 flex flex-col gap-2 border-r border-aetheria-800/30">
+            <h3 className="text-[10px] font-fantasy font-black text-aetheria-600 uppercase tracking-[0.3em] mb-2 border-b border-aetheria-800/40 pb-2">Loadout</h3>
             {renderSlot("head", "Helmet")}
             {renderSlot("chest", "Body Armor")}
             {renderSlot("legs", "Legwear")}
@@ -143,10 +143,10 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
           </div>
 
           {/* Center: Character Visual & Name */}
-          <div className="flex-1 relative flex flex-col items-center justify-center p-6 bg-[#0c0a08]/40">
+          <div className="flex-1 relative flex flex-col items-center justify-center p-6 bg-aetheria-950/40">
              <div className="mb-6 text-center z-10">
-                <div className="text-[10px] font-fantasy text-[#c2a472] uppercase tracking-[0.4em] mb-1">Level {character.level} {character.class}</div>
-                <h2 className="text-4xl font-display font-black text-[#f4e4bc] uppercase tracking-tighter italic scale-y-110 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                <div className="text-[10px] font-fantasy text-aetheria-400 uppercase tracking-[0.4em] mb-1">Level {character.level} {character.class}</div>
+                <h2 className="text-4xl font-display font-black text-aetheria-200 uppercase tracking-tighter italic scale-y-110 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
                   {character.name}
                 </h2>
              </div>
@@ -156,7 +156,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
-                  className="absolute inset-0 border border-dashed border-[#c2a472]/20 rounded-full scale-110"
+                  className="absolute inset-0 border border-dashed border-aetheria-400/20 rounded-full scale-110"
                 />
                 
                 <div className="absolute inset-0 z-10">
@@ -194,8 +194,8 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
           </div>
 
           {/* Right: Detailed Stats */}
-          <div className="w-64 bg-[#120e0a]/60 p-6 border-l border-[#4a3a2a]/30 overflow-y-auto custom-scrollbar">
-            <h3 className="text-[10px] font-fantasy font-black text-[#8b6b4d] uppercase tracking-[0.3em] mb-4 border-b border-[#4a3a2a]/40 pb-2">Attributes</h3>
+          <div className="w-64 bg-aetheria-950/60 p-6 border-l border-aetheria-800/30 overflow-y-auto custom-scrollbar">
+            <h3 className="text-[10px] font-fantasy font-black text-aetheria-600 uppercase tracking-[0.3em] mb-4 border-b border-aetheria-800/40 pb-2">Attributes</h3>
             
             <div className="grid grid-cols-1 gap-2 mb-6">
               {[
@@ -208,17 +208,17 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
                 <div key={s.label} className="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5">
                   <div className="flex items-center gap-2">
                     <span className={s.color}>{s.icon}</span>
-                    <span className="text-[10px] font-bold text-[#8b6b4d]">{s.label}</span>
+                    <span className="text-[10px] font-bold text-aetheria-600">{s.label}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-mono text-[#f4e4bc] font-bold">{s.val}</span>
+                    <span className="text-xs font-mono text-aetheria-200 font-bold">{s.val}</span>
                     {s.bonus > 0 && <span className="text-[8px] font-mono text-green-500">+{s.bonus}</span>}
                   </div>
                 </div>
               ))}
             </div>
 
-            <h3 className="text-[10px] font-fantasy font-black text-[#8b6b4d] uppercase tracking-[0.3em] mb-4 border-b border-[#4a3a2a]/40 pb-2">Combat Power</h3>
+            <h3 className="text-[10px] font-fantasy font-black text-aetheria-600 uppercase tracking-[0.3em] mb-4 border-b border-aetheria-800/40 pb-2">Combat Power</h3>
             
             <div className="space-y-3">
               <StatRow icon={<Swords size={12} />} label="Attack Power" value={physDmg.toFixed(1)} />
@@ -259,7 +259,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="pointer-events-none z-100 bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#c2a472]/40 p-4 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.8)] w-64 lg:w-72"
+            className="pointer-events-none z-100 bg-aetheria-950/98 backdrop-blur-xl border-2 border-aetheria-400/40 p-4 rounded-xl shadow-aetheria-lg w-64 lg:w-72"
             style={{ 
               position: 'fixed',
               top: Math.min(dimensions.height - 300, hoveredItem.y - 10),
@@ -268,15 +268,15 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
               zIndex: 100
             }}
           >
-            <div className="text-[#f4e4bc] font-display font-black text-lg mb-1 uppercase italic tracking-tighter">
+            <div className="text-aetheria-200 font-display font-black text-lg mb-1 uppercase italic tracking-tighter">
               {hoveredItem.item.name}
             </div>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-fantasy text-[#8b6b4d] uppercase tracking-widest">
+              <span className="text-[10px] font-fantasy text-aetheria-600 uppercase tracking-widest">
                 {hoveredItem.item.rarity} {hoveredItem.item.type}
               </span>
               {hoveredItem.item.quantity && hoveredItem.item.quantity > 1 && (
-                <span className="text-xs font-mono text-[#c2a472]">x{hoveredItem.item.quantity}</span>
+                <span className="text-xs font-mono text-aetheria-400">x{hoveredItem.item.quantity}</span>
               )}
             </div>
 
@@ -284,14 +284,14 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
               <div className="space-y-1 bg-black/20 p-2 rounded border border-white/5">
                 {Object.entries(hoveredItem.item.stats).map(([stat, value]) => (
                   <div key={stat} className="flex justify-between text-[11px]">
-                    <span className="text-[#8b6b4d] uppercase tracking-wider">{stat}</span>
-                    <span className="text-[#c2a472] font-mono font-bold">+{value}</span>
+                    <span className="text-aetheria-600 uppercase tracking-wider">{stat}</span>
+                    <span className="text-aetheria-400 font-mono font-bold">+{value}</span>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-2 text-[8px] text-[#8b6b4d] font-fantasy uppercase">
+            <div className="mt-3 flex items-center gap-2 text-[8px] text-aetheria-600 font-fantasy uppercase">
                <Info className="w-3 h-3" />
                <span>Right-Click for Options</span>
             </div>
@@ -304,11 +304,11 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
 
 const StatRow = ({ icon, label, value }: { icon: any, label: string, value: string }) => (
   <div className="flex justify-between items-center px-1">
-    <div className="flex items-center gap-2 text-[#8b6b4d]">
+    <div className="flex items-center gap-2 text-aetheria-600">
       <span className="opacity-60">{icon}</span>
       <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
     </div>
-    <span className="text-xs font-mono text-[#c2a472] font-black">{value}</span>
+    <span className="text-xs font-mono text-aetheria-400 font-black">{value}</span>
   </div>
 );
 

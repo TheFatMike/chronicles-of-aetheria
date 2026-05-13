@@ -4,8 +4,8 @@
  * Handles patrolling, aggro states, pathfinding, and combat decision-making.
  * @importance Essential: Drives the behavior of enemies and NPCs, making the game world feel alive and challenging.
  */
-import { entities, worldObjects, dirtyEntities, terrainData } from "../state";
-import { resolveWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight } from "./spatial";
+import { entities, worldObjects, dirtyEntities, terrainData, players } from "../state";
+import { resolveWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight, isAnyPlayerNearby } from "./spatial";
 
 const waypointCache = new Map<string, any[]>();
 
@@ -27,22 +27,39 @@ export const initAIWorker = () => {
   // Using standard synchronous tick within the decoupled game loop instead.
 };
 
-export const updateEntityAI = async (tickTime: number) => {
-  const GRAVITY = 20; // units per second squared
-  const dt = tickTime / 1000;
+let aiTickCount = 0;
 
+/**
+ * Updates entity AI with LOD (Level of Detail) and Interleaving.
+ */
+export const updateEntityAI = async (tickTime: number) => {
+  const dt = tickTime / 1000;
+  aiTickCount++;
+
+  let index = 0;
   for (const entity of entities.values()) {
+    index++;
     if (entity.isDead) continue;
-    
-    const oldPos: [number, number, number] = [...entity.pos] as [number, number, number];
+
+    // 1. Interleaving: Process movement/gravity every tick, but complex AI every other tick
+    const isAITick = (index + aiTickCount) % 2 === 0;
+
+    // 2. Proximity Check (LOD): Sleep if no players are nearby (150 meters)
+    // Uses the spatial grid for O(1) lookups instead of O(P)
+    if (aiTickCount % 10 === 0 || entity.isSleeping === undefined) {
+      entity.isSleeping = !isAnyPlayerNearby(entity.pos, 150);
+    }
+
+    if (entity.isSleeping && entity.type !== 'npc') continue;
+
+    // Avoid creating new arrays every tick
+    const ox = entity.pos[0], oy = entity.pos[1], oz = entity.pos[2];
     const oldAIState = entity.aiState;
 
-    // 1. Gravity & Ground Detection (Moving Entities Only)
-    // We skip physics for NPCs to allow precise editor placement on complex surfaces like stairs.
+    // 3. Gravity & Ground Detection
     if (entity.type !== 'npc') {
       const currentGroundY = await getGroundHeight(entity.pos, terrainData);
       const GRAVITY = 20;
-      const dt = tickTime / 1000;
 
       if (entity.pos[1] > currentGroundY) {
         entity.velocity = entity.velocity || { x: 0, y: 0, z: 0 };
@@ -60,10 +77,10 @@ export const updateEntityAI = async (tickTime: number) => {
       }
     }
 
-    // 2. Horizontal Movement AI (Skip for NPCs)
-    if (entity.type === 'npc') continue;
+    // 4. Horizontal Movement AI (Skip for NPCs and sleeping entities)
+    if (entity.type === 'npc' || entity.isSleeping || !isAITick) continue;
 
-    const speed = entity.stats.moveSpeed * dt;
+    const speed = entity.stats.moveSpeed * dt * 2; // Compensate for interleaving
     
     const moveWithCollision = async (dx: number, dz: number, s: number) => {
       const mag = Math.sqrt(dx*dx + dz*dz);
@@ -81,8 +98,6 @@ export const updateEntityAI = async (tickTime: number) => {
           entity.rot[1] += (Math.random() - 0.5) * 2;
           dirtyEntities.add(entity.id);
         }
-        break;
-      case 'CHASE':
         break;
       case 'RETURN':
         const hPos = entity.homePos || entity.pos;
@@ -104,18 +119,12 @@ export const updateEntityAI = async (tickTime: number) => {
         }
 
         const waypoints = getWaypointsForPath(entity.pathId);
-
         if (waypoints.length === 0) {
           entity.aiState = 'RETURN';
           break;
         }
 
         const targetWP = waypoints[(entity.currentWaypointIndex || 0) % waypoints.length];
-        if (!targetWP) {
-          entity.currentWaypointIndex = 0;
-          break;
-        }
-
         const wdx = targetWP.pos[0] - entity.pos[0];
         const wdz = targetWP.pos[2] - entity.pos[2];
         const wdSq = wdx*wdx + wdz*wdz;
@@ -132,8 +141,8 @@ export const updateEntityAI = async (tickTime: number) => {
       }
     }
 
-    if (entity.pos[0] !== oldPos[0] || entity.pos[2] !== oldPos[2] || entity.pos[1] !== oldPos[1] || entity.aiState !== oldAIState) {
-      updateInGrid(entityGrid, entity.id, oldPos, entity.pos);
+    if (entity.pos[0] !== ox || entity.pos[2] !== oz || entity.pos[1] !== oy || entity.aiState !== oldAIState) {
+      updateInGrid(entityGrid, entity.id, [ox, oy, oz], entity.pos);
       dirtyEntities.add(entity.id);
     }
   }

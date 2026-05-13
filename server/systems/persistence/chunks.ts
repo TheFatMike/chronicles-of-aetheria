@@ -14,110 +14,121 @@ import { createNPCEntity } from "../../lib/entities";
 
 /**
  * Loads terrain tiles and objects for a specific region. 
+ * Uses db.getAll() to batch Firestore reads for better performance and lower R/W costs.
  */
 export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
   const currentChunkX = Math.floor(centerX / 100);
   const currentChunkZ = Math.floor(centerZ / 100);
 
-  const loadPromises: Promise<void>[] = [];
+  const chunksToFetch: { tx: number, tz: number, localKey: string, terrainId: string, objectId: string }[] = [];
 
+  // 1. Identify which chunks need loading
   for (let dx = -1; dx <= 1; dx++) {
     for (let dz = -1; dz <= 1; dz++) {
       const tx = currentChunkX + dx;
       const tz = currentChunkZ + dz;
+      const localKey = `${tx},${tz}`;
       const terrainId = `chunk_${tx}_${tz}`;
       const objectId = `chunk_${tx}_${tz}`;
-      const localKey = `${tx},${tz}`;
 
-      loadPromises.push((async () => {
-        chunkLastAccess.set(localKey, Date.now());
-        if (loadedChunksLocal.has(localKey)) return;
+      chunkLastAccess.set(localKey, Date.now());
+      if (loadedChunksLocal.has(localKey)) continue;
 
-        try {
-          if (redis.status === 'ready') {
-            const exists = await redis.sismember("world:existing_chunks", terrainId);
-            if (!exists) {
-              loadedChunksLocal.add(localKey);
-              return;
-            }
-          }
-
-          const terrainDoc = await db.collection("terrain_chunks").doc(terrainId).get();
-          if (terrainDoc.exists) {
-            const chunkData = terrainDoc.data()?.data || {};
-            if (!chunkToTerrain.has(localKey)) chunkToTerrain.set(localKey, new Set());
-            const terrainSet = chunkToTerrain.get(localKey)!;
-
-            const syncPoints: any[] = [];
-            Object.entries(chunkData).forEach(([key, val]: [string, any]) => {
-              terrainData.set(key, { y: val.y, type: val.type || 'grass' });
-              terrainSet.add(key);
-              
-              const [px, pz] = key.split('_').map(Number);
-              syncPoints.push({ x: px, z: pz, y: val.y, type: val.type || 'grass' });
-            });
-
-            if (syncPoints.length > 0) {
-              const { io } = await import("../../../server") as any;
-              if (io) {
-                const [tx, tz] = localKey.split(',').map(Number);
-                const centerX = tx * 100 + 50;
-                const centerZ = tz * 100 + 50;
-                const { broadcastToNearbyPlayers } = await import("../../systems/spatial");
-                broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "terrain_sync", syncPoints);
-              }
-            }
-          }
-
-          const objectDoc = await db.collection("object_chunks").doc(objectId).get();
-          if (objectDoc.exists) {
-            const chunkData = objectDoc.data()?.objects || {};
-            const { OBJECT_TEMPLATES } = await import("../../../shared/data/world/templates");
-            
-            for (const [id, rawData] of Object.entries(chunkData as any)) {
-              const data = rawData as any;
-              const template = OBJECT_TEMPLATES[data.type];
-              
-              const cleanData = { ...data };
-              if (data.type === 'tent' && data.scale === 1) delete cleanData.scale;
-              if (data.type === 'campfire' && data.scale === 1) delete cleanData.scale;
-
-              const mergedObj = { id, ...template, ...cleanData };
-              
-              worldObjects.set(id, mergedObj);
-              updateInGrid(objectGrid, id, null, mergedObj.pos);
-              
-              if (!chunkToObjects.has(localKey)) chunkToObjects.set(localKey, new Set());
-              chunkToObjects.get(localKey)!.add(id);
-
-              if (mergedObj.type.startsWith("spawner_")) {
-                const { registerSpawnerFromObject } = await import("../spawners");
-                await registerSpawnerFromObject(mergedObj);
-              }
-            }
-
-            const { io } = await import("../../../server") as any;
-            const newObjs = Array.from(Object.keys(chunkData)).map(id => worldObjects.get(id)).filter(Boolean);
-            
-            if (newObjs.length > 0 && io) {
-              const [tx, tz] = localKey.split(',').map(Number);
-              const centerX = tx * 100 + 50;
-              const centerZ = tz * 100 + 50;
-              const { broadcastToNearbyPlayers } = await import("../../systems/spatial");
-              broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "world_objects_sync", newObjs);
-            }
-          }
-          
-          loadedChunksLocal.add(localKey);
-          serverLogger.info("system", `Loaded region ${localKey}: Terrain + Objects`);
-        } catch (e: any) {
-          serverLogger.error("system", `Failed to load region ${localKey}`, e.message);
+      // Check Interest Registry (Redis) to see if this chunk even exists in DB
+      if (redis.status === 'ready') {
+        const exists = await redis.sismember("world:existing_chunks", terrainId);
+        if (!exists) {
+          loadedChunksLocal.add(localKey); // Mark as loaded so we don't check again
+          continue;
         }
-      })());
+      }
+
+      chunksToFetch.push({ tx, tz, localKey, terrainId, objectId });
     }
   }
 
-  await Promise.all(loadPromises);
+  if (chunksToFetch.length === 0) return;
+
+  try {
+    // 2. Prepare Firestore batch read refs
+    const terrainRefs = chunksToFetch.map(c => db.collection("terrain_chunks").doc(c.terrainId));
+    const objectRefs = chunksToFetch.map(c => db.collection("object_chunks").doc(c.objectId));
+
+    // 3. Perform batch fetch
+    const [terrainDocs, objectDocs] = await Promise.all([
+      db.getAll(...terrainRefs),
+      db.getAll(...objectRefs)
+    ]);
+
+    const { io } = await import("../../../server") as any;
+    const { broadcastToNearbyPlayers } = await import("../../systems/spatial");
+    const { OBJECT_TEMPLATES } = await import("../../../shared/data/world/templates");
+
+    // 4. Process Results
+    for (let i = 0; i < chunksToFetch.length; i++) {
+      const info = chunksToFetch[i];
+      const terrainDoc = terrainDocs[i];
+      const objectDoc = objectDocs[i];
+
+      // Process Terrain
+      if (terrainDoc.exists) {
+        const chunkData = terrainDoc.data()?.data || {};
+        if (!chunkToTerrain.has(info.localKey)) chunkToTerrain.set(info.localKey, new Set());
+        const terrainSet = chunkToTerrain.get(info.localKey)!;
+
+        const syncPoints: any[] = [];
+        Object.entries(chunkData).forEach(([key, val]: [string, any]) => {
+          terrainData.set(key, { y: val.y, type: val.type || 'grass' });
+          terrainSet.add(key);
+          const [px, pz] = key.split('_').map(Number);
+          syncPoints.push({ x: px, z: pz, y: val.y, type: val.type || 'grass' });
+        });
+
+        if (syncPoints.length > 0 && io) {
+          const centerX = info.tx * 100 + 50;
+          const centerZ = info.tz * 100 + 50;
+          broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "terrain_sync", syncPoints);
+        }
+      }
+
+      // Process Objects
+      if (objectDoc.exists) {
+        const chunkData = objectDoc.data()?.objects || {};
+        const newObjs: any[] = [];
+        
+        for (const [id, rawData] of Object.entries(chunkData as any)) {
+          const data = rawData as any;
+          const template = OBJECT_TEMPLATES[data.type];
+          
+          // Template merging
+          const mergedObj = { id, ...template, ...data };
+          
+          worldObjects.set(id, mergedObj);
+          updateInGrid(objectGrid, id, null, mergedObj.pos);
+          
+          if (!chunkToObjects.has(info.localKey)) chunkToObjects.set(info.localKey, new Set());
+          chunkToObjects.get(info.localKey)!.add(id);
+          newObjs.push(mergedObj);
+
+          if (mergedObj.type.startsWith("spawner_")) {
+            const { registerSpawnerFromObject } = await import("../spawners");
+            await registerSpawnerFromObject(mergedObj);
+          }
+        }
+
+        if (newObjs.length > 0 && io) {
+          const centerX = info.tx * 100 + 50;
+          const centerZ = info.tz * 100 + 50;
+          broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "world_objects_sync", newObjs);
+        }
+      }
+
+      loadedChunksLocal.add(info.localKey);
+      serverLogger.info("system", `Loaded region ${info.localKey}: Terrain + Objects`);
+    }
+  } catch (e: any) {
+    serverLogger.error("system", `Failed to load region batch`, e.message);
+  }
 };
 
 /**
@@ -142,6 +153,13 @@ export const unloadInactiveChunks = async (maxAgeMs: number = 1000 * 60 * 10) =>
   
   for (const chunkKey of loadedChunksLocal) {
     if (activeChunks.has(chunkKey)) continue;
+    
+    // SAFETY: Never unload a chunk that has unsaved terrain modifications
+    const { dirtyTerrainChunks } = await import("../../state");
+    if (dirtyTerrainChunks.has(chunkKey)) {
+      // Chunk is modified but not yet saved. Skip unloading for now.
+      continue;
+    }
     
     const lastAccess = chunkLastAccess.get(chunkKey) || 0;
     if (now - lastAccess > maxAgeMs) {

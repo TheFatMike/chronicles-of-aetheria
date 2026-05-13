@@ -56,15 +56,15 @@ export const ContextMenu = memo(({ x, y, title, options, onClose }: ContextMenuP
         initial={{ opacity: 0, scale: 0.95, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -10 }}
-        className="absolute pointer-events-auto bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#4a3a2a] rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden w-[180px]"
+        className="absolute pointer-events-auto bg-aetheria-950/98 backdrop-blur-xl border-2 border-aetheria-800 rounded-lg shadow-aetheria-lg overflow-hidden w-[180px]"
         style={{
           left: finalX,
           top: finalY,
         }}
       >
         {/* Header */}
-        <div className="px-4 py-2 bg-[#2d221a] border-b border-[#4a3a2a]">
-          <span className="text-[10px] font-fantasy font-black uppercase tracking-[0.2em] text-[#c2a472] truncate block">
+        <div className="px-4 py-2 bg-aetheria-900 border-b border-aetheria-800">
+          <span className="text-[10px] font-fantasy font-black uppercase tracking-[0.2em] text-aetheria-400 truncate block">
             {title}
           </span>
         </div>
@@ -84,7 +84,7 @@ export const ContextMenu = memo(({ x, y, title, options, onClose }: ContextMenuP
                 ${option.disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                 ${!option.disabled && option.variant === 'danger' 
                   ? 'hover:bg-red-950/40 text-red-400/80 hover:text-red-400' 
-                  : !option.disabled ? 'hover:bg-[#c2a472]/10 text-[#8b6b4d] hover:text-[#f4e4bc]' : 'text-stone-600'}
+                  : !option.disabled ? 'hover:bg-aetheria-400/10 text-aetheria-600 hover:text-aetheria-200' : 'text-stone-600'}
               `}
             >
               {option.icon && (

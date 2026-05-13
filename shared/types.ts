@@ -264,6 +264,7 @@ export interface GameEntity extends GameTarget {
   expReward?: number;
   targetId?: string | null;
   lastAttackTime?: number;
+  isSleeping?: boolean;
   modelUrl?: string;
 }
 export interface Message {

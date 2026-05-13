@@ -33,34 +33,34 @@ export const ItemTooltip = ({ item, x, y }: ItemTooltipProps) => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      style={{ 
+      style={{
         position: 'fixed',
         top: Math.min(dimensions.height - 200, y - 10),
         left: x > dimensions.width / 2 ? x - 280 : x + 20,
         pointerEvents: 'none',
         zIndex: 100
       }}
-      className="w-64 bg-[#1a1410]/98 backdrop-blur-md border-2 border-[#4a3a2a] p-3 rounded shadow-2xl hidden sm:block"
+      className="w-64 bg-[#1a1410]/98 backdrop-blur-md border-2 border-aetheria-800 p-3 rounded shadow-2xl hidden sm:block"
     >
       <div className={`text-[8px] font-fantasy uppercase tracking-widest mb-1 ${getRarityColor(item.rarity)}`}>
         {item.rarity} {item.type}
       </div>
-      <h3 className="text-sm font-display font-black text-[#f4e4bc] mb-2">{item.name}</h3>
-      <p className="text-[10px] text-[#c2a472] italic mb-3 leading-relaxed">"{item.description}"</p>
-      
+      <h3 className="text-sm font-display font-black text-aetheria-200 mb-2">{item.name}</h3>
+      <p className="text-[10px] text-aetheria-400 italic mb-3 leading-relaxed">"{item.description}"</p>
+
       {item.stats && (
-        <div className="space-y-1 pt-2 border-t border-[#4a3a2a]/50">
+        <div className="space-y-1 pt-2 border-t border-aetheria-800/50">
           {Object.entries(item.stats).map(([stat, val]) => (
             <div key={stat} className="flex justify-between items-center text-[10px]">
-              <span className="text-[#8b6b4d] uppercase font-fantasy">{stat}</span>
+              <span className="text-aetheria-400 uppercase font-fantasy">{stat}</span>
               <span className="text-[#34d399] font-bold">+{val}</span>
             </div>
           ))}
         </div>
       )}
-      <div className="mt-3 flex items-center gap-2 text-[8px] text-[#8b6b4d] font-fantasy uppercase">
-         <Info className="w-3 h-3" />
-         <span>Left-Click to Equip • Right-Click for Options</span>
+      <div className="mt-3 flex items-center gap-2 text-[8px] text-aetheria-600 font-fantasy uppercase">
+        <Info className="w-3 h-3" />
+        <span>Left-Click to Equip • Right-Click for Options</span>
       </div>
     </motion.div>
   );

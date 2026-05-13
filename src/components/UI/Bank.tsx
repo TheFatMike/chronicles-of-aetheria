@@ -132,23 +132,23 @@ export const Bank = React.memo(({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-[#1a140f]/95 p-6 rounded-2xl border-4 border-[#c2a472]/40 shadow-[0_0_100px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-2xl flex flex-col gap-6 max-h-[85%]"
+        className="bg-aetheria-950/95 p-6 rounded-2xl border-4 border-aetheria-400/40 shadow-aetheria-lg pointer-events-auto relative w-full max-w-2xl flex flex-col gap-6 max-h-[85%]"
       >
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')] pointer-events-none rounded-xl" />
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#4a3a2a] pb-4 relative z-10">
+        <div className="flex items-center justify-between border-b border-aetheria-800 pb-4 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#c2a472]/20 rounded-lg border border-[#c2a472]/30">
+            <div className="p-2 bg-aetheria-400/20 rounded-lg border border-aetheria-400/30">
               <Landmark className="w-6 h-6 text-[#fbbf24]" />
             </div>
             <div>
-              <h2 className="text-xl font-display font-black text-[#f4e4bc] uppercase tracking-tighter">Bank</h2>
-              <p className="text-[10px] text-[#8b6b4d] uppercase tracking-widest font-bold opacity-60">Personal Storage</p>
+              <h2 className="text-xl font-display font-black text-aetheria-200 uppercase tracking-tighter">Bank</h2>
+              <p className="text-[10px] text-aetheria-600 uppercase tracking-widest font-bold opacity-60">Personal Storage</p>
             </div>
           </div>
           <button onClick={onClose} className="hover:text-white transition-colors p-2">
-            <X className="w-6 h-6 text-[#8b6b4d]" />
+            <X className="w-6 h-6 text-aetheria-600" />
           </button>
         </div>
 
@@ -156,9 +156,9 @@ export const Bank = React.memo(({
           {/* Bank Slots Grid */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4d] font-bold">Bank Vault (50 Slots)</h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-aetheria-600 font-bold">Bank Vault (50 Slots)</h3>
             </div>
-            <div className="grid grid-cols-10 gap-2 bg-black/40 p-3 rounded-lg border border-[#4a3a2a]/50">
+            <div className="grid grid-cols-10 gap-2 bg-black/40 p-3 rounded-lg border border-aetheria-800/50">
               {bankSlots.map((item, i) => (
                 <InventorySlot
                   key={`bank-${i}`}
@@ -179,25 +179,25 @@ export const Bank = React.memo(({
           </div>
 
           <div className="flex justify-center">
-             <div className="flex items-center gap-4 py-2 px-6 bg-[#c2a472]/10 border border-[#c2a472]/20 rounded-full group">
-               <div className="w-12 h-px bg-[#c2a472]/30" />
+             <div className="flex items-center gap-4 py-2 px-6 bg-aetheria-400/10 border border-aetheria-400/20 rounded-full group">
+               <div className="w-12 h-px bg-aetheria-400/30" />
                <button 
                  onClick={onDepositAll}
-                 className="flex items-center gap-3 px-4 py-1 rounded-full hover:bg-[#c2a472]/20 transition-all text-[#c2a472] hover:text-[#fbbf24] active:scale-95"
+                 className="flex items-center gap-3 px-4 py-1 rounded-full hover:bg-aetheria-400/20 transition-all text-aetheria-400 hover:text-[#fbbf24] active:scale-95"
                  title="Deposit All Items"
                >
                  <ChevronUp className="w-4 h-4" />
                  <span className="text-[9px] font-bold uppercase tracking-widest">Deposit All</span>
                  <ChevronUp className="w-4 h-4" />
                </button>
-               <div className="w-12 h-px bg-[#c2a472]/30" />
+               <div className="w-12 h-px bg-aetheria-400/30" />
              </div>
           </div>
 
           {/* Quick Access Inventory (Bottom) */}
           <div className="space-y-3">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4d] font-bold">Your Inventory</h3>
-            <div className="grid grid-cols-10 gap-2 bg-black/20 p-3 rounded-lg border border-[#4a3a2a]/30">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-aetheria-600 font-bold">Your Inventory</h3>
+            <div className="grid grid-cols-10 gap-2 bg-black/20 p-3 rounded-lg border border-aetheria-800/30">
               {inventoryItems.slice(0, 20).map((item, i) => (
                 <InventorySlot
                   key={`inv-${i}`}
@@ -220,7 +220,7 @@ export const Bank = React.memo(({
 
         {/* Footer Info */}
         <div className="mt-2 text-center">
-          <p className="text-[9px] text-[#8b6b4d] uppercase tracking-widest opacity-40 italic">
+          <p className="text-[9px] text-aetheria-600 uppercase tracking-widest opacity-40 italic">
             Right-click for options • Drag and Drop to transfer
           </p>
         </div>
@@ -234,30 +234,30 @@ export const Bank = React.memo(({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             style={{ left: bankContextMenu.x, top: bankContextMenu.y }}
-            className="fixed z-100 bg-[#1a140f] border-2 border-[#c2a472]/40 rounded-lg shadow-2xl overflow-hidden min-w-[140px] pointer-events-auto"
+            className="fixed z-100 bg-aetheria-950 border-2 border-aetheria-400/40 rounded-lg shadow-2xl overflow-hidden min-w-[140px] pointer-events-auto"
           >
-            <div className="px-3 py-2 bg-[#c2a472]/10 border-b border-[#4a3a2a] mb-1">
-               <span className="text-[10px] text-[#c2a472] font-black uppercase tracking-widest">{bankContextMenu.item.name}</span>
+            <div className="px-3 py-2 bg-aetheria-400/10 border-b border-aetheria-800 mb-1">
+               <span className="text-[10px] text-aetheria-400 font-black uppercase tracking-widest">{bankContextMenu.item.name}</span>
             </div>
             <button 
               onClick={() => executeContextAction('single')}
-              className="w-full text-left px-4 py-2 text-xs text-[#f4e4bc] hover:bg-[#c2a472] hover:text-[#1a140f] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-xs text-aetheria-200 hover:bg-aetheria-400 hover:text-aetheria-950 transition-colors flex items-center gap-2"
             >
               {bankContextMenu.type === 'inventory' ? 'Deposit' : 'Withdraw'} One
             </button>
             <button 
               onClick={() => executeContextAction('all')}
-              className="w-full text-left px-4 py-2 text-xs text-[#f4e4bc] hover:bg-[#c2a472] hover:text-[#1a140f] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-xs text-aetheria-200 hover:bg-aetheria-400 hover:text-aetheria-950 transition-colors flex items-center gap-2"
             >
               {bankContextMenu.type === 'inventory' ? 'Deposit' : 'Withdraw'} All
             </button>
             <button 
               onClick={() => executeContextAction('x')}
-              className="w-full text-left px-4 py-2 text-xs text-[#f4e4bc] hover:bg-[#c2a472] hover:text-[#1a140f] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-xs text-aetheria-200 hover:bg-aetheria-400 hover:text-aetheria-950 transition-colors flex items-center gap-2"
             >
               {bankContextMenu.type === 'inventory' ? 'Deposit' : 'Withdraw'} X...
             </button>
-            <div className="h-px bg-[#4a3a2a] my-1" />
+            <div className="h-px bg-aetheria-800 my-1" />
             <button 
               onClick={() => setBankContextMenu(null)}
               className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-500 hover:text-white transition-colors"

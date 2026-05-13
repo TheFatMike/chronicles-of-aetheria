@@ -13,46 +13,59 @@ export const autosavePlayers = async () => {
   if (dirtyPlayers.size === 0) return;
   
   const playersToSave = new Map(dirtyPlayers);
-  dirtyPlayers.clear();
+  // We DO NOT clear dirtyPlayers yet. If the save fails, we want to retry next time.
   
-  const pipeline = redis.pipeline();
-  let count = 0;
+  try {
+    const pipeline = redis.pipeline();
+    let count = 0;
 
-  for (const [id, fields] of playersToSave.entries()) {
-    const p = players.get(id);
-    if (p) {
-      const redisData = {
-        userId: p.userId,
-        characterId: p.characterId,
-        characterName: p.name,
-        class: p.class,
-        color: p.color,
-        level: p.level,
-        exp: p.exp,
-        maxExp: p.maxExp,
-        hp: p.hp,
-        mp: p.mp,
-        gold: p.gold,
-        pos: JSON.stringify(p.pos),
-        rot: JSON.stringify(p.rot),
-        stats: JSON.stringify(p.stats),
-        inventory: JSON.stringify(p.inventory),
-        equipment: JSON.stringify(p.equipment),
-        hotbar: JSON.stringify(p.hotbar),
-        quests: JSON.stringify(p.quests),
-        bank: JSON.stringify(p.bank || []),
-        discoveredTeleports: JSON.stringify(p.discoveredTeleports || []),
-        lastActive: Date.now()
-      };
-      pipeline.hset(`player:session:${p.characterId}`, redisData);
-      pipeline.expire(`player:session:${p.characterId}`, 60 * 60 * 24); // 24 hour TTL
-      count++;
+    for (const [id, fields] of playersToSave.entries()) {
+      const p = players.get(id);
+      if (p) {
+        const redisData = {
+          userId: p.userId,
+          characterId: p.characterId,
+          characterName: p.name,
+          class: p.class,
+          color: p.color,
+          level: p.level,
+          exp: p.exp,
+          maxExp: p.maxExp,
+          hp: p.hp,
+          mp: p.mp,
+          gold: p.gold,
+          pos: JSON.stringify(p.pos),
+          rot: JSON.stringify(p.rot),
+          stats: JSON.stringify(p.stats),
+          inventory: JSON.stringify(p.inventory),
+          equipment: JSON.stringify(p.equipment),
+          hotbar: JSON.stringify(p.hotbar),
+          quests: JSON.stringify(p.quests),
+          bank: JSON.stringify(p.bank || []),
+          discoveredTeleports: JSON.stringify(p.discoveredTeleports || []),
+          lastActive: Date.now()
+        };
+        pipeline.hset(`player:session:${p.characterId}`, redisData);
+        pipeline.expire(`player:session:${p.characterId}`, 60 * 60 * 24); // 24 hour TTL
+        count++;
+      }
     }
-  }
-  
-  if (count > 0) {
-    await pipeline.exec();
-    serverLogger.info("redis", `Buffered ${count} player updates to Redis Write-Back cache via pipeline.`);
+    
+    if (count > 0) {
+      await pipeline.exec();
+      
+      // Success! Now clear the dirty entries that we just saved.
+      // We only clear entries that were in our initial 'playersToSave' map.
+      // If a player became dirty WHILE we were saving, their new dirty flag will stay.
+      for (const id of playersToSave.keys()) {
+        dirtyPlayers.delete(id);
+      }
+      
+      serverLogger.info("redis", `Buffered ${count} player updates to Redis Write-Back cache.`);
+    }
+  } catch (e: any) {
+    serverLogger.error("redis", `Failed to autosave players to Redis: ${e.message}`);
+    // dirtyPlayers is NOT cleared, so it will retry on the next interval.
   }
 };
 

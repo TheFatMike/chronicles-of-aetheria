@@ -21,12 +21,12 @@ import { validatePayload } from "../lib/validation";
 
 /**
  * Sends synchronized player stats to both the target player (private) and others nearby (public).
+ * Uses proximity-based broadcasting to reduce global network traffic.
  */
 function sendPlayerStats(io: any, socket: any, player: any) {
-  // Public update (HP/MP) for others
-  io.emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
+  const publicStats = { id: player.id, hp: player.hp, mp: player.mp };
   
-  // Private update for the specific player (includes XP/Gold/etc)
+  // 1. Private update for the specific player (includes XP/Gold/etc)
   const privateStats = { 
     id: player.id, 
     hp: player.hp, 
@@ -45,6 +45,9 @@ function sendPlayerStats(io: any, socket: any, player: any) {
   } else {
     io.to(player.id).emit("player_stats", privateStats);
   }
+
+  // 2. Public update (HP/MP) ONLY for nearby players
+  broadcastToNearbyPlayers(io, player.pos, 150, "player_stats", publicStats, player.id);
 }
 
 export const handleCastSkill = (io: any, socket: any, data: any) => {

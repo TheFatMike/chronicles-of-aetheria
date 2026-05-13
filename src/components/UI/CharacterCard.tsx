@@ -35,10 +35,10 @@ export const CharacterCard = ({
       variants={itemVariants}
       whileHover={{ y: -5 }}
       onClick={() => onSelect(char.id)}
-      className={`bg-[#1a1410] border rounded p-5 text-left group transition-all relative overflow-hidden shadow-2xl cursor-pointer ${
+      className={`bg-aetheria-950 border rounded p-5 text-left group transition-all relative overflow-hidden shadow-aetheria-lg cursor-pointer ${
         isHighlighted 
-          ? "border-[#c2a472] ring-1 ring-[#c2a472]/30 shadow-[0_0_40px_rgba(194,164,114,0.15)] scale-[1.02]" 
-          : "border-[#4a3a2a] hover:border-[#8b6b4d] opacity-80 hover:opacity-100"
+          ? "border-aetheria-400 ring-1 ring-aetheria-400/30 shadow-gold-glow/15 scale-[1.02]" 
+          : "border-aetheria-800 hover:border-aetheria-600 opacity-80 hover:opacity-100"
       }`}
     >
       {/* Sheen Effect */}
@@ -55,7 +55,7 @@ export const CharacterCard = ({
         </div>
         
         <div className="flex flex-col items-end gap-2 ml-auto z-10 relative">
-          <span className="text-[10px] font-fantasy text-[#8b6b4d] uppercase tracking-widest bg-black/80 backdrop-blur-md px-2 py-1 rounded border border-white/10">Lv. {char.level}</span>
+          <span className="text-[10px] font-fantasy text-aetheria-600 uppercase tracking-widest bg-black/80 backdrop-blur-md px-2 py-1 rounded border border-white/10">Lv. {char.level}</span>
           
           <AnimatePresence mode="wait">
             {isDeleting ? (
@@ -94,13 +94,13 @@ export const CharacterCard = ({
         </div>
       </div>
 
-      <h2 className="text-xl font-display font-bold text-[#f4e4bc] mb-0.5 group-hover:text-white transition-colors flex items-center gap-2">
+      <h2 className="text-xl font-display font-bold text-aetheria-200 mb-0.5 group-hover:text-white transition-colors flex items-center gap-2">
         {char.name}
       </h2>
-      <p className="text-[#8b6b4d] font-fantasy text-[10px] uppercase tracking-[0.2em] mb-3">{char.class}</p>
+      <p className="text-aetheria-600 font-fantasy text-[10px] uppercase tracking-[0.2em] mb-3">{char.class}</p>
 
-      <div className="flex items-center justify-end pt-3 border-t border-[#4a3a2a]">
-        <ChevronRight size={14} className={`${isHighlighted ? "text-[#c2a472] translate-x-1" : "text-[#4a3a2a]"} transition-all`} />
+      <div className="flex items-center justify-end pt-3 border-t border-aetheria-800">
+        <ChevronRight size={14} className={`${isHighlighted ? "text-aetheria-400 translate-x-1" : "text-aetheria-800"} transition-all`} />
       </div>
     </motion.div>
   );

@@ -58,11 +58,11 @@ export const InventorySlot = ({
   onDragEnd
 }: InventorySlotProps) => {
   return (
-    <div 
+    <div
       className={`aspect-square w-full rounded border flex items-center justify-center relative transition-all
-        ${item ? getRarityColor(item.rarity) : "border-[#4a3a2a]/20 bg-black/10"}
+        ${item ? getRarityColor(item.rarity) : "border-aetheria-800/20 bg-black/10"}
         ${item ? "cursor-pointer hover:bg-white/5 active:scale-95" : ""}
-        ${isDragOver ? "bg-[#c2a472]/20 border-[#f4e4bc] scale-105 z-30" : ""}
+        ${isDragOver ? "bg-aetheria-400/20 border-aetheria-200 scale-105 z-30" : ""}
       `}
       onDragStart={(e) => item && onDragStart(e, item, index)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(index); }}
