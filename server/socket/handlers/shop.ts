@@ -3,7 +3,7 @@
  * @description Handles buying and selling items between players and NPCs.
  */
 import { Socket } from "socket.io";
-import { players, entities } from "../../state";
+import { players, entities, worldObjects } from "../../state";
 import { generateItemInstance, ITEM_REGISTRY } from "../../data/items";
 import { SHOPS } from "../../../src/data/shops";
 import { markPlayerDirty } from "../../lib/stateUtils";
@@ -25,10 +25,10 @@ export const handleBuyItem = (socket: Socket, data: any) => {
   const shop = SHOPS[shopId];
   if (!shop) return;
 
-  // Proximity Check
-  const nearbyMerchant = Array.from(entities.values()).find(e => 
-    e.type === 'npc' && e.shopId === shopId && isWithinRange(player.pos, e.pos, 10)
-  );
+  // Proximity Check: Search both dynamic entities and static world objects
+  const nearbyMerchant = 
+    Array.from(entities.values()).find(e => e.type === 'npc' && e.shopId === shopId && isWithinRange(player.pos, e.pos, 10)) ||
+    Array.from(worldObjects.values()).find(o => o.shopId === shopId && isWithinRange(player.pos, o.pos, 10));
 
   if (!nearbyMerchant) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near the merchant to buy items!", color: "#ff4444" });
@@ -81,10 +81,10 @@ export const handleSellItem = (socket: Socket, data: any) => {
   const item = player.inventory[inventoryIndex];
   if (!item) return;
 
-  // Proximity Check
-  const nearbyMerchant = Array.from(entities.values()).find(e => 
-    e.type === 'npc' && e.shopId && isWithinRange(player.pos, e.pos, 10)
-  );
+  // Proximity Check: Search both dynamic entities and static world objects
+  const nearbyMerchant = 
+    Array.from(entities.values()).find(e => e.type === 'npc' && e.shopId && isWithinRange(player.pos, e.pos, 10)) ||
+    Array.from(worldObjects.values()).find(o => o.shopId && isWithinRange(player.pos, o.pos, 10));
 
   if (!nearbyMerchant) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a merchant to sell items!", color: "#ff4444" });

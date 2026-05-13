@@ -152,6 +152,7 @@ export interface UISlice {
   isBankOpen: boolean;
   activeBankNPCId: string | null;
   assetsReady: boolean;
+  showAllNames: boolean;
   addMessage: (message: Message) => void;
   setConnected: (connected: boolean) => void;
   setActiveMenu: (menu: 'inventory' | 'map' | 'menu' | 'spawners' | 'quests' | 'skills' | null) => void;
@@ -189,6 +190,7 @@ export interface UISlice {
   setShopOpen: (isOpen: boolean, npcId?: string) => void;
   setActiveShop: (shop: Shop | null) => void;
   setBankOpen: (isOpen: boolean, npcId?: string) => void;
+  setShowAllNames: (show: boolean) => void;
 }
 
 export interface DialogueOption {

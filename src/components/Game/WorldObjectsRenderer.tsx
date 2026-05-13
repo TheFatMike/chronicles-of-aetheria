@@ -49,7 +49,7 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
 
       lastCullPos.current.copy(playerPos);
       
-      const CULL_DISTANCE_SQ = 120 * 120;
+      const CULL_DISTANCE_SQ = 300 * 300;
       const currentObjects = Object.values(state.worldObjects);
 
       const filtered = currentObjects.filter(obj => {

@@ -60,9 +60,10 @@ export const BaseEntity = memo(({
   const _sphere = useRef(new THREE.Sphere());
   
   const [hovered, setHovered] = useState(false);
-  const { setTarget, currentTargetId } = useGameStore(useShallow((state) => ({
+  const { setTarget, currentTargetId, showAllNames } = useGameStore(useShallow((state) => ({
     setTarget: state.setTarget,
-    currentTargetId: state.currentTarget?.id
+    currentTargetId: state.currentTarget?.id,
+    showAllNames: state.showAllNames
   })));
   const isTargeted = currentTargetId === id;
 
@@ -113,7 +114,8 @@ export const BaseEntity = memo(({
         color,
         hp,
         maxHp,
-        role
+        role,
+        isDead
       };
       setTarget(target);
       return;
@@ -165,7 +167,7 @@ export const BaseEntity = memo(({
     if (!localPlayer) return;
 
     // Target first
-    const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
+    const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead };
     setTarget(targetData);
 
     const dx = localPlayer.pos[0] - position[0];
@@ -213,7 +215,7 @@ export const BaseEntity = memo(({
     if (dx < 20 && dy < 20 && dt < 500) {
       e.stopPropagation();
       
-      const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role };
+      const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead };
 
       if (e.button === 2 && (type === "player" || type === "npc" || type === "enemy")) {
         // Target first if not targeted
@@ -239,8 +241,8 @@ export const BaseEntity = memo(({
           setTarget(targetData);
         }
 
-        // If it's an NPC, try to interact immediately if in range
-        if (type === 'npc' && localPlayer) {
+        // If it's an NPC, try to interact ONLY if already targeted
+        if (type === 'npc' && localPlayer && isTargeted) {
           const distDx = localPlayer.pos[0] - position[0];
           const distDz = localPlayer.pos[2] - position[2];
           const distance = Math.sqrt(distDx * distDx + distDz * distDz);
@@ -324,7 +326,7 @@ export const BaseEntity = memo(({
       {children}
 
       {/* Name and Level Tag */}
-      {(isTargeted || hovered) && (
+      {(isTargeted || hovered || showAllNames) && (
         <Billboard
           position={[0, nameOffset, 0]}
           follow={true}

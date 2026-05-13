@@ -37,6 +37,7 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   activeShopNPCId: null,
   isBankOpen: false,
   activeBankNPCId: null,
+  showAllNames: localStorage.getItem('show_all_names') === 'true',
 
   addMessage: (message) => set((state) => ({
     messages: [...state.messages.slice(-99), message],
@@ -100,4 +101,8 @@ export const createUISlice: StateCreator<GameState, [], [], UISlice> = (set) => 
   setShopOpen: (isOpen, npcId) => set({ isShopOpen: isOpen, activeShopNPCId: npcId || null }),
   setActiveShop: (shop) => set({ activeShop: shop }),
   setBankOpen: (isOpen, npcId) => set({ isBankOpen: isOpen, activeBankNPCId: npcId || null }),
+  setShowAllNames: (show) => {
+    localStorage.setItem('show_all_names', show.toString());
+    set({ showAllNames: show });
+  },
 });

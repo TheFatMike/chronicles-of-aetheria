@@ -25,19 +25,17 @@ export const useWorldInteraction = (socket: any) => {
     if (e.button !== 0) return;
     
     // In Editor mode, we allow clicking on anything to place on top of it.
-    // In normal play mode, we check if we hit the floor first.
-    if (!isEditorOpen && e.intersections[0]?.object !== e.eventObject) return;
-
-    // Don't clear target if we're hovering over something else (UI or Entity)
-    const isHoveringOther = document.body.classList.contains('npc-hover') || 
-                           document.body.classList.contains('enemy-hover') || 
-                           document.body.classList.contains('loot-hover') ||
-                           document.body.classList.contains('player-hover');
-    if (isHoveringOther) return;
-
-    // Clear target when clicking ground (if not in editor placement mode)
-    if (!isEditorOpen || !editorSelectedType || editorSelectedType === 'delete' || editorSelectedType === 'edit') {
-      useGameStore.getState().setTarget(null);
+    // In normal play mode, anything that reaches this point is a "click-off" (missed entity).
+    if (!isEditorOpen) {
+      // Don't clear target if we're hovering over an interactable entity
+      const isHoveringOther = document.body.classList.contains('npc-hover') || 
+                             document.body.classList.contains('enemy-hover') || 
+                             document.body.classList.contains('loot-hover') ||
+                             document.body.classList.contains('player-hover');
+      
+      if (!isHoveringOther) {
+        useGameStore.getState().setTarget(null);
+      }
       return;
     }
 
@@ -60,8 +58,10 @@ export const useWorldInteraction = (socket: any) => {
 
     let point = highestHit.point.clone();
     
+    if (!editorSelectedType || editorSelectedType === 'edit' || editorSelectedType === 'delete') return;
+    
     // Terrain Sculpting Logic
-    if (editorSelectedType.startsWith('terrain_')) {
+    if (editorSelectedType?.startsWith('terrain_')) {
       const { editorBrushSize, editorBrushStrength } = useGameStore.getState();
       const brushSize = editorBrushSize;
       const strength = editorBrushStrength;

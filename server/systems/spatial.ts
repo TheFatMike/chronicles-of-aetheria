@@ -5,6 +5,11 @@
  * @importance Essential: Crucial for server performance, allowing the engine to handle many entities by limiting calculations to nearby objects.
  */
 import { worldObjects } from "../state";
+import * as THREE from 'three';
+import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
+
+// Cache for loaded THREE groups associated with objects
+export const meshInstances = new Map<string, THREE.Group>();
 
 export const GRID_SIZE = 50;
 
@@ -70,49 +75,23 @@ export function toWorldVector(localX: number, localZ: number, rotY: number): { x
   };
 }
 
-export function checkWorldCollision(newPos: [number, number, number], radius: number = 0.25) {
-  const nearbyKeys = getNearbyGridKeys(newPos, 10); // Check within 10 units range for collisions
-  for (const key of nearbyKeys) {
-    const ids = objectGrid.get(key);
-    if (!ids) continue;
-
-    for (const id of ids) {
-      const obj = worldObjects.get(id);
-      if (!obj) continue;
-
-      const { pos, rot, type, scale } = obj;
-      
-      const s = scale || [1, 1, 1];
-      const sx = Array.isArray(s) ? s[0] : (s.x ?? 1);
-      const sy = Array.isArray(s) ? s[1] : (s.y ?? 1);
-      const sz = Array.isArray(s) ? s[2] : (s.z ?? 1);
-      const t = (type || "").toLowerCase();
-
-      let shapeType = 'box';
-      if (t.includes('tree') || t.includes('rock') || t.includes('npc') || t.includes('tent') || t.includes('spawner')) {
-        shapeType = 'circle';
-      }
-
-      const local = toLocalSpace(newPos, pos, rot[1] || 0);
-      const hTop = sy;
-
-      if (local.y >= -0.5 && local.y <= hTop) {
-        if (shapeType === 'circle') {
-          const radiusSq = Math.pow((sx / 2 + radius), 2);
-          const distSq = local.x * local.x + local.z * local.z;
-          if (distSq < radiusSq) return true;
-        } else {
-          const halfW = sx / 2 + radius;
-          const halfD = sz / 2 + radius;
-          if (Math.abs(local.x) < halfW && Math.abs(local.z) < halfD) return true;
-        }
-      }
-    }
+export function getObjectDimensions(type: string, scale: any) {
+  const t = (type || "").toLowerCase();
+  
+  // World objects now use mesh-based collision instead of primitives.
+  // We only keep primitive dimensions for entities that don't have static world meshes.
+  if (t === 'npc' || t === 'enemy' || t === 'spawner') {
+    const s = scale || 1;
+    const width = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1));
+    const height = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1));
+    const depth = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1));
+    return { width, height, depth, shapeType: 'circle' };
   }
-  return false;
+
+  return null;
 }
 
-export function resolveWorldCollision(oldPos: [number, number, number], newPos: [number, number, number], radius: number = 0.25): [number, number, number] {
+export async function resolveWorldCollision(oldPos: [number, number, number], newPos: [number, number, number], radius: number = 0.25): Promise<[number, number, number]> {
   let resolvedPos: [number, number, number] = [...newPos];
   const nearbyKeys = getNearbyGridKeys(resolvedPos, 10);
 
@@ -125,28 +104,58 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
       if (!obj) continue;
 
       const { pos, rot, type, scale } = obj;
-      const rotY = rot[1] || 0;
-      const local = toLocalSpace(resolvedPos, pos, rotY);
-      
-      const s = scale || [1, 1, 1];
-      const sx = Array.isArray(s) ? s[0] : (s.x ?? 1);
-      const sy = Array.isArray(s) ? s[1] : (s.y ?? 1);
-      const sz = Array.isArray(s) ? s[2] : (s.z ?? 1);
       const t = (type || "").toLowerCase();
 
-      let shapeType = 'box';
-      if (t.includes('tree') || t.includes('rock') || t.includes('npc') || t.includes('tent') || t.includes('spawner')) {
-        shapeType = 'circle';
+      // 1. Try Mesh Collision first
+      const loaded = await loadModelMesh(t);
+      if (loaded) {
+        const mesh = loaded.mesh.clone();
+        mesh.position.set(pos[0], pos[1], pos[2]);
+        mesh.rotation.set(rot[0], rot[1], rot[2]);
+        const s = scale || 1;
+        mesh.scale.set(
+          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
+          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
+          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
+        );
+        mesh.updateMatrixWorld();
+
+        // Mesh-based pushback: check 8 directions around the player
+        const raycaster = new THREE.Raycaster();
+        const directions = [
+          [1,0,0], [-1,0,0], [0,0,1], [0,0,-1],
+          [0.7,0,0.7], [-0.7,0,0.7], [0.7,0,-0.7], [-0.7,0,-0.7]
+        ];
+
+        for (const [dx, dy, dz] of directions) {
+          const dir = new THREE.Vector3(dx, dy, dz);
+          // Cast from slightly above ground
+          raycaster.set(new THREE.Vector3(resolvedPos[0], resolvedPos[1] + 0.5, resolvedPos[2]), dir);
+          const intersects = raycaster.intersectObject(mesh, true);
+          if (intersects.length > 0 && intersects[0].distance < radius) {
+            const pushDist = radius - intersects[0].distance;
+            resolvedPos[0] -= dir.x * pushDist;
+            resolvedPos[2] -= dir.z * pushDist;
+          }
+        }
+        continue;
       }
 
-      const hTop = sy;
+      // 2. Fallback to primitive if it's an NPC or has no mesh
+      const dims = getObjectDimensions(type, scale);
+      if (!dims) continue;
+
+      const rotY = rot[1] || 0;
+      const local = toLocalSpace(resolvedPos, pos, rotY);
+      const { width, height, depth, shapeType } = dims;
+      const hTop = height;
 
       if (local.y >= -0.5 && local.y <= hTop) {
         if (shapeType === 'circle') {
           const hdx = local.x;
           const hdz = local.z;
           const distSq = hdx * hdx + hdz * hdz;
-          const minDist = sx / 2 + radius;
+          const minDist = width / 2 + radius;
           
           if (distSq < minDist * minDist) {
             const dist = Math.sqrt(distSq);
@@ -155,27 +164,6 @@ export function resolveWorldCollision(oldPos: [number, number, number], newPos: 
             const overlap = minDist - dist;
             const push = toWorldVector((hdx / dist) * overlap, (hdz / dist) * overlap, rotY);
 
-            resolvedPos[0] += push.x;
-            resolvedPos[2] += push.z;
-          }
-        } else {
-          const halfW = sx / 2 + radius;
-          const halfD = sz / 2 + radius;
-
-          if (Math.abs(local.x) < halfW && Math.abs(local.z) < halfD) {
-            const overlapX = halfW - Math.abs(local.x);
-            const overlapZ = halfD - Math.abs(local.z);
-
-            let pushX = 0;
-            let pushZ = 0;
-
-            if (overlapX < overlapZ) {
-              pushX = local.x > 0 ? overlapX : -overlapX;
-            } else {
-              pushZ = local.z > 0 ? overlapZ : -overlapZ;
-            }
-
-            const push = toWorldVector(pushX, pushZ, rotY);
             resolvedPos[0] += push.x;
             resolvedPos[2] += push.z;
           }
@@ -228,7 +216,7 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
   return result;
 }
 
-export function getGroundHeight(pos: [number, number, number], terrainData: any): number {
+export async function getGroundHeight(pos: [number, number, number], terrainData: any): Promise<number> {
   let groundHeight = -100;
 
   // 1. Check Terrain
@@ -242,7 +230,7 @@ export function getGroundHeight(pos: [number, number, number], terrainData: any)
   }
 
   // 2. Check Objects
-  const nearbyKeys = getNearbyGridKeys(pos, 5);
+  const nearbyKeys = getNearbyGridKeys(pos, 15); // Broad search for meshes
   for (const key of nearbyKeys) {
     const ids = objectGrid.get(key);
     if (!ids) continue;
@@ -251,41 +239,46 @@ export function getGroundHeight(pos: [number, number, number], terrainData: any)
       const obj = worldObjects.get(id);
       if (!obj) continue;
       const { pos: objPos, rot, scale, type } = obj;
-      const s = scale || 1;
-      const sx = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1));
-      const sy = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1));
-      const sz = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1));
-
-      const local = toLocalSpace(pos, objPos, rot[1] || 0);
       
-      // If we are within the horizontal bounds of the object
+      // Try to load mesh for ALL objects (Mesh-First)
       const t = (type || "").toLowerCase();
+      const loaded = await loadModelMesh(t);
+      if (loaded) {
+        const mesh = loaded.mesh.clone();
+        mesh.position.set(objPos[0], objPos[1], objPos[2]);
+        mesh.rotation.set(rot[0], rot[1], rot[2]);
+        
+        const s = scale || 1;
+        mesh.scale.set(
+          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
+          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
+          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
+        );
+        mesh.updateMatrixWorld();
+
+        const meshY = getMeshHeightAt(mesh, pos);
+        if (meshY !== null) {
+          groundHeight = Math.max(groundHeight, meshY);
+          continue; 
+        }
+      }
+
+      // Fallback to primitive for entities (NPCs/Spawners)
+      const dims = getObjectDimensions(type, scale);
+      if (!dims) continue;
+
+      const { width, height, shapeType } = dims;
+      const local = toLocalSpace(pos, objPos, rot[1] || 0);
       let isInside = false;
-      
-      // Rough estimation of object bounds based on type
-      let width = sx;
-      let depth = sz;
-      let height = sy;
 
-      if (t === 'house' || t === 'tower_base') { width *= 8; depth *= 8; height *= 6; }
-      if (t === 'well') { width *= 3; depth *= 3; height *= 2; }
-      if (t === 'barrel') { width *= 0.8; depth *= 0.8; height *= 1.2; }
-      if (t === 'chest') { width *= 1.2; depth *= 0.8; height *= 0.8; }
-      if (t === 'tent') { width *= 400; depth *= 400; height *= 300; } // Adjusted for tent's weird 0.01 scale
-
-      if (t.includes('tree') || t.includes('rock') || t.includes('npc')) {
+      if (shapeType === 'circle') {
         const radiusSq = Math.pow(width / 2, 2);
         isInside = (local.x * local.x + local.z * local.z) < radiusSq;
-      } else {
-        isInside = Math.abs(local.x) < width / 2 && Math.abs(local.z) < depth / 2;
       }
 
       if (isInside) {
         const topY = objPos[1] + height;
         const bottomY = objPos[1];
-        
-        // If we are vertically within the object's range (with some margin), 
-        // consider its top as the ground to stand on.
         if (pos[1] >= bottomY - 0.5 && pos[1] <= topY + 1.0) {
           groundHeight = Math.max(groundHeight, topY);
         }

@@ -142,7 +142,7 @@ export const EditorInspector = ({
                       </div>
                       <input 
                         type="number" step="0.1"
-                        value={Number(selectedObject.pos[i].toFixed(2))}
+                        value={Number((selectedObject.pos[i] ?? 0).toFixed(2))}
                         onChange={(e) => {
                           const newPos = [...selectedObject.pos];
                           newPos[i] = parseFloat(e.target.value) || 0;
@@ -159,7 +159,7 @@ export const EditorInspector = ({
                     <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest block px-1">Rotation (Y)</label>
                     <input 
                       type="number" step="0.1"
-                      value={Number(selectedObject.rot[1].toFixed(2))}
+                      value={Number((selectedObject.rot[1] ?? 0).toFixed(2))}
                       onChange={(e) => updateSelected({ rot: [0, parseFloat(e.target.value) || 0, 0] })}
                       className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono"
                     />
@@ -168,7 +168,7 @@ export const EditorInspector = ({
                     <label className="text-[7px] text-slate-500 font-black uppercase tracking-widest block px-1">Global Scale</label>
                     <input 
                       type="number" step="0.1"
-                      value={Number(selectedObject.scale.toFixed(2))}
+                      value={Number((selectedObject.scale ?? 1).toFixed(2))}
                       onChange={(e) => updateSelected({ scale: parseFloat(e.target.value) || 1 })}
                       className="w-full bg-slate-900/50 text-white text-[10px] p-2.5 rounded-xl border border-white/5 outline-none focus:border-blue-500/50 font-mono"
                     />

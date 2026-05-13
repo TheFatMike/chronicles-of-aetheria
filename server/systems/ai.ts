@@ -5,7 +5,7 @@
  * @importance Essential: Drives the behavior of enemies and NPCs, making the game world feel alive and challenging.
  */
 import { entities, worldObjects, dirtyEntities, terrainData } from "../state";
-import { checkWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight } from "./spatial";
+import { resolveWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight } from "./spatial";
 
 const waypointCache = new Map<string, any[]>();
 
@@ -27,7 +27,7 @@ export const initAIWorker = () => {
   // Using standard synchronous tick within the decoupled game loop instead.
 };
 
-export const updateEntityAI = (tickTime: number) => {
+export const updateEntityAI = async (tickTime: number) => {
   const GRAVITY = 20; // units per second squared
   const dt = tickTime / 1000;
 
@@ -40,7 +40,7 @@ export const updateEntityAI = (tickTime: number) => {
     // 1. Gravity & Ground Detection (Moving Entities Only)
     // We skip physics for NPCs to allow precise editor placement on complex surfaces like stairs.
     if (entity.type !== 'npc') {
-      const currentGroundY = getGroundHeight(entity.pos, terrainData);
+      const currentGroundY = await getGroundHeight(entity.pos, terrainData);
       const GRAVITY = 20;
       const dt = tickTime / 1000;
 
@@ -65,22 +65,14 @@ export const updateEntityAI = (tickTime: number) => {
 
     const speed = entity.stats.moveSpeed * dt;
     
-    const moveWithCollision = (dx: number, dz: number, s: number) => {
+    const moveWithCollision = async (dx: number, dz: number, s: number) => {
       const mag = Math.sqrt(dx*dx + dz*dz);
       if (mag < 0.01) return;
       const nx = (dx/mag) * s;
       const nz = (dz/mag) * s;
       
       const nextPos: [number, number, number] = [entity.pos[0] + nx, entity.pos[1], entity.pos[2] + nz];
-      
-      if (!checkWorldCollision(nextPos, 0.5)) {
-        entity.pos = nextPos;
-      } else {
-         const tryX: [number, number, number] = [entity.pos[0] + nx, entity.pos[1], entity.pos[2]];
-         const tryZ: [number, number, number] = [entity.pos[0], entity.pos[1], entity.pos[2] + nz];
-         if (!checkWorldCollision(tryX, 0.5)) entity.pos = tryX;
-         else if (!checkWorldCollision(tryZ, 0.5)) entity.pos = tryZ;
-      }
+      entity.pos = await resolveWorldCollision(entity.pos, nextPos, 0.5);
     };
 
     switch (entity.aiState) {
@@ -101,7 +93,7 @@ export const updateEntityAI = (tickTime: number) => {
           entity.isMoving = false;
         } else {
           entity.isMoving = true;
-          moveWithCollision(rdx, rdz, speed * 1.5);
+          await moveWithCollision(rdx, rdz, speed * 1.5);
         }
         break;
       case 'PATROL': {
@@ -133,7 +125,7 @@ export const updateEntityAI = (tickTime: number) => {
         } else {
           entity.isMoving = true;
           entity.rot[1] = Math.atan2(wdx, wdz);
-          moveWithCollision(wdx, wdz, speed);
+          await moveWithCollision(wdx, wdz, speed);
         }
         break;
       }

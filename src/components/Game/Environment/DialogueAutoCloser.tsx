@@ -45,6 +45,25 @@ export const InteractionAutoCloser = memo(() => {
     if (isBankOpen && activeBankNPCId) {
       checkDistance(activeBankNPCId, () => setBankOpen(false));
     }
+
+    // New: Clear target if walking away (standard RPG behavior)
+    const currentTarget = state.currentTarget;
+    if (currentTarget) {
+      const targetId = currentTarget.id;
+      let targetPos: [number, number, number] | null = null;
+      
+      if (entities[targetId]) targetPos = entities[targetId].pos;
+      else if (worldObjects[targetId]) targetPos = worldObjects[targetId].pos;
+      else if (state.players[targetId]) targetPos = state.players[targetId].pos;
+
+      if (targetPos) {
+        const distSq = (localPlayer.pos[0] - targetPos[0])**2 + 
+                       (localPlayer.pos[2] - targetPos[2])**2;
+        if (distSq > 1600) { // 40m range for losing target
+          state.setTarget(null);
+        }
+      }
+    }
   });
 
   return null;

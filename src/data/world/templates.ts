@@ -14,6 +14,7 @@ export interface ObjectTemplate {
   label: string;
   role?: string;
   color?: string;
+  shopId?: string;
 }
 
 export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
@@ -105,8 +106,8 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
     label: 'Guard Spawner'
   },
   'npc_elder_thorne': { type: 'npc_elder_thorne', label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1 },
-  'npc_merchant_silas': { type: 'npc_merchant_silas', label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1 },
-  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1 },
+  'npc_merchant_silas': { type: 'npc_merchant_silas', label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1, shopId: 'general_merchant' },
+  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1, shopId: 'blacksmith' },
   'npc_guard_captain': { type: 'npc_guard_captain', label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1 },
   'npc_instructor_kael': { type: 'npc_instructor_kael', label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1 },
   'npc_banker': { type: 'npc_banker', label: 'Banker', role: 'Banker', color: '#fbbf24', category: 'npcs', scale: 1 },

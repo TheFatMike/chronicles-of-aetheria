@@ -217,7 +217,7 @@ export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: st
         type: type,
         name: isNPC ? (template?.label || 'Villager') : undefined,
         role: isNPC ? (template?.role || template?.label || 'Villager') : undefined,
-        pos: [point.x, point.y || 0, point.z],
+        pos: Array.isArray(point) ? point : [point.x, point.y || 0, point.z],
         rot: [0, 0, 0],
         scale: isSpawner ? 1 : (scale || 1),
         modelUrl: modelUrl || template?.modelUrl,

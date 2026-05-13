@@ -23,7 +23,7 @@ export const startHeartbeat = (io: Server) => {
   let timeSinceLastStatsRegen = 0;
   let timeSinceLastAutosave = 0;
 
-  const tick = () => {
+  const tick = async () => {
     const now = performance.now();
     let dt = now - lastTickTime;
     
@@ -40,7 +40,7 @@ export const startHeartbeat = (io: Server) => {
 
       // 2. Entity AI (Asynchronous via Worker Thread)
       // We pass the actual dt so movement is smooth even if tick rate fluctuates
-      updateEntityAI(dt);
+      await updateEntityAI(dt);
 
       // 3. Broadcast (True Delta Syncing)
       if (players.size > 0) {

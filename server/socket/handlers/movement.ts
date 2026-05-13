@@ -56,7 +56,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     // 1. Fly Detection: Check if player is suspended in air for too long
     // Get authoritative ground height (terrain + objects)
     const { getGroundHeight } = await import("../../systems/spatial");
-    const groundY = getGroundHeight(validated.pos, terrainData);
+    const groundY = await getGroundHeight(validated.pos, terrainData);
     const heightAboveGround = validated.pos[1] - groundY;
 
     if (heightAboveGround > 5.0 && !validated.isGrounded) {
@@ -73,11 +73,11 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
   }
   
   const oldPos = [...player.pos] as [number, number, number];
-  let finalPos = resolveWorldCollision(oldPos, validated.pos);
+  let finalPos = await resolveWorldCollision(oldPos, validated.pos);
   
   // Ground Enforcement: Keep players from falling THROUGH the ground or objects
   const { getGroundHeight } = await import("../../systems/spatial");
-  const currentGroundY = getGroundHeight(finalPos, terrainData);
+  const currentGroundY = await getGroundHeight(finalPos, terrainData);
   if (finalPos[1] < currentGroundY - 0.5) {
     finalPos[1] = currentGroundY;
   }

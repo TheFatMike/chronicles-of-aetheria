@@ -5,7 +5,7 @@
  * @importance Essential: Core to the RPG experience, allowing players to manage their gear and resources.
  */
 import { Socket, Server } from "socket.io";
-import { players, entities } from "../../state";
+import { players, entities, worldObjects } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { generateItemInstance } from "../../data/items";
@@ -325,10 +325,10 @@ export const handleBankDeposit = (socket: Socket, data: any) => {
   let item = player.inventory[inventoryIndex];
   if (!item) return;
 
-  // Proximity Check
-  const nearbyBanker = Array.from(entities.values()).find(e => 
-    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
-  );
+  // Proximity Check: Search both dynamic entities and static world objects
+  const nearbyBanker = 
+    Array.from(entities.values()).find(e => e.type === 'npc' && e.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, e.pos, 10)) ||
+    Array.from(worldObjects.values()).find(o => o.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, o.pos, 10));
 
   if (!nearbyBanker) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to deposit items!", color: "#ff4444" });
@@ -372,10 +372,10 @@ export const handleBankWithdraw = (socket: Socket, data: any) => {
   let item = player.bank[bankIndex];
   if (!item) return;
 
-  // Proximity Check
-  const nearbyBanker = Array.from(entities.values()).find(e => 
-    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
-  );
+  // Proximity Check: Search both dynamic entities and static world objects
+  const nearbyBanker = 
+    Array.from(entities.values()).find(e => e.type === 'npc' && e.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, e.pos, 10)) ||
+    Array.from(worldObjects.values()).find(o => o.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, o.pos, 10));
 
   if (!nearbyBanker) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to withdraw items!", color: "#ff4444" });
@@ -416,10 +416,10 @@ export const handleBankMove = (socket: Socket, data: any) => {
   const { fromIndex, toIndex } = validated;
   if (fromIndex === toIndex) return;
 
-  // Proximity Check
-  const nearbyBanker = Array.from(entities.values()).find(e => 
-    e.type === 'npc' && e.role === 'bank' && isWithinRange(player.pos, e.pos, 10)
-  );
+  // Proximity Check: Search both dynamic entities and static world objects
+  const nearbyBanker = 
+    Array.from(entities.values()).find(e => e.type === 'npc' && e.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, e.pos, 10)) ||
+    Array.from(worldObjects.values()).find(o => o.role?.toLowerCase().includes('bank') && isWithinRange(player.pos, o.pos, 10));
 
   if (!nearbyBanker) {
     socket.emit("chat_message", { sender: "SYSTEM", text: "You must be near a banker to organize your bank!", color: "#ff4444" });

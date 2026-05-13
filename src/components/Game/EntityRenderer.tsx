@@ -38,7 +38,17 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
       const distMoved = playerPos.distanceTo(lastCullPos.current);
       const currentEntities = Object.values(state.entities);
       
-      if (distMoved < 2 && nearbyEntities.length === currentEntities.length && nearbyEntities.length > 0) return;
+      let hasUpdates = nearbyEntities.length !== currentEntities.length;
+      if (!hasUpdates) {
+        for (let i = 0; i < nearbyEntities.length; i++) {
+          if (state.entities[nearbyEntities[i].id] !== nearbyEntities[i]) {
+            hasUpdates = true;
+            break;
+          }
+        }
+      }
+
+      if (distMoved < 2 && !hasUpdates && nearbyEntities.length > 0) return;
 
       lastCullPos.current.copy(playerPos);
       

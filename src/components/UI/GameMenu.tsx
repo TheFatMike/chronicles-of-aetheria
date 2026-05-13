@@ -18,7 +18,7 @@ interface GameMenuProps {
 
 export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps) => {
   const [view, setView] = useState<'menu' | 'settings'>('menu');
-  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players, uiScale, setUIScale, brightness, setBrightness } = useGameStore(useShallow(state => ({
+  const { setActiveMenu, devMode, setDevMode, id: currentPlayerId, players, uiScale, setUIScale, brightness, setBrightness, showAllNames, setShowAllNames } = useGameStore(useShallow(state => ({
     setActiveMenu: state.setActiveMenu,
     devMode: state.devMode,
     setDevMode: state.setDevMode,
@@ -27,7 +27,9 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
     uiScale: state.uiScale,
     setUIScale: state.setUIScale,
     brightness: state.brightness,
-    setBrightness: state.setBrightness
+    setBrightness: state.setBrightness,
+    showAllNames: state.showAllNames,
+    setShowAllNames: state.setShowAllNames
   })));
 
   const localPlayer = currentPlayerId ? players[currentPlayerId] : null;
@@ -174,6 +176,18 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
                 <p className="text-[9px] text-[#8b6b4d] leading-relaxed">
                   Adjusting the UI scale helps visibility on smaller displays or high-resolution monitors.
                 </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-[#4a3a2a]/50 hover:border-[#8b6b4d]/50 transition-colors cursor-pointer"
+                onClick={() => setShowAllNames(!showAllNames)}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[#f4e4bc] font-fantasy text-[10px] uppercase tracking-wider">Show All Nameplates</span>
+                  <span className="text-[8px] text-[#8b6b4d] italic">Always show names for all entities</span>
+                </div>
+                <div className={`w-8 h-4 rounded-full transition-colors relative ${showAllNames ? 'bg-[#c2a472]' : 'bg-black/40'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-[#f4e4bc] transition-all ${showAllNames ? 'left-[17px]' : 'left-0.5'}`} />
+                </div>
               </div>
             </div>
           )}

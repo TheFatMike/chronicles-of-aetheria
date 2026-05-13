@@ -123,14 +123,14 @@ export const WorldObjectItem = memo(({
 
     // 1. "Proximity Shield": If object is close, ALWAYS show it.
     // This prevents any popping when spinning the camera quickly.
-    if (distSq < 1600) { // 40 meters
+    if (distSq < 10000) { // 100 meters
       if (!groupRef.current.visible) groupRef.current.visible = true;
       return;
     }
 
     // 2. "Aggressive Frustum Bleed": Use a large 20m radius for the frustum check.
     // This ensures objects are rendered long before they actually hit the screen edges.
-    _sphere.current.set(_point.current, 20); 
+    _sphere.current.set(_point.current, 50); 
     const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere.current);
     
     if (groupRef.current.visible !== isVisible) {
