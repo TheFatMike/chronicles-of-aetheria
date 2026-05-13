@@ -24,7 +24,7 @@ export const autosavePlayers = async () => {
       const redisData = {
         userId: p.userId,
         characterId: p.characterId,
-        characterName: p.characterName,
+        characterName: p.name,
         class: p.class,
         color: p.color,
         level: p.level,
@@ -83,7 +83,7 @@ export const flushRedisToFirestore = async () => {
       const charRef = db.collection("users").doc(data.userId).collection("characters").doc(data.characterId);
       
       const payload: any = {
-        name: data.characterName,
+        name: data.name,
         class: data.class,
         color: data.color,
         level: parseInt(data.level) || 1,
@@ -106,7 +106,7 @@ export const flushRedisToFirestore = async () => {
         if (data.bank) payload.bank = JSON.parse(data.bank);
         if (data.discoveredTeleports) payload.discoveredTeleports = JSON.parse(data.discoveredTeleports);
       } catch (e: any) {
-        serverLogger.error("persistence", `Failed to parse Redis data for ${data.characterName}: ${e.message}`);
+        serverLogger.error("persistence", `Failed to parse Redis data for ${data.name}: ${e.message}`);
       }
 
       batch.set(charRef, payload, { merge: true });

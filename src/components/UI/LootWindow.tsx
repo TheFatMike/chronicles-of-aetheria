@@ -12,7 +12,7 @@ import * as Icons from "lucide-react";
 import { Socket } from 'socket.io-client';
 import { useScaffold } from "./GameScaffold";
 import { ItemTooltip } from "./ItemTooltip";
-import { ItemRarity } from '../../types';
+import { ItemRarity } from '@shared/types';
 
 interface LootWindowProps {
   socket: Socket | null;

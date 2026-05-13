@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../../store/useGameStore';
 import * as Icons from 'lucide-react';
 import { X, Lock, Unlock, Check, Coins, ArrowLeftRight } from 'lucide-react';
-import { InventoryItem, ItemRarity } from '../../types';
+import { InventoryItem, ItemRarity } from '@shared/types';
 import { formatGold, formatGoldDetailed } from '../../lib/currency';
 
 const getRarityColor = (rarity: ItemRarity | undefined) => {

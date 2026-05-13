@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
-import { INITIAL_WORLD_OBJECTS } from "../src/data/world/index";
+import { INITIAL_WORLD_OBJECTS } from "../shared/data/world/index";
 
 /**
  * SEEDING SCRIPT

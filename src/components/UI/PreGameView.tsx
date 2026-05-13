@@ -6,7 +6,7 @@
  */
 import { motion } from "motion/react";
 import { User } from "firebase/auth";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 import { Login } from "./Login";
 import { CharacterSelection } from "./CharacterSelection";
 import { CharacterCreation } from "./CharacterCreation";

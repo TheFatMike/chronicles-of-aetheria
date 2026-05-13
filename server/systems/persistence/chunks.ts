@@ -48,16 +48,31 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
             if (!chunkToTerrain.has(localKey)) chunkToTerrain.set(localKey, new Set());
             const terrainSet = chunkToTerrain.get(localKey)!;
 
+            const syncPoints: any[] = [];
             Object.entries(chunkData).forEach(([key, val]: [string, any]) => {
               terrainData.set(key, { y: val.y, type: val.type || 'grass' });
               terrainSet.add(key);
+              
+              const [px, pz] = key.split('_').map(Number);
+              syncPoints.push({ x: px, z: pz, y: val.y, type: val.type || 'grass' });
             });
+
+            if (syncPoints.length > 0) {
+              const { io } = await import("../../../server") as any;
+              if (io) {
+                const [tx, tz] = localKey.split(',').map(Number);
+                const centerX = tx * 100 + 50;
+                const centerZ = tz * 100 + 50;
+                const { broadcastToNearbyPlayers } = await import("../../systems/spatial");
+                broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "terrain_sync", syncPoints);
+              }
+            }
           }
 
           const objectDoc = await db.collection("object_chunks").doc(objectId).get();
           if (objectDoc.exists) {
             const chunkData = objectDoc.data()?.objects || {};
-            const { OBJECT_TEMPLATES } = await import("../../../src/data/world/templates");
+            const { OBJECT_TEMPLATES } = await import("../../../shared/data/world/templates");
             
             for (const [id, rawData] of Object.entries(chunkData as any)) {
               const data = rawData as any;
@@ -84,7 +99,13 @@ export const loadTerrainRegion = async (centerX: number, centerZ: number) => {
             const { io } = await import("../../../server") as any;
             const newObjs = Array.from(Object.keys(chunkData)).map(id => worldObjects.get(id)).filter(Boolean);
             
-            if (newObjs.length > 0) io.emit("world_objects_sync", newObjs);
+            if (newObjs.length > 0 && io) {
+              const [tx, tz] = localKey.split(',').map(Number);
+              const centerX = tx * 100 + 50;
+              const centerZ = tz * 100 + 50;
+              const { broadcastToNearbyPlayers } = await import("../../systems/spatial");
+              broadcastToNearbyPlayers(io, [centerX, 0, centerZ], 200, "world_objects_sync", newObjs);
+            }
           }
           
           loadedChunksLocal.add(localKey);

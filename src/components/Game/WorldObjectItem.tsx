@@ -15,9 +15,9 @@ import { Billboard, Text } from "@react-three/drei";
 import { SelectionCircle } from "./SelectionCircle";
 import { useGameStore } from "../../store/useGameStore";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
-import { SAMPLE_QUESTS } from "../../data/quests";
-import { OBJECT_TEMPLATES } from "../../data/world/templates";
-import { getNPCDialogue } from "../../data/npcDialogues";
+import { SAMPLE_QUESTS } from "@shared/data/quests";
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
+import { getNPCDialogue } from "@shared/data/npcDialogues";
 
 export const ProceduralModel = memo(({ 
   type, 

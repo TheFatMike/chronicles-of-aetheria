@@ -8,17 +8,32 @@ import { useCallback } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Character, InventoryItem } from "../types";
+import { Character, InventoryItem } from "@shared/types";
+import { useShallow } from "zustand/react/shallow";
 import { SAMPLE_ITEMS } from "../constants";
 import { getAccountRole, getRoleLevel as getPermissionLevel } from "../lib/permissions";
 
 export const useChatCommands = (
   user: any, 
-  character: Character | null, 
-  setCharacter: React.Dispatch<React.SetStateAction<Character | null>>,
   socket: any
 ) => {
-  const { devMode, setDevMode, requestTeleport, addMessage, setActiveMenu } = useGameStore();
+  const { 
+    localPlayer, 
+    updateLocalPlayer,
+    devMode, 
+    setDevMode, 
+    requestTeleport, 
+    addMessage, 
+    setActiveMenu 
+  } = useGameStore(useShallow(s => ({
+    localPlayer: s.localPlayer,
+    updateLocalPlayer: s.updateLocalPlayer,
+    devMode: s.devMode,
+    setDevMode: s.setDevMode,
+    requestTeleport: s.requestTeleport,
+    addMessage: s.addMessage,
+    setActiveMenu: s.setActiveMenu
+  })));
 
   const getRoleLevel = (role?: string) => {
     // 1. Check character role (authoritative from server)
@@ -38,7 +53,7 @@ export const useChatCommands = (
     const args = text.slice(1).split(" ");
     const command = args[0].toLowerCase();
 
-    const roleLevel = getRoleLevel(character?.role);
+    const roleLevel = getRoleLevel(localPlayer?.role);
     const isAdmin = roleLevel >= 2;
     const isMod = roleLevel >= 1;
     const isDev = roleLevel >= 3;
@@ -85,10 +100,10 @@ export const useChatCommands = (
         // 3. Try lookup by character name
         else if (args[1]) {
           const pName = args[1].toLowerCase();
-          const pEntry = Object.values(players).find(p => p.characterName.toLowerCase() === pName);
+          const pEntry = Object.values(players).find(p => p.name.toLowerCase() === pName);
           if (pEntry) {
             targetId = pEntry.id;
-            targetName = pEntry.characterName;
+            targetName = pEntry.name;
           }
         }
 
@@ -174,10 +189,10 @@ export const useChatCommands = (
         } 
         else if (args[1]) {
           const pName = args[1].toLowerCase();
-          const pEntry = Object.values(players).find(p => p.characterName.toLowerCase() === pName);
+          const pEntry = Object.values(players).find(p => p.name.toLowerCase() === pName);
           if (pEntry) {
             targetId = pEntry.id;
-            targetName = pEntry.characterName;
+            targetName = pEntry.name;
           }
         }
 
@@ -215,19 +230,19 @@ export const useChatCommands = (
       }
 
       case "give": {
-        if (!character || !user) return true;
+        if (!localPlayer || !user) return true;
         const itemName = args.slice(1).join(" ").toLowerCase();
         const item = SAMPLE_ITEMS.find(i => i.name.toLowerCase().includes(itemName));
         
         if (item) {
-          const newInventory = [...character.inventory];
+          const newInventory = [...localPlayer.inventory];
           const emptyIdx = newInventory.findIndex(slot => slot === null);
           if (emptyIdx !== -1) {
             newInventory[emptyIdx] = { ...item, id: Math.random().toString(36).substr(2, 9) };
-            setCharacter({ ...character, inventory: newInventory });
+            updateLocalPlayer({ inventory: newInventory });
             
             // Save to Firestore
-            const charRef = doc(db, `users/${user.uid}/characters`, character.id);
+            const charRef = doc(db, `users/${user.uid}/characters`, localPlayer.id);
             updateDoc(charRef, { inventory: newInventory });
           }
         }
@@ -273,7 +288,7 @@ export const useChatCommands = (
       default:
         return false;
     }
-  }, [user, character, setCharacter, devMode, setDevMode, addMessage, requestTeleport, socket]);
+  }, [user, localPlayer, updateLocalPlayer, devMode, setDevMode, addMessage, requestTeleport, socket]);
 
   return { executeCommand };
 };

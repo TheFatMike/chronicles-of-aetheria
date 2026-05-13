@@ -44,12 +44,13 @@ describe('Game Store Smoke Test', () => {
     
     const player = {
       id: 'player-1',
-      characterName: 'Hero',
+      name: 'Hero',
       displayName: 'Hero123',
       class: 'Warrior',
       color: 'red',
       pos: [0, 0, 0] as [number, number, number],
-      rot: [0, 0, 0] as [number, number, number]
+      rot: [0, 0, 0] as [number, number, number],
+      discoveredTeleports: []
     };
 
     // 1. Add player
@@ -68,10 +69,10 @@ describe('Game Store Smoke Test', () => {
     expect(useGameStore.getState().currentTarget?.name).toBe('Hero');
 
     // 3. Update player and see if target auto-syncs (based on useGameStore logic)
-    updatePlayer('player-1', { characterName: 'Legend' });
+    updatePlayer('player-1', { name: 'Legend' });
     
     const state = useGameStore.getState();
-    expect(state.players['player-1'].characterName).toBe('Legend');
+    expect(state.players['player-1'].name).toBe('Legend');
     expect(state.currentTarget?.name).toBe('Legend');
   });
 
@@ -80,12 +81,13 @@ describe('Game Store Smoke Test', () => {
     
     setPlayers([{
       id: 'p2',
-      characterName: 'Ghost',
+      name: 'Ghost',
       displayName: 'Ghost',
       class: 'Mage',
       color: 'blue',
       pos: [1, 1, 1],
-      rot: [0, 0, 0]
+      rot: [0, 0, 0],
+      discoveredTeleports: []
     }]);
 
     setTarget({ id: 'p2', name: 'Ghost', type: 'player', level: 1, color: 'blue', class: 'Mage' });

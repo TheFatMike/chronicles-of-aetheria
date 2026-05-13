@@ -16,6 +16,7 @@ import { SpawnerRenderer } from "./SpawnerRenderer";
 import { GlobalEnvironment } from "./Environment/Lighting";
 import { InteractionAutoCloser } from "./Environment/DialogueAutoCloser";
 import { useWorldInteraction } from "../../hooks/useWorldInteraction";
+import { FloatingCombatTextRenderer } from "./FloatingCombatTextRenderer";
 
 interface WorldProps {
   onAttack?: () => void;
@@ -49,6 +50,7 @@ export const World = memo(({ onAttack, onLoot, socket }: WorldProps) => {
           <EntityRenderer onAttack={onAttack} onLoot={onLoot} />
           <OtherPlayers />
           <SpawnerRenderer />
+          <FloatingCombatTextRenderer />
         </>
       ) : null}
       

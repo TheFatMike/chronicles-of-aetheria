@@ -6,7 +6,7 @@
  */
 import { memo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { OBJECT_TEMPLATES } from "../../data/world/templates";
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 import { GLBModel } from "./GLBModel";
 import { ProceduralModel } from "./WorldObjectItem";
 import { snapToGrid } from "../../lib/gameUtils";

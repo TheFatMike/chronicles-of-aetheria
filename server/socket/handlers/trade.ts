@@ -37,10 +37,10 @@ export const handleTradeRequest = (io: Server, socket: Socket, data: any) => {
   // Send request to target
   io.to(targetId).emit("trade_request_received", {
     fromId: socket.id,
-    fromName: player.characterName
+    fromName: player.name
   });
 
-  socket.emit("chat_message", { sender: "SYSTEM", text: `Trade request sent to ${target.characterName}.`, color: "#3b82f6" });
+  socket.emit("chat_message", { sender: "SYSTEM", text: `Trade request sent to ${target.name}.`, color: "#3b82f6" });
 };
 
 export const handleTradeAccept = (io: Server, socket: Socket, data: any) => {
@@ -66,8 +66,8 @@ export const handleTradeAccept = (io: Server, socket: Socket, data: any) => {
     id: tradeId,
     p1: requesterId,
     p2: socket.id,
-    p1Name: requester.characterName,
-    p2Name: player.characterName,
+    p1Name: requester.name,
+    p2Name: player.name,
     p1Items: [],
     p2Items: [],
     p1Gold: 0,
@@ -161,7 +161,7 @@ export const handleTradeConfirm = (io: Server, socket: Socket, tradeId: string) 
       };
 
       if (!verifyPlayerTrade(p1, trade.p1Items, trade.p1Gold) || !verifyPlayerTrade(p2, trade.p2Items, trade.p2Gold)) {
-        serverLogger.warn("anti-cheat", `Trade validation failed for ${p1.characterName} or ${p2.characterName}. Potential duplication attempt.`);
+        serverLogger.warn("anti-cheat", `Trade validation failed for ${p1.name} or ${p2.name}. Potential duplication attempt.`);
         io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: "Trade failed: Items or gold state changed.", color: "#ef4444" });
         io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: "Trade failed: Items or gold state changed.", color: "#ef4444" });
         activeTrades.delete(tradeId);
@@ -178,12 +178,12 @@ export const handleTradeConfirm = (io: Server, socket: Socket, tradeId: string) 
       // P2 receives trade.p1Items.length items
       if (p1Available < trade.p2Items.length) {
         io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: "You don't have enough inventory space!", color: "#ef4444" });
-        io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: `${p1.characterName} doesn't have enough space.`, color: "#ef4444" });
+        io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: `${p1.name} doesn't have enough space.`, color: "#ef4444" });
         return;
       }
       if (p2Available < trade.p1Items.length) {
         io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: "You don't have enough inventory space!", color: "#ef4444" });
-        io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: `${p2.characterName} doesn't have enough space.`, color: "#ef4444" });
+        io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: `${p2.name} doesn't have enough space.`, color: "#ef4444" });
         return;
       }
 
@@ -247,7 +247,7 @@ export const handleTradeConfirm = (io: Server, socket: Socket, tradeId: string) 
       io.to(trade.p1).emit("chat_message", { sender: "SYSTEM", text: "Trade complete!", color: "#22c55e" });
       io.to(trade.p2).emit("chat_message", { sender: "SYSTEM", text: "Trade complete!", color: "#22c55e" });
       
-      serverLogger.info("trade", `Trade complete between ${p1.characterName} and ${p2.characterName}.`);
+      serverLogger.info("trade", `Trade complete between ${p1.name} and ${p2.name}.`);
     }
 
     activeTrades.delete(tradeId);

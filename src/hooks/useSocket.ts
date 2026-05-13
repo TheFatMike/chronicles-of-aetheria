@@ -112,7 +112,7 @@ export const useSocket = (token: string | null) => {
     });
 
     socket.on("player_join", (player) => {
-      logger.info("socket", `Player joined nearby: ${player.characterName}`);
+      logger.info("socket", `Player joined nearby: ${player.name}`);
       useGameStore.getState().updatePlayer(player.id, player);
     });
     
@@ -129,6 +129,13 @@ export const useSocket = (token: string | null) => {
     socket.on("chat_message", (msg) => {
       logger.debug("socket", "Chat message received", msg);
       useGameStore.getState().addMessage(msg);
+    });
+    
+    socket.on("combat_event", (event) => {
+      useGameStore.getState().addCombatText(event);
+      setTimeout(() => {
+        useGameStore.getState().removeCombatText(event.id);
+      }, 2500); // Remove after 2.5 seconds
     });
     
     socket.on("move_correction", (data) => {

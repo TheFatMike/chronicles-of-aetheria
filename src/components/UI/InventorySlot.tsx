@@ -6,7 +6,7 @@
  */
 import React from "react";
 import * as Icons from "lucide-react";
-import { InventoryItem, ItemRarity } from "../../types";
+import { InventoryItem, ItemRarity } from "@shared/types";
 
 interface InventorySlotProps {
   item: InventoryItem | null;

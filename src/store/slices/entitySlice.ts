@@ -6,7 +6,7 @@
  */
 import { StateCreator } from 'zustand';
 import { GameState, EntitySlice } from '../types';
-import { GameEntity } from '../../types';
+import { GameEntity } from '@shared/types';
 
 export const createEntitySlice: StateCreator<GameState, [], [], EntitySlice> = (set) => ({
   entities: {},

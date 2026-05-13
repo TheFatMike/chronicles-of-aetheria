@@ -6,8 +6,7 @@
  */
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Quest } from '../../types';
-import { DialogueOption } from '../../store/types';
+import { Quest, DialogueOption } from '@shared/types';
 import { BookOpen, Check, X } from 'lucide-react';
 
 interface DialogueBoxProps {

@@ -73,7 +73,7 @@ export const handleChatMessage = (io: Server, socket: Socket, text: string) => {
 
   const payload = { 
     id: Math.random().toString(36).substring(2), 
-    sender: player.characterName, 
+    sender: player.name, 
     text: cleanText, 
     timestamp: now,
     color: player.color,

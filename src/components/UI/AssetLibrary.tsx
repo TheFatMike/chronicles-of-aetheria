@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Trees, Home, Box, Skull, Mountain, Trash2, MousePointer2, Grid, Settings2, Info, MapPin, Users, Package, Activity } from 'lucide-react';
-import { OBJECT_TEMPLATES } from '../../data/world/templates';
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'motion/react';

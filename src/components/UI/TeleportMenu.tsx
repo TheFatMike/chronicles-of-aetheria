@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, X, Zap, Coins, Navigation } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
-import { OBJECT_TEMPLATES } from '../../data/world/templates';
+import { OBJECT_TEMPLATES } from '@shared/data/world/templates';
 
 const TELEPORT_COST = 50;
 

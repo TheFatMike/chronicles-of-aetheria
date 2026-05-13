@@ -5,7 +5,7 @@
 import { Socket } from "socket.io";
 import { players, entities, worldObjects } from "../../state";
 import { generateItemInstance, ITEM_REGISTRY } from "../../data/items";
-import { SHOPS } from "../../../src/data/shops";
+import { SHOPS } from "../../../shared/data/shops";
 import { markPlayerDirty } from "../../lib/stateUtils";
 import { syncQuestInventory } from "../../logic/quest";
 import { BuyItemSchema, SellItemSchema } from "../../lib/schemas";

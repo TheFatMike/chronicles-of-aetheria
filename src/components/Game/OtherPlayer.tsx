@@ -23,7 +23,7 @@ export const OtherPlayer = memo(({ id }: OtherPlayerProps) => {
   return (
     <BaseEntity
       id={id}
-      name={player.characterName}
+      name={player.name}
       type="player"
       level={1} // Could be in player state
       position={player.pos}

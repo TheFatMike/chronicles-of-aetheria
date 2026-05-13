@@ -9,7 +9,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Environment, Float } from "@react-three/drei";
 import * as THREE from "three";
 import { Humanoid } from "../Game/Humanoid";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 import { useGameStore } from "../../store/useGameStore";
 
 interface CharacterPreviewProps {

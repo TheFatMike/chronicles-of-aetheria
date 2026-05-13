@@ -6,7 +6,7 @@
  */
 import { StateCreator } from 'zustand';
 import { GameState, WorldSlice } from '../types';
-import { Spawner, WorldObject } from '../../types';
+import { Spawner, WorldObject } from '@shared/types';
 export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (set) => ({
   spawners: {},
   worldObjects: {},
@@ -40,7 +40,7 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   }),
 
   setTerrainData: (dataArray) => set((state) => {
-    const terrainObj: Record<string, { y: number; type: string }> = {};
+    const terrainObj: Record<string, { y: number; type: string }> = { ...state.terrainData };
     const dirty: { x: number; z: number; y: number; type: string }[] = [];
     
     dataArray.forEach(p => {

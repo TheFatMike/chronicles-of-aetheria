@@ -5,7 +5,7 @@
  * @importance Critical: Coordinates the entire in-game user interface and ensures all elements work together.
  */
 import { motion, AnimatePresence } from "motion/react";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 import { PlayerHUD } from "./PlayerHUD";
 import { Chat } from "./Chat";
 import { TargetFrame } from "./TargetFrame";
@@ -24,43 +24,47 @@ import { DebugOverlay } from "./DebugOverlay";
 import { TeleportMenu } from "./TeleportMenu";
 import { ScreenEffects } from "./ScreenEffects";
 import { useGameStore } from "../../store/useGameStore";
+import { useShallow } from "zustand/react/shallow";
+import { GameState } from "../../store/types";
+import { useInventory } from "../../hooks/useInventory";
 import { Socket } from "socket.io-client";
 
 interface InGameViewProps {
-  selectedCharacter: Character;
   userEmail?: string | null;
   socket: Socket | null;
   showEscapeMenu: boolean;
   setShowEscapeMenu: (show: boolean) => void;
   onLogout: () => void;
   onSelectCharacter: () => void;
-  updateHotbar: (hotbar: any[]) => void;
-  moveItem: any;
-  splitStack: any;
-  equipItem: any;
-  unequipItem: any;
   handleSendMessage: (text: string) => void;
 }
 
 export const InGameView = ({
-  selectedCharacter,
   userEmail,
   socket,
   showEscapeMenu,
   setShowEscapeMenu,
   onLogout,
   onSelectCharacter,
-  updateHotbar,
-  moveItem,
-  splitStack,
-  equipItem,
-  unequipItem,
   handleSendMessage
 }: InGameViewProps) => {
-const isEditorOpen = useGameStore(s => s.isEditorOpen);
-  const activeMenu = useGameStore(s => s.activeMenu);
-  const setActiveMenu = useGameStore(s => s.setActiveMenu);
-  const devMode = useGameStore(s => s.devMode);
+  const { 
+    localPlayer,
+    isEditorOpen,
+    activeMenu,
+    setActiveMenu,
+    devMode
+  } = useGameStore(
+    useShallow((s: GameState) => ({
+      localPlayer: s.localPlayer,
+      isEditorOpen: s.isEditorOpen,
+      activeMenu: s.activeMenu,
+      setActiveMenu: s.setActiveMenu,
+      devMode: s.devMode,
+    }))
+  );
+
+  const { updateHotbar } = useInventory(socket);
 
   return (
     <motion.div
@@ -99,19 +103,19 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
       <div className="pointer-events-none">
         {!isEditorOpen && (
           <>
-            <PlayerHUD character={selectedCharacter} userEmail={userEmail} />
+            <PlayerHUD character={localPlayer!} userEmail={userEmail} />
             <TargetFrame />
             <PartyFrames />
             <CastBar />
             <Hotbar
-              slots={selectedCharacter.hotbar || Array(10).fill(null)}
+              slots={localPlayer?.hotbar || Array(10).fill(null)}
               onSlotAction={(index, data) => {
-                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                const newHotbar = [...(localPlayer?.hotbar || Array(10).fill(null))];
                 newHotbar[index] = data;
                 updateHotbar(newHotbar);
               }}
               onClearSlot={(index) => {
-                const newHotbar = [...(selectedCharacter.hotbar || Array(10).fill(null))];
+                const newHotbar = [...(localPlayer?.hotbar || Array(10).fill(null))];
                 newHotbar[index] = null;
                 updateHotbar(newHotbar);
               }}
@@ -135,12 +139,7 @@ const isEditorOpen = useGameStore(s => s.isEditorOpen);
         <WorldEditor socket={socket} userEmail={userEmail} />
         
         <MenuManager 
-          selectedCharacter={selectedCharacter}
           socket={socket}
-          moveItem={moveItem}
-          splitStack={splitStack}
-          equipItem={equipItem}
-          unequipItem={unequipItem}
         />
 
         <DebugOverlay socket={socket} />

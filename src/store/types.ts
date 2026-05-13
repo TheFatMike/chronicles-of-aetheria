@@ -4,11 +4,25 @@
  * Provides the central type definitions for players, entities, and world state.
  * @importance Essential: Ensures type safety and consistent state management across the entire client application.
  */
-import { GameTarget, GameEntity, Spawner, WorldObject, Quest } from '../types';
+import { 
+  GameTarget, 
+  GameEntity, 
+  Spawner, 
+  WorldObject, 
+  Quest, 
+  Character, 
+  InventoryItem, 
+  WorldObjectType, 
+  Message,
+  DialogueOption, 
+  Shop, 
+  ShopItem,
+  CombatText
+} from '@shared/types';
 
 export interface PlayerState {
   id: string;
-  characterName: string;
+  name: string;
   displayName: string;
   class: string;
   color: string;
@@ -26,9 +40,9 @@ export interface PlayerState {
   exp?: number;
   maxExp?: number;
   gold?: number;
-  inventory?: (import('../types').InventoryItem | null)[];
+  inventory?: (InventoryItem | null)[];
   discoveredTeleports: string[];
-  bank?: (import('../types').InventoryItem | null)[];
+  bank?: (InventoryItem | null)[];
 }
 
 export interface Projectile {
@@ -41,22 +55,17 @@ export interface Projectile {
   createdAt: number;
 }
 
-export interface Message {
-  id: string;
-  sender: string;
-  text: string;
-  timestamp: number;
-  color: string;
-  role?: string;
-}
 
 export interface PlayerSlice {
   id: string | null;
   players: Record<string, PlayerState>;
+  localPlayer: Character | null;
   setPlayerId: (id: string | null) => void;
   setPlayers: (players: PlayerState[]) => void;
   updatePlayer: (id: string, data: Partial<PlayerState>) => void;
   removePlayer: (id: string) => void;
+  setLocalPlayer: (player: Character | null) => void;
+  updateLocalPlayer: (data: Partial<Character>) => void;
 }
 
 export interface EntitySlice {
@@ -102,6 +111,7 @@ export interface CombatSlice {
     startTime: number;
   } | null;
   projectiles: Projectile[];
+  combatTexts: CombatText[];
   setTarget: (target: GameTarget | null) => void;
   setAutoAttackTarget: (id: string | null) => void;
   setAttacking: (isAttacking: boolean) => void;
@@ -112,6 +122,8 @@ export interface CombatSlice {
   addProjectile: (p: Projectile) => void;
   removeProjectile: (id: string) => void;
   takeDamage: (id: string, amount: number) => void;
+  addCombatText: (text: CombatText) => void;
+  removeCombatText: (id: string) => void;
 }
 
 export interface UISlice {
@@ -124,7 +136,7 @@ export interface UISlice {
   editorShowOutliner: boolean;
   gridSnap: boolean;
   editorTransformMode: 'translate' | 'rotate' | 'scale';
-  editorSelectedType: import('../types').WorldObjectType | null;
+  editorSelectedType: WorldObjectType | null;
   editorBrushSize: number;
   editorBrushStrength: number;
   selectedWorldObjectId: string | null;
@@ -147,7 +159,7 @@ export interface UISlice {
     targetType?: 'player' | 'npc' | 'enemy';
     targetRole?: string;
   } | null;
-  activeLoot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null;
+  activeLoot: { targetId: string; items: (InventoryItem | null)[]; gold: number } | null;
   worldReady: boolean;
   isShopOpen: boolean;
   activeShop: Shop | null;
@@ -174,7 +186,7 @@ export interface UISlice {
   setTransforming: (val: boolean) => void;
   setGridSnap: (val: boolean) => void;
   setEditorTransformMode: (mode: 'translate' | 'rotate' | 'scale') => void;
-  setEditorSelectedType: (type: import('../types').WorldObjectType | null) => void;
+  setEditorSelectedType: (type: WorldObjectType | null) => void;
   setEditorBrushSize: (size: number) => void;
   setEditorBrushStrength: (strength: number) => void;
   setEditorShowOutliner: (val: boolean) => void;
@@ -190,29 +202,13 @@ export interface UISlice {
     targetType?: 'player' | 'npc' | 'enemy';
     targetRole?: string;
   } | null) => void;
-  setActiveLoot: (loot: { targetId: string; items: (import('../types').InventoryItem | null)[]; gold: number } | null) => void;
+  setActiveLoot: (loot: { targetId: string; items: (InventoryItem | null)[]; gold: number } | null) => void;
   setShopOpen: (isOpen: boolean, npcId?: string) => void;
   setActiveShop: (shop: Shop | null) => void;
   setBankOpen: (isOpen: boolean, npcId?: string) => void;
   setShowAllNames: (show: boolean) => void;
 }
 
-export interface DialogueOption {
-  label: string;
-  action: 'quest' | 'dialogue' | 'close' | 'shop' | 'bank';
-  targetId?: string;
-}
-
-export interface ShopItem {
-  itemId: string;
-  price: number;
-}
-
-export interface Shop {
-  id: string;
-  name: string;
-  items: ShopItem[];
-}
 
 export interface QuestSlice {
   activeDialogue: { 
@@ -266,8 +262,8 @@ export interface TradeSlice {
     p2: string;
     p1Name: string;
     p2Name: string;
-    p1Items: (import('../types').InventoryItem | null)[];
-    p2Items: (import('../types').InventoryItem | null)[];
+    p1Items: (InventoryItem | null)[];
+    p2Items: (InventoryItem | null)[];
     p1Gold: number;
     p2Gold: number;
     p1Locked: boolean;

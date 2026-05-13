@@ -6,7 +6,7 @@
  */
 import { motion, AnimatePresence } from "motion/react";
 import { Trash2, ChevronRight } from "lucide-react";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 import { CharacterPreview } from "./CharacterPreview";
 
 interface CharacterCardProps {

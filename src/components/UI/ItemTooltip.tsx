@@ -6,7 +6,7 @@
  */
 import { motion } from "motion/react";
 import { Info } from "lucide-react";
-import { InventoryItem, ItemRarity } from "../../types";
+import { InventoryItem, ItemRarity } from "@shared/types";
 import { useScaffold } from "./GameScaffold";
 
 interface ItemTooltipProps {

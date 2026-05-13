@@ -17,8 +17,13 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
   const messages = useGameStore((state) => state.messages);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(true); 
+  const [activeTab, setActiveTab] = useState<'all' | 'combat'>('all');
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const filteredMessages = messages.filter(msg => 
+    activeTab === 'all' ? msg.channel !== 'combat' : msg.channel === activeTab
+  );
 
   useEffect(() => {
     const handleGlobalKeydown = (e: KeyboardEvent) => {
@@ -50,7 +55,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [filteredMessages, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +81,24 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={14} className="text-[#c2a472]" />
-                <span className="text-[10px] font-sans font-black uppercase tracking-widest text-[#f4e4bc]">World Chat</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare size={14} className="text-[#c2a472]" />
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setActiveTab('all')}
+                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'all' ? 'bg-[#c2a472] text-[#1a1410]' : 'text-[#8b6b4d] hover:text-[#f4e4bc]'}`}
+                  >
+                    World
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('combat')}
+                    className={`text-[10px] font-sans font-black uppercase tracking-widest px-2 py-1 rounded transition-colors ${activeTab === 'combat' ? 'bg-red-900 text-[#f4e4bc]' : 'text-[#8b6b4d] hover:text-red-400'}`}
+                  >
+                    Combat
+                  </button>
+                </div>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
@@ -93,12 +113,12 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
               ref={scrollRef}
               className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3 custom-scrollbar"
             >
-              {messages.length === 0 ? (
+              {filteredMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-[9px] sm:text-[10px] font-sans font-bold text-stone-600 uppercase tracking-widest">Silence falls upon the realm...</p>
                 </div>
               ) : (
-                messages.map((msg, idx) => (
+                filteredMessages.map((msg, idx) => (
                   <div key={msg.id || `msg-${idx}-${msg.timestamp}`} className="group">
                     <div className="flex items-baseline gap-1.5 sm:gap-2 mb-0.5">
                       {msg.role && msg.role !== 'player' && (

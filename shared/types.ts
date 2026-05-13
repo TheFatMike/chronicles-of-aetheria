@@ -10,6 +10,7 @@ export interface Stats {
   wisdom: number;
   intelligence: number;
   stamina: number;
+  [key: string]: number;
 }
 
 export type SkillType = 'active' | 'passive';
@@ -81,6 +82,8 @@ export interface Character {
   gold: number;
   pos?: [number, number, number];
   rot?: [number, number, number];
+  isMoving?: boolean;
+  isGrounded?: boolean;
   discoveredTeleports: string[];
 }
 
@@ -115,6 +118,7 @@ export interface Quest {
   reward: QuestReward;
   status: 'available' | 'active' | 'completed';
   prerequisiteQuestId?: string;
+  completedAt?: number;
 }
 
 export type ItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
@@ -149,7 +153,7 @@ export interface InventoryItem {
 export interface PlayerData {
   id: string;
   displayName: string;
-  characterName: string;
+  name: string;
   class: string;
   pos: [number, number, number];
   rot: [number, number, number];
@@ -168,6 +172,17 @@ export interface PlayerData {
   discoveredTeleports?: string[];
 }
 
+export interface CameraState {
+  theta: number;
+  phi: number;
+  radius: number;
+  isLeftMouseDown: boolean;
+  isRightMouseDown: boolean;
+  lastX: number;
+  lastY: number;
+}
+
+
 export type WorldObjectType = 'tree' | 'rock' | 'house' | 'tent' | 'tower_base' | 'bush' | 'fence' | 'campfire' | 'barrel' | 'dummy' | 'chest' | 'well' | 'signpost' | 'teleport_crystal' | 'terrain_raise' | 'terrain_lower' | 'terrain_flatten' | 'terrain_paint_grass' | 'terrain_paint_dirt' | 'terrain_paint_stone' | 'terrain_paint_sand' | 'waypoint' | 'spawner_slime' | 'spawner_wolf' | 'spawner_guard' | 'spawner_instructor_kael' | 'npc_guard_captain' | 'npc_instructor_kael' | 'npc_merchant' | 'npc_elder_thorne' | 'npc_merchant_silas' | 'npc_blacksmith_torin' | 'npc_banker' | 'npc_farmer_bob' | 'delete' | 'edit' | (string & {});
 
 export interface WorldObject {
@@ -175,7 +190,7 @@ export interface WorldObject {
   type: WorldObjectType;
   pos: [number, number, number];
   rot: [number, number, number];
-  scale: number;
+  scale?: number | number[];
   modelUrl?: string;
   name?: string;
   waypointId?: string; // For pathing
@@ -186,6 +201,8 @@ export interface WorldObject {
   spawnRadius?: number;
   maxEntities?: number;
   respawnTime?: number;
+  shopId?: string;
+  role?: string;
 }
 
 export interface TeleportPoint {
@@ -220,11 +237,16 @@ export interface Spawner {
   maxEntities: number;
   respawnTime: number; // in seconds
   pathId?: string; // For assigned guard paths
+  lastSpawn?: number;
+  spawnInterval?: number;
 }
 
 export interface GameEntity extends GameTarget {
   pos: [number, number, number];
   rot: [number, number, number];
+  stats: any;
+  velocity?: { x: number; y: number; z: number };
+  scale?: number | number[];
   spawnerId?: string;
   entityClass?: string;
   lastUpdate: number;
@@ -232,13 +254,50 @@ export interface GameEntity extends GameTarget {
   isAttacking?: boolean;
   isDead?: boolean;
   loot?: string[]; // Array of Item IDs
+  lootInstances?: any[]; // Generated InventoryItem instances
+  gold?: number;
   pathId?: string;
   currentWaypointIndex?: number;
   aiState?: string;
   homePos?: [number, number, number];
+  shopId?: string;
   expReward?: number;
   targetId?: string | null;
   lastAttackTime?: number;
   modelUrl?: string;
 }
+export interface Message {
+  id: string;
+  sender: string;
+  text: string;
+  timestamp: number;
+  color: string;
+  role?: string;
+  channel?: 'global' | 'combat' | 'system';
+}
 
+export interface CombatText {
+  id: string;
+  amount: number;
+  type: 'damage' | 'heal' | 'miss';
+  pos: [number, number, number];
+  isCrit?: boolean;
+  createdAt: number;
+}
+
+export interface DialogueOption {
+  label: string;
+  action: 'quest' | 'dialogue' | 'close' | 'shop' | 'bank';
+  targetId?: string;
+}
+
+export interface ShopItem {
+  itemId: string;
+  price: number;
+}
+
+export interface Shop {
+  id: string;
+  name: string;
+  items: ShopItem[];
+}

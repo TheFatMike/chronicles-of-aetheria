@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { collection, query, orderBy, getDocs, doc, getDoc, setDoc, runTransaction, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
-import { Character } from "../types";
+import { Character } from "@shared/types";
 import { CHARACTER_CLASSES, SAMPLE_ITEMS } from "../constants";
 import { CharacterModel } from "../models/CharacterModel";
 import { User } from "firebase/auth";

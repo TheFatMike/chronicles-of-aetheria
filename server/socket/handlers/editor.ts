@@ -7,7 +7,7 @@
 import { Socket, Server } from "socket.io";
 import { z } from "zod";
 import admin from "firebase-admin";
-import { players, worldObjects, spawners, spawnerEntityCounts, entities, terrainData } from "../../state";
+import { players, worldObjects, spawners, spawnerEntityCounts, entities, terrainData, ServerCharacter } from "../../state";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { loadTerrainRegion } from "../../systems/persistence";
@@ -17,11 +17,11 @@ import { clearAICache } from "../../systems/ai";
 import { SaveWorldObjectSchema, BatchSaveSchema } from "../../lib/schemas";
 import { validatePayload } from "../../lib/validation";
 
-export const isEditorAuthorized = (socket: Socket, player: any) => {
+export const isEditorAuthorized = (socket: Socket, player: any): player is ServerCharacter => {
   const email = (socket as any).email;
   const ownerEmails = (process.env.OWNER_EMAILS || "").toLowerCase().split(",");
   const isOwnerEmail = email && ownerEmails.includes(email.toLowerCase());
-  return player && (player.role === 'owner' || player.role === 'dev' || player.role === 'admin' || isOwnerEmail);
+  return !!player && (player.role === 'owner' || player.role === 'dev' || player.role === 'admin' || isOwnerEmail);
 };
 
 export const handleSaveWorldObject = async (io: Server, socket: Socket, data: any) => {
@@ -79,7 +79,7 @@ export const handleSaveWorldObject = async (io: Server, socket: Socket, data: an
     }
 
     io.emit("world_object_updated", worldObj);
-    serverLogger.info("world", `${player.characterName} updated ${type} (${id})`);
+    serverLogger.info("world", `${player.name} updated ${type} (${id})`);
 
     socket.emit("chat_message", {
       id: "sys-" + Date.now(),
@@ -146,7 +146,7 @@ export const handleRemoveWorldObject = async (io: Server, socket: Socket, data: 
     }
 
     io.emit("world_object_removed", { id });
-    serverLogger.info("world", `${player.characterName} removed world object ${id}`);
+    serverLogger.info("world", `${player.name} removed world object ${id}`);
   } catch (e: any) {
     serverLogger.error("world", "Failed to remove world object", e.message);
   }
@@ -160,12 +160,12 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
   if (!isEditorAuthorized(socket, player)) return;
 
   const { saves = [], deletes = [], terrain = [] } = validated;
-  serverLogger.info("world", `Batch save request: ${saves.length} saves, ${deletes.length} deletes, ${terrain.length} terrain pts from ${player.characterName}`);
+  serverLogger.info("world", `Batch save request: ${saves.length} saves, ${deletes.length} deletes, ${terrain.length} terrain pts from ${player.name}`);
   
   // 1. Safety Limit: Prevent massive DoS-style payloads
   const totalOps = saves.length + deletes.length + terrain.length;
   if (totalOps > 5000) {
-    serverLogger.warn("world", `Rejected oversized batch from ${player.characterName} (${totalOps} ops)`);
+    serverLogger.warn("world", `Rejected oversized batch from ${player.name} (${totalOps} ops)`);
     return;
   }
 
@@ -189,7 +189,7 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
       // 2. Process all operations in this chunk
       const terrainByChunk = new Map<string, Record<string, any>>();
       const objectsByChunk = new Map<string, Record<string, any>>();
-      const { OBJECT_TEMPLATES } = await import("../../../src/data/world/templates");
+      const { OBJECT_TEMPLATES } = await import("../../../shared/data/world/templates");
 
       for (const op of chunk) {
         if (op.type === 'delete') {
@@ -361,9 +361,9 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
     }
 
     socket.emit("world_save_status", { success: true, count: totalOps });
-    serverLogger.info("world", `[SUCCESS] ${player.characterName} batch saved ${totalOps} changes.`);
+    serverLogger.info("world", `[SUCCESS] ${player.name} batch saved ${totalOps} changes.`);
   } catch (e: any) {
-    serverLogger.error("world", `[CRITICAL FAILURE] Batch save failed for ${player.characterName}: ${e.message}`);
+    serverLogger.error("world", `[CRITICAL FAILURE] Batch save failed for ${player.name}: ${e.message}`);
     socket.emit("world_save_status", { success: false, error: e.message });
   }
 };

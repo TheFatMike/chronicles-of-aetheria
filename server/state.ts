@@ -4,10 +4,23 @@
  * Tracks players, entities, parties, trades, and terrain data in real-time.
  * @importance Critical: Serves as the authoritative source of truth for the game world's current state on the server.
  */
-export const players = new Map<string, any>();
-export const entities = new Map<string, any>();
-export const spawners = new Map<string, any>();
-export const worldObjects = new Map<string, any>();
+import { Character, GameEntity, Spawner, WorldObject } from "../shared/types";
+
+export interface ServerCharacter extends Character {
+  userId: string;
+  characterId: string;
+  partyId?: string;
+  pos: [number, number, number];
+  rot: [number, number, number];
+  lastMovePacketTime?: number;
+  lastMoveTime?: number;
+  airTime?: number;
+}
+
+export const players = new Map<string, ServerCharacter>();
+export const entities = new Map<string, GameEntity>();
+export const spawners = new Map<string, Spawner>();
+export const worldObjects = new Map<string, WorldObject>();
 export const logoutTimers = new Map<string, NodeJS.Timeout>();
 export const lastSkillUse = new Map<string, Record<string, number>>(); // socketId -> { skillId: timestamp }
 export const lastChatMessage = new Map<string, number>(); // socketId -> timestamp

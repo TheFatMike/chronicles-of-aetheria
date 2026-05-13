@@ -4,8 +4,8 @@
  * Handles skill execution, damage calculations, and state updates for combat participants.
  * @importance Critical: The heart of the game's combat system, ensuring fair and synchronized interactions.
  */
-import { ALL_SKILLS } from "../../src/data/skills";
-import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../src/lib/gameUtils";
+import { ALL_SKILLS } from "../../shared/data/skills";
+import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../shared/logic/gameRules";
 import { players, entities, lastSkillUse, parties, dirtyEntities, dirtyPlayers } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
@@ -14,6 +14,7 @@ import { ENTITY_TEMPLATES } from "../data/entityTemplates";
 import { CharacterModel } from "../../src/models/CharacterModel";
 import { markPlayerDirty } from "../lib/stateUtils";
 import { decrementSpawnerCount } from "../systems/spawners";
+import { broadcastToNearbyPlayers } from "../systems/spatial";
 import { CastSkillSchema } from "../lib/schemas";
 import { validatePayload } from "../lib/validation";
 
@@ -60,7 +61,8 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
     
     // Account for target size (radius) in the range check
     // We add half the target's scale to the allowable range
-    const targetRadius = (targetEntity.scale || 1) / 2;
+    const scaleVal = Array.isArray(targetEntity.scale) ? targetEntity.scale[0] : (targetEntity.scale || 1);
+    const targetRadius = scaleVal / 2;
     const maxRange = (skill.range || 3) + targetRadius + 1.5;
     
     if (dist > maxRange) {
@@ -106,7 +108,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   });
 
   // Calculate amount
-  const stats = calculateTotalStats(player.stats || {}, player.equipment || {});
+  const stats = calculateTotalStats(player.stats, player.equipment);
   let amount = 0;
 
   if (skill.scalingType === 'magic') {
@@ -134,7 +136,16 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         maxExp: target.maxExp, 
         gold: target.gold 
       });
-      socket.emit("chat_message", { id: Math.random().toString(), sender: "Combat", text: `You cast ${skill.name} for ${amount} healing!`, timestamp: Date.now(), color: "#22c55e" });
+      socket.emit("chat_message", { id: Math.random().toString(), sender: "Combat", text: `You cast ${skill.name} for ${amount} healing!`, timestamp: Date.now(), color: "#22c55e", channel: "combat" });
+      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", {
+        id: Math.random().toString(),
+        sourceId: player.id,
+        targetId: target.id,
+        amount: amount,
+        type: "heal",
+        pos: target.pos,
+        createdAt: Date.now()
+      });
     }
     return;
   }
@@ -142,7 +153,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   // Damage
   if (validated.targetId) {
     const target = entities.get(validated.targetId);
-    if (target && !target.isDead) {
+    if (target && !target.isDead && target.hp !== undefined) {
       // PREVENT NPC DAMAGE
       if (target.type === 'npc') {
         socket.emit("chat_message", { 
@@ -164,7 +175,18 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         sender: "Combat",
         text: `You used ${skill.name} on ${target.name} for ${amount} damage!`,
         timestamp: Date.now(),
-        color: skill.id === 'basic_attack' ? "#9ca3af" : "#ef4444"
+        color: skill.id === 'basic_attack' ? "#9ca3af" : "#ef4444",
+        channel: "combat"
+      });
+
+      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", {
+        id: Math.random().toString(),
+        sourceId: player.id,
+        targetId: target.id,
+        amount: amount,
+        type: "damage",
+        pos: target.pos,
+        createdAt: Date.now()
       });
 
       if (target.hp <= 0 && !target.isDead) {
@@ -173,7 +195,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         decrementSpawnerCount(target.spawnerId);
         // Generate loot from template
         const loot: string[] = [];
-        const templateKey = target.class.toLowerCase();
+        const templateKey = (target.class || "").toLowerCase();
         const template = ENTITY_TEMPLATES[templateKey];
         
         let goldDrop = 0;
@@ -204,7 +226,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         
         serverLogger.info("combat", `Target ${target.name} died. Class: ${target.class}, TemplateKey: ${templateKey}, Found: ${!!template}. Loot: ${loot.join(', ')}, Gold: ${goldDrop}`);
 
-        serverLogger.info("combat", `${player.characterName} killed ${target.name}!`);
+        serverLogger.info("combat", `${player.name} killed ${target.name}!`);
 
         // XP & LOOT
         const expReward = target.expReward || 0;
@@ -234,13 +256,13 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
               if (dist < 50) {
                 const memberSocket = io.sockets.sockets.get(mId);
                 if (memberSocket) {
-                  updateQuestProgress(memberSocket, member, "kill", target.class);
+                  updateQuestProgress(memberSocket, member, "kill", target.class || "");
                 }
               }
             }
           });
         } else {
-          updateQuestProgress(socket, player, "kill", target.class);
+          updateQuestProgress(socket, player, "kill", target.class || "");
         }
         
         // Cleanup corpse after 5 minutes
@@ -282,7 +304,7 @@ export function giveExperience(io: any, player: any, amount: number) {
           ...party,
           memberDetails: party.members.map((id: string) => {
             const p = players.get(id);
-            return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
+            return p ? { id: p.id, name: p.name, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
           }).filter(Boolean)
         };
         party.members.forEach((mId: string) => io.to(mId).emit("party_update", updateData));

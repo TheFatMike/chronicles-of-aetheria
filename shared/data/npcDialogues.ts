@@ -1,5 +1,5 @@
 import { Quest } from "../types";
-import { DialogueOption } from "../store/types";
+import { DialogueOption } from "../types";
 import { SAMPLE_QUESTS } from "./quests";
 
 export interface DialogueNode {

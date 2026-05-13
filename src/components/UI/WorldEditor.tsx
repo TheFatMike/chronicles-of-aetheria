@@ -7,14 +7,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useShallow } from 'zustand/react/shallow';
-import { WorldObject } from '../../types';
+import { WorldObject } from '@shared/types';
 import { AnimatePresence, motion } from 'motion/react';
 import { Save, Settings2, Activity, List } from 'lucide-react';
 import { AssetLibrary } from './AssetLibrary';
 import { EditorInspector } from './EditorInspector';
 import { EditorOutliner } from './EditorOutliner';
 import { snapVectorToGrid } from '../../lib/gameUtils';
-import { OBJECT_TEMPLATES } from '../../data/world/templates';
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 
 export const WorldEditor = ({ socket, userEmail }: { socket: any, userEmail?: string | null }) => {
   const { 

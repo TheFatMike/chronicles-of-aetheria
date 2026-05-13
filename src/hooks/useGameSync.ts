@@ -7,17 +7,15 @@
 import { useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { useGameStore } from "../store/useGameStore";
-import { Character } from "../types";
+import { Character } from "@shared/types";
 import { logger } from "../lib/logger";
 
 interface useGameSyncProps {
   socket: Socket | null;
-  selectedCharacter: Character | null;
-  setSelectedCharacter: React.Dispatch<React.SetStateAction<Character | null>>;
   connected: boolean;
 }
 
-export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, connected }: useGameSyncProps) => {
+export const useGameSync = ({ socket, connected }: useGameSyncProps) => {
   useEffect(() => {
     if (!socket || !connected) return;
     
@@ -26,11 +24,11 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
 
     const listeners = {
       "quest_update": (newQuests: any) => {
-        setSelectedCharacter(prev => prev ? { ...prev, quests: newQuests } : null);
+        store.updateLocalPlayer({ quests: newQuests });
         store.setActiveQuests(newQuests);
       },
       "session_start": (confirmedState: any) => {
-        setSelectedCharacter(prev => prev ? { ...prev, ...confirmedState } : null);
+        store.setLocalPlayer(confirmedState);
         store.setActiveQuests(confirmedState.quests || {});
         if (confirmedState.pos) store.requestTeleport(confirmedState.pos);
         if (confirmedState.discoveredTeleports) {
@@ -41,22 +39,22 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         store.setPlayerId(socket.id || null);
       },
       "inventory_update": (data: any) => {
-        setSelectedCharacter(prev => prev ? { ...prev, inventory: data.inventory } : null);
+        store.updateLocalPlayer({ inventory: data.inventory });
         if (socket.id) store.updatePlayer(socket.id, { inventory: data.inventory });
       },
       "bank_update": (data: any) => {
-        setSelectedCharacter(prev => prev ? { ...prev, bank: data.bank } : null);
+        store.updateLocalPlayer({ bank: data.bank });
         if (socket.id) store.updatePlayer(socket.id, { bank: data.bank });
       },
       "player_stats": (data: any) => {
         if (data.id === socket.id) {
-          setSelectedCharacter(prev => {
-            if (!prev) return null;
-            // Only trigger re-render if values actually changed
+          const prev = store.localPlayer;
+          if (prev) {
             const hasChanged = Object.entries(data).some(([k, v]) => (prev as any)[k] !== v && v !== undefined);
-            if (!hasChanged) return prev;
-            return { ...prev, ...data };
-          });
+            if (hasChanged) {
+              store.updateLocalPlayer(data);
+            }
+          }
         }
         // Also update the players map in the store for other systems
         store.updatePlayer(data.id, data);
@@ -86,7 +84,15 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
         }
       },
       "role_update": (data: { role: string }) => {
-        setSelectedCharacter(prev => prev ? { ...prev, role: data.role } : null);
+        store.updateLocalPlayer({ role: data.role });
+      },
+      "world_ready": () => {
+        store.setWorldReady(true);
+        logger.info("system", "World manifestation complete.");
+      },
+      "move_sync": (data: { pos: [number, number, number], rot: [number, number, number] }) => {
+        store.requestTeleport(data.pos);
+        if (socket?.id) store.updatePlayer(socket.id, { pos: data.pos, rot: data.rot });
       }
     };
 
@@ -106,5 +112,5 @@ export const useGameSync = ({ socket, selectedCharacter, setSelectedCharacter, c
       socket.off("loot_update", listeners.loot_opened);
     };
 
-  }, [socket, connected, setSelectedCharacter]);
+  }, [socket, connected]);
 };

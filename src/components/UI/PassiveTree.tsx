@@ -7,8 +7,8 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Target, Zap, Shield, Heart, Brain, ScrollText } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
-import { getClassPassives } from '../../data/passives';
-import { PassiveNode, Character } from '../../types';
+import { getClassPassives } from "@shared/data/passives";
+import { PassiveNode, Character } from '@shared/types';
 
 interface PassiveTreeProps {
   character: Character;

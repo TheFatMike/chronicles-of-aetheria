@@ -6,7 +6,7 @@
  */
 import React, { useState, memo } from "react";
 import { motion } from "motion/react";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 import { Plus, ChevronRight, Trash2, LogOut, ArrowUpDown } from "lucide-react";
 import { ParticleEffect } from "./Particles";
 import { CharacterPreview } from "./CharacterPreview";

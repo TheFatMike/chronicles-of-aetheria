@@ -5,7 +5,7 @@
  * @importance Essential: Key for inventory management and preparing items for trade or use.
  */
 import { motion } from "motion/react";
-import { InventoryItem } from "../../types";
+import { InventoryItem } from "@shared/types";
 
 interface SplitStackModalProps {
   item: InventoryItem;

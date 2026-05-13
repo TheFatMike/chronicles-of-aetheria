@@ -36,7 +36,7 @@ export const GameMenu = ({ onClose, onSelectCharacter, onLogout }: GameMenuProps
   const isDev = 
     localPlayer?.role === 'dev' || 
     localPlayer?.role === 'admin' ||
-    (localPlayer?.characterName === 'Michael'); // Fallback for name if role sync is weird
+    (localPlayer?.name === 'Michael'); // Fallback for name if role sync is weird
 
   return (
     <motion.div 

@@ -48,7 +48,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
       for (const [sid, p] of players.entries()) {
         if (p.userId === targetUserId) {
           onlineSocketId = sid;
-          targetName = p.characterName;
+          targetName = p.name;
           break;
         }
       }
@@ -59,7 +59,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
         return;
       }
       targetUserId = targetPlayer.userId;
-      targetName = targetPlayer.characterName;
+      targetName = targetPlayer.name;
       onlineSocketId = targetId;
       currentRole = targetPlayer.role || "player";
     }
@@ -110,7 +110,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
         io.to(onlineSocketId).emit("role_update", { role });
         io.to(onlineSocketId).emit("chat_message", { 
           sender: "SYSTEM", 
-          text: `You have been promoted to ${role.toUpperCase()} by ${sender.characterName}!`, 
+          text: `You have been promoted to ${role.toUpperCase()} by ${sender.name}!`, 
           color: "#facc15" 
         });
         // Broadcast to all to update nameplates/chat tags
@@ -125,7 +125,7 @@ export const handlePromotePlayer = async (io: Server, socket: Socket, data: { ta
       color: "#22c55e" 
     });
 
-    serverLogger.info("staff", `${sender.characterName} promoted ${targetName} (${targetUserId}) to ${role}`);
+    serverLogger.info("staff", `${sender.name} promoted ${targetName} (${targetUserId}) to ${role}`);
   } catch (e: any) {
     serverLogger.error("staff", "Promotion failed", e.message);
     socket.emit("chat_message", { sender: "SYSTEM", text: "Failed to update player role in database.", color: "#ff4444" });

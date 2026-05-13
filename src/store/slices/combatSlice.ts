@@ -14,6 +14,7 @@ export const createCombatSlice: StateCreator<GameState, [], [], CombatSlice> = (
   skillCooldowns: {},
   castState: null,
   projectiles: [],
+  combatTexts: [],
 
   setTarget: (target) => set((state) => ({ 
     currentTarget: target,
@@ -69,4 +70,7 @@ export const createCombatSlice: StateCreator<GameState, [], [], CombatSlice> = (
       currentTarget: state.currentTarget?.id === id ? { ...state.currentTarget, hp: newHp } as any : state.currentTarget
     };
   }),
+
+  addCombatText: (text) => set(state => ({ combatTexts: [...state.combatTexts, text] })),
+  removeCombatText: (id) => set(state => ({ combatTexts: state.combatTexts.filter(t => t.id !== id) })),
 });

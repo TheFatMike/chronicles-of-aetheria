@@ -23,7 +23,7 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
   const isAdminEmail = email?.toLowerCase() === "michaeljhoward94@gmail.com";
   if (!player || (player.role !== 'dev' && !isAdminEmail)) return;
 
-  serverLogger.info("terrain", `Processing ${data.points.length} points from ${player.characterName}`);
+  serverLogger.info("terrain", `Processing ${data.points.length} points from ${player.name}`);
 
   const updates: any[] = [];
 
@@ -55,7 +55,14 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
     }
 
     import("../../redis").then(m => m.redis.publish("terrain:sync", JSON.stringify(updates)));
-    io.emit("terrain_sync", updates);
+    
+    // Broadcast to players near the center of the updates
+    const avgX = updates.reduce((sum, p) => sum + p.x, 0) / updates.length;
+    const avgZ = updates.reduce((sum, p) => sum + p.z, 0) / updates.length;
+    
+    import("../../systems/spatial").then(spatial => {
+      spatial.broadcastToNearbyPlayers(io, [avgX, 0, avgZ], 150, "terrain_sync", updates);
+    });
   }
 };
 

@@ -39,7 +39,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     }
 
     if (existingPlayer) {
-      serverLogger.info("net", `Session Takeover for ${existingPlayer.characterName}`);
+      serverLogger.info("net", `Session Takeover for ${existingPlayer.name}`);
       const timer = logoutTimers.get(existingPlayer.id);
       if (timer) {
         clearTimeout(timer);
@@ -112,7 +112,7 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
         id: socket.id,
         userId: userId,
         characterId: validated.characterId,
-        characterName: charData.name,
+        name: charData.name,
         class: charData.class,
         color: charData.color,
         role: userRole,
@@ -140,22 +140,29 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
 
       // BACKFILL: Ensure existing players get points for their level (1 per level past 1)
       const p = players.get(socket.id);
-      const expectedTotal = (p.level || 1) - 1;
-      const spent = Object.values(p.passives || {}).reduce((sum: number, val: any) => sum + val, 0);
-      const currentAvailable = p.passivePoints || 0;
-      
-      if (spent + currentAvailable < expectedTotal) {
-        const missing = expectedTotal - (spent + currentAvailable);
-        p.passivePoints = (p.passivePoints || 0) + missing;
-        serverLogger.info("net", `Backfilled ${missing} passive points for ${p.characterName} (Level ${p.level})`);
+      if (p) {
+        const expectedTotal = (p.level || 1) - 1;
+        const spent = Object.values(p.passives || {}).reduce((sum: number, val: any) => sum + val, 0);
+        const currentAvailable = p.passivePoints || 0;
+        
+        if (spent + currentAvailable < expectedTotal) {
+          const missing = expectedTotal - (spent + currentAvailable);
+          p.passivePoints = (p.passivePoints || 0) + missing;
+          serverLogger.info("net", `Backfilled ${missing} passive points for ${p.name} (Level ${p.level})`);
+        }
       }
 
       characterNameToId.set(charData.name.toLowerCase(), socket.id);
-      updateInGrid(entityGrid, socket.id, null, players.get(socket.id).pos);
+      const player = players.get(socket.id);
+      if (player) {
+        updateInGrid(entityGrid, socket.id, null, player.pos || [0, 1, 0]);
+      }
     }
 
     const currentPlayer = players.get(socket.id);
-    serverLogger.info("net", `Player joined: ${currentPlayer.characterName} (${currentPlayer.role})`);
+    if (!currentPlayer) return;
+    
+    serverLogger.info("net", `Player joined: ${currentPlayer.name} (${currentPlayer.role})`);
 
     // --- CONSISTENT SYNC SEQUENCE (For New & Takeover Sessions) ---
     
@@ -163,9 +170,10 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     socket.emit("session_start", currentPlayer);
     
     // 2. Load & Sync World Context (Terrain & Static Objects)
-    await loadTerrainRegion(currentPlayer.pos[0], currentPlayer.pos[2]);
+    const currentPos = currentPlayer.pos || [0, 1, 0];
+    await loadTerrainRegion(currentPos[0], currentPos[2]);
     
-    const nearbyWorldObjects = filterNearby(worldObjects, currentPlayer.pos, 150, 'object');
+    const nearbyWorldObjects = filterNearby(worldObjects, currentPos, 150, 'object');
     socket.emit("world_sync", nearbyWorldObjects);
     
     handleRequestTerrainSync(socket);
@@ -174,14 +182,14 @@ export const handleJoin = async (io: Server, socket: Socket, playerData: any, us
     socket.emit("world_ready");
 
     // 4. Broadcast & Sync Active Entities (Players & NPCs)
-    const nearbyToNew = filterNearby(players, currentPlayer.pos, 150, 'entity');
+    const nearbyToNew = filterNearby(players, currentPos, 150, 'entity');
     for (const p of nearbyToNew) {
       if (p.id !== socket.id) io.to(p.id).emit("player_join", currentPlayer);
     }
     
     socket.emit("players", nearbyToNew);
     
-    const nearbyEntities = filterNearby(entities, currentPlayer.pos, 100, 'entity');
+    const nearbyEntities = filterNearby(entities, currentPos, 100, 'entity');
     socket.emit("entities", nearbyEntities);
     
     socket.emit("spawners_sync", Array.from(spawners.values()));
@@ -194,13 +202,14 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
   const player = players.get(socket.id);
   
   if (player && player.userId && player.characterId) {
-    serverLogger.info("net", `Player blipped: ${player.characterName}. 10s logout timer started.`);
+    serverLogger.info("net", `Player blipped: ${player.name}. 10s logout timer started.`);
     
     const timer = setTimeout(async () => {
       logoutTimers.delete(socket.id);
       if (!players.has(socket.id)) return;
 
       const p = players.get(socket.id);
+      if (!p) return;
 
       // Handle Party Leave
       if (p.partyId) {
@@ -239,24 +248,24 @@ export const handleDisconnect = (io: Server, socket: Socket) => {
           lastActive: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         
-        serverLogger.info("net", `Saved & Logged out: ${p.characterName}`);
+        serverLogger.info("net", `Saved & Logged out: ${p.name}`);
       } catch (e: any) {
         serverLogger.error("firestore", `Save failed for session ${socket.id}`, e.message);
       }
       
-      cleanupSession(io, socket.id, p.characterName);
+      cleanupSession(io, socket.id, p.name);
     }, 10000);
 
     logoutTimers.set(socket.id, timer);
   } else {
-    cleanupSession(io, socket.id, player?.characterName);
+    cleanupSession(io, socket.id, player?.name);
   }
 };
 
 /**
  * Centralized cleanup for player sessions to prevent memory leaks.
  */
-function cleanupSession(io: Server, socketId: string, characterName?: string) {
+function cleanupSession(io: Server, socketId: string, name?: string) {
   // 1. Grid Cleanup
   const p = players.get(socketId);
   if (p?.pos) {
@@ -273,8 +282,8 @@ function cleanupSession(io: Server, socketId: string, characterName?: string) {
   lastChatMessage.delete(socketId);
   dirtyPlayers.delete(socketId);
   
-  if (characterName) {
-    characterNameToId.delete(characterName.toLowerCase());
+  if (name) {
+    characterNameToId.delete(name.toLowerCase());
   }
 
   // 3. Redis Cleanup

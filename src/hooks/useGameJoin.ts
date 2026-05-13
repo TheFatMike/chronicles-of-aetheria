@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef } from "react";
 import { User } from "firebase/auth";
-import { Character } from "../types";
+import { Character } from "@shared/types";
 import { Socket } from "socket.io-client";
 import { useGameStore } from "../store/useGameStore";
 import { logger } from "../lib/logger";
@@ -14,7 +14,6 @@ import { getAccountRole } from "../lib/permissions";
 
 interface useGameJoinProps {
   user: User | null;
-  selectedCharacter: Character | null;
   connected: boolean;
   socket: Socket | null;
   sendJoin: (data: any) => void;
@@ -24,17 +23,17 @@ interface useGameJoinProps {
 
 export const useGameJoin = ({
   user,
-  selectedCharacter,
   connected,
   socket,
   sendJoin,
   requestWorldSync,
   setIsJoining
 }: useGameJoinProps) => {
+  const localPlayer = useGameStore(s => s.localPlayer);
   const lastJoinedRef = useRef<{ charId: string; socketId: string } | null>(null);
 
   useEffect(() => {
-    if (!setIsJoining || !selectedCharacter) return;
+    if (!setIsJoining || !localPlayer) return;
     
     // Check if essential data and assets are ready
     const checkReady = () => {
@@ -65,36 +64,36 @@ export const useGameJoin = ({
         clearTimeout(timeout);
       };
     }
-  }, [selectedCharacter, setIsJoining]);
+  }, [localPlayer, setIsJoining]);
 
   useEffect(() => {
     const socketId = socket?.id;
-    if (!user || !selectedCharacter || !connected || !socketId) return;
+    if (!user || !localPlayer || !connected || !socketId) return;
 
-    const alreadyJoined = lastJoinedRef.current?.charId === selectedCharacter.id && 
+    const alreadyJoined = lastJoinedRef.current?.charId === localPlayer.id && 
                           lastJoinedRef.current?.socketId === socketId;
 
     if (!alreadyJoined) {
-      logger.info("play", `Joining world as ${selectedCharacter.name} (${selectedCharacter.id}) | Socket: ${socketId}`);
+      logger.info("play", `Joining world as ${localPlayer.name} (${localPlayer.id}) | Socket: ${socketId}`);
       setIsJoining(true);
       useGameStore.getState().setWorldLoading(true);
       useGameStore.getState().setWorldReady(false);
-      lastJoinedRef.current = { charId: selectedCharacter.id, socketId };
+      lastJoinedRef.current = { charId: localPlayer.id, socketId };
       
       sendJoin({
         displayName: user.displayName || "Unknown User",
-        characterId: selectedCharacter.id,
-        characterName: selectedCharacter.name,
-        class: selectedCharacter.class,
-        color: selectedCharacter.color,
+        characterId: localPlayer.id,
+        characterName: localPlayer.name,
+        class: localPlayer.class,
+        color: localPlayer.color,
         role: getAccountRole(user.email),
-        pos: selectedCharacter.pos,
-        rot: selectedCharacter.rot,
-        hp: selectedCharacter.hp,
-        mp: selectedCharacter.mp
+        pos: localPlayer.pos,
+        rot: localPlayer.rot,
+        hp: localPlayer.hp,
+        mp: localPlayer.mp
       });
 
       requestWorldSync();
     }
-  }, [user, selectedCharacter, connected, socket?.id, sendJoin, requestWorldSync, setIsJoining]);
+  }, [user, localPlayer, connected, socket?.id, sendJoin, requestWorldSync, setIsJoining]);
 };

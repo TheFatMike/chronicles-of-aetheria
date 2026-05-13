@@ -11,7 +11,7 @@ import { serverLogger } from "../../logger";
 import { generateItemInstance } from "../../data/items";
 import { decrementSpawnerCount } from "../../systems/spawners";
 import { CharacterModel } from "../../../src/models/CharacterModel";
-import { InventoryItem } from "../../../src/types";
+import { InventoryItem } from "../../../shared/types";
 import { updateQuestProgress, syncQuestInventory } from "../../logic/quest";
 import { markPlayerDirty } from "../../lib/stateUtils";
 import { LootEntitySchema, TakeLootItemSchema, EquipItemSchema, UnequipItemSchema, MoveItemSchema, SplitStackSchema, DestroyItemSchema, BankDepositSchema, BankWithdrawSchema, BankMoveSchema } from "../../lib/schemas";
@@ -30,7 +30,8 @@ export const handleLootEntity = (io: Server, socket: Socket, data: any) => {
   const target = entities.get(validated.targetId);
   if (target && target.isDead) {
     const distSq = Math.pow(player.pos[0] - target.pos[0], 2) + Math.pow(player.pos[2] - target.pos[2], 2);
-    const targetRadius = (target.scale || 1) / 2;
+    const scaleVal = Array.isArray(target.scale) ? target.scale[0] : (target.scale || 1);
+    const targetRadius = scaleVal / 2;
     const maxRange = 5 + targetRadius;
 
     if (distSq <= maxRange * maxRange) {
@@ -284,7 +285,7 @@ export const handleSplitStack = (socket: Socket, data: any) => {
   if (emptyIdx === -1) return;
 
   const newInventory = [...player.inventory];
-  newInventory[fromIndex] = { ...item, quantity: item.quantity - amount };
+  newInventory[fromIndex] = { ...item, quantity: (item.quantity || 1) - amount };
   newInventory[emptyIdx] = { 
     ...item, 
     id: Math.random().toString(36).substring(2, 11), 
@@ -313,7 +314,7 @@ export const handleDestroyItem = (socket: Socket, data: any) => {
   socket.emit("inventory_update", { inventory: newInventory });
   syncQuestInventory(socket, player);
   markPlayerDirty(socket.id, ["inventory"]);
-  serverLogger.info("inventory", `Player ${player.characterName} destroyed item: ${item.name}`);
+  serverLogger.info("inventory", `Player ${player.name} destroyed item: ${item.name}`);
 };
 
 // --- Bank Handlers ---

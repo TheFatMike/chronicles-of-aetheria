@@ -2,7 +2,7 @@
  * @file src/data/shops.ts
  * @description Static definitions for in-game shops and their inventories.
  */
-import { Shop } from "../store/types";
+import { Shop } from "../types";
 
 export const SHOPS: Record<string, Shop> = {
   "general_merchant": {

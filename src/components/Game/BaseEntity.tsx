@@ -11,7 +11,7 @@ import { SelectionCircle } from "./SelectionCircle";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from 'zustand/react/shallow';
 import { useEntitySync } from "../../hooks/useEntitySync";
-import { GameTarget } from "../../types";
+import { GameTarget } from "@shared/types";
 import { useFrame } from "@react-three/fiber";
 import { SHARED_FRUSTUM } from "./WorldObjectsRenderer";
 

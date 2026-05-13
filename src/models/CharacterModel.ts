@@ -1,4 +1,4 @@
-import { Character, InventoryItem, Stats, EquipmentSlots } from "../types";
+import { Character, InventoryItem, Stats, EquipmentSlots } from "@shared/types";
 import { calculateTotalStats, calculateMaxHP, calculateMaxMP } from "../lib/gameUtils";
 
 export class CharacterModel {

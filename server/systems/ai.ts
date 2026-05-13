@@ -85,8 +85,9 @@ export const updateEntityAI = async (tickTime: number) => {
       case 'CHASE':
         break;
       case 'RETURN':
-        const rdx = entity.homePos[0] - entity.pos[0];
-        const rdz = entity.homePos[2] - entity.pos[2];
+        const hPos = entity.homePos || entity.pos;
+        const rdx = hPos[0] - entity.pos[0];
+        const rdz = hPos[2] - entity.pos[2];
         const rdSq = rdx*rdx + rdz*rdz;
         if (rdSq < 0.25) { 
           entity.aiState = entity.pathId ? 'PATROL' : 'IDLE';
@@ -109,7 +110,7 @@ export const updateEntityAI = async (tickTime: number) => {
           break;
         }
 
-        const targetWP = waypoints[entity.currentWaypointIndex % waypoints.length];
+        const targetWP = waypoints[(entity.currentWaypointIndex || 0) % waypoints.length];
         if (!targetWP) {
           entity.currentWaypointIndex = 0;
           break;
@@ -120,7 +121,7 @@ export const updateEntityAI = async (tickTime: number) => {
         const wdSq = wdx*wdx + wdz*wdz;
 
         if (wdSq < 0.25) {
-          entity.currentWaypointIndex = (entity.currentWaypointIndex + 1) % waypoints.length;
+          entity.currentWaypointIndex = ((entity.currentWaypointIndex || 0) + 1) % waypoints.length;
           entity.isMoving = false;
         } else {
           entity.isMoving = true;

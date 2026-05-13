@@ -24,7 +24,7 @@ export const registerSpawnerFromObject = (obj: any) => {
     id: spawnerId,
     name: `${entityType} Spawner`,
     type: 'enemy',
-    entityType,
+    entityClass: entityType,
     level: obj.level || 1,
     pos: obj.pos,
     spawnRadius: obj.spawnRadius || 10,
@@ -47,14 +47,14 @@ export const updateSpawners = (now: number) => {
 
       for (let i = 0; i < numToSpawn; i++) {
         const id = crypto.randomUUID();
-        const radius = spawner.radius || spawner.spawnRadius || 5;
+        const radius = spawner.spawnRadius || 5;
         const rx = (Math.random() - 0.5) * radius * 2;
         const rz = (Math.random() - 0.5) * radius * 2;
         
         const pos: [number, number, number] = [spawner.pos[0] + rx, 0, spawner.pos[2] + rz];
         const rot: [number, number, number] = [0, Math.random() * Math.PI * 2, 0];
         
-        const newEntity = createNPCEntity(id, null, spawner.entityType, pos, rot);
+        const newEntity = createNPCEntity(id, null, spawner.entityClass, pos, rot);
         
         // Inject spawner-specific logic
         const entityWithSpawner = {

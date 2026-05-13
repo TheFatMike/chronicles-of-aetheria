@@ -4,14 +4,14 @@
  */
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { InventoryItem } from "../../types";
-import { Shop as ShopType, ShopItem } from "../../store/types";
+import { InventoryItem } from "@shared/types";
+import { Shop as ShopType, ShopItem } from "@shared/types";
 import * as Icons from "lucide-react";
 import { ShoppingBag, X, Coins, ArrowRight } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useScaffold } from "./GameScaffold";
 import { formatGold, formatGoldDetailed } from "../../lib/currency";
-import { ITEMS } from "../../data/items";
+import { ITEMS } from "@shared/data/items";
 import { ItemTooltip } from "./ItemTooltip";
 
 interface ShopProps {

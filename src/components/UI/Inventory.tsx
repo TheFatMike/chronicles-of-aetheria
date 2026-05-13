@@ -6,7 +6,7 @@
  */
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { InventoryItem } from "../../types";
+import { InventoryItem } from "@shared/types";
 import * as Icons from "lucide-react";
 import { Briefcase, X, Scissors, Sword, Shield, Eye } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";

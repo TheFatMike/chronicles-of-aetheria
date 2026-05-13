@@ -2,6 +2,7 @@ import { AnimatePresence } from "motion/react";
 import { useEffect } from "react";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
+import { GameState } from "../../store/types";
 import { Map } from "./Map";
 import { QuestLog } from "./QuestLog";
 import { DialogueBox } from "./DialogueBox";
@@ -9,35 +10,29 @@ import { SpawnerManager } from "./SpawnerManager";
 import { Inventory } from "./Inventory";
 import { SkillBook } from "./SkillBook";
 import { CharacterInfo } from "./CharacterInfo";
-import { Character, InventoryItem, EquipmentSlots } from "../../types";
+import { Character, InventoryItem, EquipmentSlots } from "@shared/types";
 import { ContextMenu } from "./ContextMenu";
 import { UserPlus, Handshake, MessageSquare, X, ShoppingCart, Landmark, Sword } from "lucide-react";
-import { getNPCDialogue } from "../../data/npcDialogues";
-import { SAMPLE_QUESTS } from "../../data/quests";
+import { getNPCDialogue } from "@shared/data/npcDialogues";
+import { SAMPLE_QUESTS } from "@shared/data/quests";
 import { Shop } from "./Shop";
-import { SHOPS } from "../../data/shops";
+import { SHOPS } from "@shared/data/shops";
 import { Bank } from "./Bank";
 import { QuestWindow } from "./QuestWindow";
 import { PassiveTree } from "./PassiveTree";
 
+import { useInventory } from "../../hooks/useInventory";
+
 interface MenuManagerProps {
-  selectedCharacter: Character;
   socket: any;
-  moveItem: (from: number, to: number) => void;
-  splitStack: (from: number, amount: number) => void;
-  equipItem: (inventoryIndex: number) => void;
-  unequipItem: (slotId: keyof EquipmentSlots) => void;
 }
 
 export const MenuManager = ({
-  selectedCharacter,
-  socket,
-  moveItem,
-  splitStack,
-  equipItem,
-  unequipItem
+  socket
 }: MenuManagerProps) => {
+  const { moveItem, splitStack, equipItem, unequipItem } = useInventory(socket);
   const { 
+    localPlayer,
     activeMenu, 
     setActiveMenu, 
     activeDialogue, 
@@ -77,7 +72,8 @@ export const MenuManager = ({
     isTeleportMenuOpen,
     setTeleportMenuOpen,
     activeTeleportCrystalId
-  } = useGameStore(useShallow((s) => ({
+  } = useGameStore(useShallow((s: GameState) => ({
+    localPlayer: s.localPlayer,
     activeMenu: s.activeMenu,
     setActiveMenu: s.setActiveMenu,
     activeDialogue: s.activeDialogue,
@@ -121,15 +117,15 @@ export const MenuManager = ({
   })));
 
   // Auto-close logic for distance-based windows
-  const localPlayer = players[playerId || ""];
   
   // Quest Offer Distance check
   useEffect(() => {
-    if (activeQuestOffer && activeQuestNPCId && localPlayer) {
+    if (activeQuestOffer && activeQuestNPCId && localPlayer?.pos) {
       const npc = entities[activeQuestNPCId];
       if (npc) {
-        const dx = localPlayer.pos[0] - npc.pos[0];
-        const dz = localPlayer.pos[2] - npc.pos[2];
+        const [px, , pz] = localPlayer.pos;
+        const dx = px - npc.pos[0];
+        const dz = pz - npc.pos[2];
         const distSq = dx*dx + dz*dz;
         if (distSq > 100) { // 10 meters
           setQuestOffer(null);
@@ -140,11 +136,12 @@ export const MenuManager = ({
 
   // Bank Distance check
   useEffect(() => {
-    if (isBankOpen && activeBankNPCId && localPlayer) {
+    if (isBankOpen && activeBankNPCId && localPlayer?.pos) {
       const npc = entities[activeBankNPCId];
       if (npc) {
-        const dx = localPlayer.pos[0] - npc.pos[0];
-        const dz = localPlayer.pos[2] - npc.pos[2];
+        const [px, , pz] = localPlayer.pos;
+        const dx = px - npc.pos[0];
+        const dz = pz - npc.pos[2];
         const distSq = dx*dx + dz*dz;
         if (distSq > 64) { // 8 meters
           setBankOpen(false);
@@ -162,11 +159,12 @@ export const MenuManager = ({
 
   // Teleport Menu Distance check
   useEffect(() => {
-    if (isTeleportMenuOpen && activeTeleportCrystalId && localPlayer) {
+    if (isTeleportMenuOpen && activeTeleportCrystalId && localPlayer?.pos) {
       const crystal = (useGameStore.getState().worldObjects as any)[activeTeleportCrystalId];
       if (crystal) {
-        const dx = localPlayer.pos[0] - crystal.pos[0];
-        const dz = localPlayer.pos[2] - crystal.pos[2];
+        const [px, , pz] = localPlayer.pos;
+        const dx = px - crystal.pos[0];
+        const dz = pz - crystal.pos[2];
         const distSq = dx*dx + dz*dz;
         if (distSq > 64) { // 8 meters
           setTeleportMenuOpen(false);
@@ -184,11 +182,12 @@ export const MenuManager = ({
 
   // Shop Distance check
   useEffect(() => {
-    if (isShopOpen && activeShopNPCId && localPlayer) {
+    if (isShopOpen && activeShopNPCId && localPlayer?.pos) {
       const npc = entities[activeShopNPCId];
       if (npc) {
-        const dx = localPlayer.pos[0] - npc.pos[0];
-        const dz = localPlayer.pos[2] - npc.pos[2];
+        const [px, , pz] = localPlayer.pos;
+        const dx = px - npc.pos[0];
+        const dz = pz - npc.pos[2];
         const distSq = dx*dx + dz*dz;
         if (distSq > 64) { // 8 meters
           setShopOpen(false);
@@ -315,8 +314,8 @@ export const MenuManager = ({
         <Shop
           key="shop-window"
           shop={activeShop}
-          playerGold={selectedCharacter.gold || 0}
-          playerInventory={selectedCharacter.inventory || []}
+          playerGold={localPlayer?.gold || 0}
+          playerInventory={localPlayer?.inventory || []}
           onClose={() => setShopOpen(false)}
           onBuy={(itemId, price) => {
             if (socket) {
@@ -333,8 +332,8 @@ export const MenuManager = ({
       {isBankOpen && (
         <Bank
           key="bank-window"
-          bankItems={selectedCharacter.bank || []}
-          inventoryItems={selectedCharacter.inventory || []}
+          bankItems={localPlayer?.bank || []}
+          inventoryItems={localPlayer?.inventory || []}
           onClose={() => {
             setBankOpen(false);
           }}
@@ -549,8 +548,8 @@ export const MenuManager = ({
       {isInventoryOpen && (
         <Inventory
           key="inventory-window"
-          items={selectedCharacter.inventory || []}
-          gold={selectedCharacter.gold || 0}
+          items={localPlayer?.inventory || []}
+          gold={localPlayer?.gold || 0}
           onClose={() => setInventoryOpen(false)}
           onMoveItem={moveItem}
           onSplitStack={splitStack}
@@ -560,7 +559,7 @@ export const MenuManager = ({
       {isCharacterOpen && (
         <CharacterInfo
           key="character-window"
-          character={selectedCharacter}
+          character={localPlayer!}
           onClose={() => setCharacterOpen(false)}
           onUnequip={unequipItem}
         />
@@ -572,14 +571,14 @@ export const MenuManager = ({
         <SkillBook
           key="skills-window"
           onClose={() => setSkillsOpen(false)}
-          playerClass={selectedCharacter.class}
-          learnedSkills={selectedCharacter.skills || []}
+          playerClass={localPlayer?.class || 'warrior'}
+          learnedSkills={localPlayer?.skills || []}
         />
       )}
       {isPassiveTreeOpen && (
         <PassiveTree
           key="passive-tree-window"
-          character={selectedCharacter}
+          character={localPlayer!}
           onClose={() => setPassiveTreeOpen(false)}
           onAllocate={(nodeId) => {
             if (socket) socket.emit("allocate_passive", { nodeId });

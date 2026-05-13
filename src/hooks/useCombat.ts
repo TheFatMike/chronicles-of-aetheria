@@ -6,23 +6,21 @@
  */
 import { useCallback, useRef, useEffect } from "react";
 import { useGameStore } from "../store/useGameStore";
-import { Character, Skill } from "../types";
+import { Character, Skill } from "@shared/types";
 import { useShallow } from "zustand/react/shallow";
 import { calculatePhysicalDamage, calculateMagicDamage, calculateTotalStats } from "../lib/gameUtils";
 import { logger } from "../lib/logger";
-import { ALL_SKILLS } from "../data/skills";
+import { ALL_SKILLS } from "@shared/data/skills";
 
-export const useCombat = (
-  selectedCharacter: Character | null, 
-  setSelectedCharacter: React.Dispatch<React.SetStateAction<Character | null>>,
-  socket: any
-) => {
+export const useCombat = (socket: any) => {
   const { 
+    localPlayer,
     currentTarget, 
     autoAttackTargetId, 
     setAutoAttackTarget, 
     setTarget 
   } = useGameStore(useShallow(state => ({
+    localPlayer: state.localPlayer,
     currentTarget: state.currentTarget,
     autoAttackTargetId: state.autoAttackTargetId,
     setAutoAttackTarget: state.setAutoAttackTarget,
@@ -41,15 +39,15 @@ export const useCombat = (
     let self = state.id ? players[state.id] : null;
     
     if (!self) {
-      const matchingPlayer = Object.values(players).find(p => p.characterName === selectedCharacter?.name);
+      const matchingPlayer = Object.values(players).find(p => p.name === localPlayer?.name);
       if (matchingPlayer) self = matchingPlayer as any;
     }
 
     if (!self) {
-      self = { id: state.id || "unknown", pos: selectedCharacter?.pos || [0,0,0] } as any;
+      self = { id: state.id || "unknown", pos: localPlayer?.pos || [0,0,0] } as any;
     }
 
-    if (!selectedCharacter || !socket) return;
+    if (!localPlayer || !socket) return;
 
     // 1. Check Cooldown
     const now = Date.now();
@@ -68,7 +66,7 @@ export const useCombat = (
     }
 
     // 2. Check Mana
-    if (selectedCharacter.mp < skill.manaCost) {
+    if (localPlayer.mp < skill.manaCost) {
       addMessage({
         id: Math.random().toString(),
         sender: "System",
@@ -173,7 +171,7 @@ export const useCombat = (
     // 5. Send Intent to Server
     socket.emit("cast_skill", {
         skillId: skill.id,
-        targetId: currentTarget?.id || (skill.healingMultiplier ? selectedCharacter.id : undefined)
+        targetId: currentTarget?.id || (skill.healingMultiplier ? localPlayer.id : undefined)
     });
 
     // Trigger animation
@@ -181,7 +179,7 @@ export const useCombat = (
     setAttacking(true);
     setTimeout(() => setAttacking(false), 300);
 
-  }, [selectedCharacter, socket, addMessage, setSelectedCharacter]);
+  }, [localPlayer, socket, addMessage, currentTarget, setSkillCooldown]);
 
 
   const basicAttack = useCallback(() => {
@@ -196,7 +194,7 @@ export const useCombat = (
 
   // Auto-Attack Loop
   useEffect(() => {
-    if (!autoAttackTargetId || !selectedCharacter) return;
+    if (!autoAttackTargetId || !localPlayer) return;
 
     const interval = setInterval(() => {
       // Check if target still exists, is correct, and is alive
@@ -210,12 +208,12 @@ export const useCombat = (
     }, 950); // Slightly more than cooldown (800ms) to ensure it's ready
 
     return () => clearInterval(interval);
-  }, [autoAttackTargetId, selectedCharacter, basicAttack, setAutoAttackTarget]);
+  }, [autoAttackTargetId, localPlayer, basicAttack, setAutoAttackTarget]);
 
   const useSlot = useCallback(async (slotIndex: number) => {
-    if (!selectedCharacter || !socket) return;
+    if (!localPlayer || !socket) return;
     
-    const slot = selectedCharacter.hotbar[slotIndex];
+    const slot = localPlayer.hotbar[slotIndex];
     if (!slot) return;
 
     if (slot.type === 'skill') {
@@ -228,7 +226,7 @@ export const useCombat = (
       // Handle item use (potions etc)
       logger.info("combat", `Using item: ${slot.data.name}`);
     }
-  }, [selectedCharacter, socket, useSkill, currentTarget, setAutoAttackTarget]);
+  }, [localPlayer, socket, useSkill, currentTarget, setAutoAttackTarget]);
 
   return { useSkill, useSlot, basicAttack, stopCombat };
 };

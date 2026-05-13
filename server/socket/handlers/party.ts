@@ -29,17 +29,17 @@ export const handlePartyInvite = (io: Server, socket: Socket, targetId: string) 
   }
 
   if (target.partyId) {
-    socket.emit("chat_message", { sender: "PARTY", text: `${target.characterName} is already in a party.`, color: "#ef4444" });
+    socket.emit("chat_message", { sender: "PARTY", text: `${target.name} is already in a party.`, color: "#ef4444" });
     return;
   }
 
   // Send invite to target
   io.to(targetId).emit("party_invite_received", {
     fromId: socket.id,
-    fromName: player.characterName
+    fromName: player.name
   });
 
-  socket.emit("chat_message", { sender: "PARTY", text: `Invite sent to ${target.characterName}.`, color: "#3b82f6" });
+  socket.emit("chat_message", { sender: "PARTY", text: `Invite sent to ${target.name}.`, color: "#3b82f6" });
 };
 
 export const handlePartyAccept = (io: Server, socket: Socket, inviterId: string) => {
@@ -79,12 +79,12 @@ export const handlePartyAccept = (io: Server, socket: Socket, inviterId: string)
       ...party,
       memberDetails: party.members.map((id: string) => {
         const p = players.get(id);
-        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
+        return p ? { id: p.id, name: p.name, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
       }).filter(Boolean)
     });
   });
 
-  io.emit("chat_message", { sender: "PARTY", text: `${player.characterName} has joined the party!`, color: "#22c55e" });
+  io.emit("chat_message", { sender: "PARTY", text: `${player.name} has joined the party!`, color: "#22c55e" });
 };
 
 export const handlePartyLeave = (io: Server, socket: Socket) => {
@@ -96,7 +96,7 @@ export const handlePartyLeave = (io: Server, socket: Socket) => {
   if (!party) return;
 
   party.members = party.members.filter((id: string) => id !== socket.id);
-  player.partyId = null;
+  player.partyId = undefined;
 
   if (party.members.length === 0) {
     parties.delete(partyId);
@@ -111,12 +111,12 @@ export const handlePartyLeave = (io: Server, socket: Socket) => {
       ...party,
       memberDetails: party.members.map((id: string) => {
         const p = players.get(id);
-        return p ? { id: p.id, name: p.characterName, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
+        return p ? { id: p.id, name: p.name, hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp, class: p.class, color: p.color, level: p.level } : null;
       }).filter(Boolean)
     };
     party.members.forEach((mId: string) => io.to(mId).emit("party_update", updateData));
   }
 
   socket.emit("party_update", null);
-  io.emit("chat_message", { sender: "PARTY", text: `${player.characterName} has left the party.`, color: "#f97316" });
+  io.emit("chat_message", { sender: "PARTY", text: `${player.name} has left the party.`, color: "#f97316" });
 };

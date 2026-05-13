@@ -17,7 +17,7 @@ import { InputHandler } from "../lib/movement/InputHandler";
 import { PhysicsEngine } from "../lib/movement/PhysicsEngine";
 import { CollisionSystem } from "../lib/movement/CollisionSystem";
 import { CameraManager } from "../lib/movement/CameraManager";
-import { CameraState } from "../lib/movement/types";
+import { CameraState } from "@shared/types";
 import { logger } from "../lib/logger";
 
 const PHYSICS_STEP = 1/60;

@@ -21,10 +21,10 @@ export const handleDebugToggle = (io: Server, socket: Socket, data: { category?:
 
   if (data.global) {
     DEBUG_CONFIG.ENABLED = data.enabled;
-    serverLogger.info("system", `Global Debug ${data.enabled ? 'ENABLED' : 'DISABLED'} by ${player.characterName}`);
+    serverLogger.info("system", `Global Debug ${data.enabled ? 'ENABLED' : 'DISABLED'} by ${player.name}`);
   } else if (data.category) {
     DEBUG_CONFIG.SERVER[data.category] = data.enabled;
-    serverLogger.info("system", `Debug Category ${data.category} ${data.enabled ? 'ENABLED' : 'DISABLED'} by ${player.characterName}`);
+    serverLogger.info("system", `Debug Category ${data.category} ${data.enabled ? 'ENABLED' : 'DISABLED'} by ${player.name}`);
   }
 
   // Broadcast the updated config to all other developers if needed, 

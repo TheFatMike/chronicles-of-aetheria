@@ -10,8 +10,8 @@ import { NPC } from "./NPC";
 import { SlimeEnemy, SkeletonEnemy, GoblinEnemy } from "./Enemy";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
-import { SAMPLE_QUESTS } from "../../data/quests";
-import { getNPCDialogue } from "../../data/npcDialogues";
+import { SAMPLE_QUESTS } from "@shared/data/quests";
+import { getNPCDialogue } from "@shared/data/npcDialogues";
 
 import { useThree } from "@react-three/fiber";
 

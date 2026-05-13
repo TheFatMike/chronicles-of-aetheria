@@ -5,9 +5,9 @@
  */
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Quest, InventoryItem } from '../../types';
+import { Quest, InventoryItem } from '@shared/types';
 import { X, CheckCircle2, Coins, Sparkles, Box } from 'lucide-react';
-import { ITEMS } from '../../data/items';
+import { ITEMS } from "@shared/data/items";
 import * as Icons from 'lucide-react';
 import { ItemTooltip } from './ItemTooltip';
 import { useScaffold } from './GameScaffold';

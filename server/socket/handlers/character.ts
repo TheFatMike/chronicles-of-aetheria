@@ -9,7 +9,7 @@ import admin from "firebase-admin";
 import { db } from "../../db";
 import { serverLogger } from "../../logger";
 import { CHARACTER_CLASSES } from "../../../src/constants";
-import { EquipmentSlots } from "../../../src/types";
+import { EquipmentSlots } from "../../../shared/types";
 import { CLASS_STARTING_GEAR, generateItemInstance } from "../../data/items";
 import { CharacterModel } from "../../../src/models/CharacterModel";
 import { getUserRole } from "../../lib/auth";
@@ -163,7 +163,7 @@ export const handleUpdateCharacter = async (socket: Socket, data: any) => {
       // 3. Broadcast update to the client themselves (confirmation)
       socket.emit("character_update", data);
       
-      serverLogger.debug("net", `Updated character ${player.characterName} fields: ${updates.join(", ")}`);
+      serverLogger.debug("net", `Updated character ${player.name} fields: ${updates.join(", ")}`);
     }
   } catch (e: any) {
     serverLogger.error("net", "Character update failed", e.message);

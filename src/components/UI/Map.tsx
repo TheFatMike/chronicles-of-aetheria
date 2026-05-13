@@ -212,7 +212,7 @@ const MapMarker = memo(({ id, isLocal, toMapCoords }: { id: string, isLocal: boo
             style={{ backgroundColor: player.color }}
           />
           <div className="absolute top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 px-2 py-1 rounded text-[8px] font-black text-[#f4e4bc] border border-[#c2a472]/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none uppercase tracking-tighter">
-            {player.characterName}
+            {player.name}
           </div>
         </div>
       )}

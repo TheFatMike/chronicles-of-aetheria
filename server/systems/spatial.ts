@@ -4,7 +4,7 @@
  * Used for efficient collision detection, proximity filtering, and localized network updates.
  * @importance Essential: Crucial for server performance, allowing the engine to handle many entities by limiting calculations to nearby objects.
  */
-import { worldObjects } from "../state";
+import { worldObjects, players } from "../state";
 import * as THREE from 'three';
 import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
 
@@ -60,6 +60,29 @@ export function getNearbyGridKeys(pos: [number, number, number], radius: number 
 }
 
 /**
+ * Broadcasts a socket event only to players within a specific radius.
+ */
+export function broadcastToNearbyPlayers(io: any, pos: [number, number, number], radius: number, event: string, payload: any) {
+  const nearbyKeys = getNearbyGridKeys(pos, radius);
+  const processed = new Set<string>();
+  
+  for (const key of nearbyKeys) {
+    const occupantIds = entityGrid.get(key);
+    if (!occupantIds) continue;
+
+    for (const otherId of occupantIds) {
+      if (processed.has(otherId)) continue;
+      
+      const otherPlayer = players.get(otherId);
+      if (otherPlayer) {
+        io.to(otherId).emit(event, payload);
+        processed.add(otherId);
+      }
+    }
+  }
+}
+
+/**
  * Transforms world coordinates to a local space relative to an object's position and rotation.
  */
 export function toLocalSpace(worldPos: [number, number, number], objPos: [number, number, number], rotY: number): { x: number, z: number, y: number } {
@@ -94,9 +117,9 @@ export function getObjectDimensions(type: string, scale: any) {
   // We only keep primitive dimensions for entities that don't have static world meshes.
   if (t === 'npc' || t === 'enemy' || t === 'spawner') {
     const s = scale || 1;
-    const width = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1));
-    const height = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1));
-    const depth = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1));
+    const width = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1);
+    const height = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1);
+    const depth = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1);
     return { width, height, depth, shapeType: 'circle' };
   }
 
@@ -130,9 +153,9 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
         _tempRot.set(rot[0], rot[1], rot[2]);
         const s = scale || 1;
         _tempScale.set(
-          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
-          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
-          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
+          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1),
+          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1),
+          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1)
         );
         
         mesh.position.copy(_tempPos);
@@ -245,8 +268,9 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
     const x = Math.round(pos[0]);
     const z = Math.round(pos[2]);
     const key = `${x}_${z}`;
-    if (terrainData[key]) {
-      groundHeight = terrainData[key].y;
+    const data = terrainData.get(key);
+    if (data) {
+      groundHeight = data.y;
     }
   }
 
@@ -271,9 +295,9 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
         
         const s = scale || 1;
         _tempScale.set(
-          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : (s.x ?? 1)),
-          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : (s.y ?? 1)),
-          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : (s.z ?? 1))
+          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1),
+          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1),
+          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1)
         );
         
         mesh.position.copy(_tempPos);

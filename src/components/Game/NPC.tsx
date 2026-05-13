@@ -9,10 +9,10 @@ import { Humanoid } from "./Humanoid";
 import { BaseEntity } from "./BaseEntity";
 import { GLBModel } from "./GLBModel";
 import { useGameStore } from "../../store/useGameStore";
-import { SAMPLE_QUESTS } from "../../data/quests";
+import { SAMPLE_QUESTS } from "@shared/data/quests";
 import { useShallow } from "zustand/react/shallow";
 import { Text, Billboard } from "@react-three/drei";
-import { OBJECT_TEMPLATES } from "../../data/world/templates";
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 
 interface NPCProps {
   id: string;

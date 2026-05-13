@@ -72,4 +72,13 @@ export const createPlayerSlice: StateCreator<GameState, [], [], PlayerSlice> = (
     const newTarget = state.currentTarget?.id === id ? null : state.currentTarget;
     return { players: newPlayers, currentTarget: newTarget };
   }),
+
+  localPlayer: null,
+  setLocalPlayer: (localPlayer) => set({ localPlayer }),
+  updateLocalPlayer: (data) => set((state) => {
+    if (!state.localPlayer) return state;
+    return {
+      localPlayer: { ...state.localPlayer, ...data }
+    };
+  }),
 });

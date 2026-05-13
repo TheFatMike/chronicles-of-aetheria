@@ -6,7 +6,7 @@
  */
 import React from "react";
 import { motion } from "motion/react";
-import { HotbarSlot as HotbarSlotType, ItemRarity } from "../../types";
+import { HotbarSlot as HotbarSlotType, ItemRarity } from "@shared/types";
 import * as Icons from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 

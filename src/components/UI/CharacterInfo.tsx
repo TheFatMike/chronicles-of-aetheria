@@ -7,7 +7,7 @@
 import React, { memo, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Shield, Sword, Gem, Shirt, Footprints, Info, Activity, Zap, HardDrive, Target, Heart, Sparkles, Wind, Crosshair, Swords } from "lucide-react";
-import { Character, EquipmentSlots, InventoryItem, Stats } from "../../types";
+import { Character, EquipmentSlots, InventoryItem, Stats } from "@shared/types";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage, calculateHPRegen, calculateMPRegen } from "../../lib/gameUtils";
 import { useGameStore } from "../../store/useGameStore";
 import { ContextMenu } from "./ContextMenu";

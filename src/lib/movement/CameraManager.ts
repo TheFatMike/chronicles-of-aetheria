@@ -5,7 +5,7 @@
  * @importance Essential: Vital for providing a stable and pleasant visual perspective for the player.
  */
 import * as THREE from "three";
-import { CameraState } from "./types";
+import { CameraState } from "@shared/types";
 
 export class CameraManager {
   private targetCamPos = new THREE.Vector3();

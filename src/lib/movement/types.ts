@@ -5,6 +5,7 @@
  * @importance Essential: Ensures type safety and consistent data structures across the movement library.
  */
 import * as THREE from "three";
+import { CameraState } from "@shared/types";
 
 export interface MovementConfig {
   MOVE_SPEED: number;
@@ -15,16 +16,6 @@ export interface MovementConfig {
   MIN_RADIUS: number;
   MAX_RADIUS: number;
   isEditorOpen?: boolean;
-}
-
-export interface CameraState {
-  theta: number;
-  phi: number;
-  radius: number;
-  isLeftMouseDown: boolean;
-  isRightMouseDown: boolean;
-  lastX: number;
-  lastY: number;
 }
 
 export interface MovementState {

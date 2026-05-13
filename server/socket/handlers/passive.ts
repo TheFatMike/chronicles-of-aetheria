@@ -5,7 +5,7 @@
  */
 import { Socket } from "socket.io";
 import { players } from "../../state";
-import { PASSIVE_NODES } from "../../../src/data/passives";
+import { PASSIVE_NODES } from "../../../shared/data/passives";
 import { serverLogger } from "../../logger";
 
 export const handleAllocatePassive = (socket: Socket, data: any) => {
@@ -67,5 +67,5 @@ export const handleAllocatePassive = (socket: Socket, data: any) => {
   socket.emit("player_stats", player); // Send updated stats/points
   socket.emit("session_start", player); // Full update for the talent UI
   
-  serverLogger.info("net", `${player.characterName} allocated point to ${node.name} (${player.passivePoints} remaining)`);
+  serverLogger.info("net", `${player.name} allocated point to ${node.name} (${player.passivePoints} remaining)`);
 };

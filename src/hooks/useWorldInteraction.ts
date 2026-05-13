@@ -2,7 +2,7 @@ import { useThree } from "@react-three/fiber";
 import { useCallback, useRef } from "react";
 import * as THREE from "three";
 import { useGameStore } from "../store/useGameStore";
-import { OBJECT_TEMPLATES } from "../data/world/templates";
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 
 export const useWorldInteraction = (socket: any) => {
   const setEditorMousePoint = useGameStore(state => state.setEditorMousePoint);

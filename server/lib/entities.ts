@@ -5,7 +5,7 @@
  * @importance Essential: Orchestrates the instantiation and initial configuration of all world actors.
  */
 import { ENTITY_TEMPLATES } from "../data/entityTemplates";
-import { calculateMaxHP, calculateMaxMP } from "../../src/lib/gameUtils";
+import { calculateMaxHP, calculateMaxMP } from "../../shared/logic/gameRules";
 
 export function createNPCEntity(id: string, worldObjectId: string | null, type: string, pos: [number, number, number], rot: [number, number, number], metadata?: any) {
   const npcKey = type.replace('npc_', '');

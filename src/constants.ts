@@ -4,7 +4,7 @@
  * Includes character classes, base stats, and world-wide configuration values.
  * @importance Essential: Acts as a single source of truth for fixed game data and environmental settings.
  */
-import { InventoryItem } from "./types";
+import { InventoryItem } from "@shared/types";
 
 export const CHARACTER_CLASSES = [
   { 

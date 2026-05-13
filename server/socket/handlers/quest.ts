@@ -9,7 +9,7 @@ import { players } from "../../state";
 import { db } from "../../db";
 import admin from "firebase-admin";
 import { serverLogger } from "../../logger";
-import { SAMPLE_QUESTS } from "../../../src/data/quests";
+import { SAMPLE_QUESTS } from "../../../shared/data/quests";
 import { validateQuestState } from "../../logic/quest";
 import { giveExperience } from "../../logic/combat";
 import { generateItemInstance } from "../../data/items";

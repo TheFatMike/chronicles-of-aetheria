@@ -7,9 +7,9 @@
 import React, { memo } from "react";
 import { motion } from "motion/react";
 import { X, Book, Sparkles, Target, Zap, Clock } from "lucide-react";
-import { Skill } from "../../types";
+import { Skill } from "@shared/types";
 import { useGameStore } from "../../store/useGameStore";
-import { ALL_SKILLS, getClassSkills } from "../../data/skills";
+import { ALL_SKILLS, getClassSkills } from "@shared/data/skills";
 
 interface SkillBookProps {
   onClose: () => void;

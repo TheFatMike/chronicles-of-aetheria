@@ -49,7 +49,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     // Hardened Speed Check: 25m/s is a fast run/mount speed. 
     // 25^2 = 625
     if (speedSq > 625 && dt > 0.05) { 
-      serverLogger.warn("anti-cheat", `Speed/Teleport detected for ${player.characterName} (Speed: ${Math.sqrt(speedSq).toFixed(1)}m/s). Resetting.`);
+      serverLogger.warn("anti-cheat", `Speed/Teleport detected for ${player.name} (Speed: ${Math.sqrt(speedSq).toFixed(1)}m/s). Resetting.`);
       socket.emit("session_start", player);
       return;
     }
@@ -62,7 +62,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     if (heightAboveGround > 5.0 && !validated.isGrounded) {
       player.airTime = (player.airTime || 0) + dt;
       if (player.airTime > 3.0) { // Suspended for more than 3 seconds
-        serverLogger.warn("anti-cheat", `Fly/Hover detected for ${player.characterName} (Height: ${heightAboveGround.toFixed(1)}m). Resetting.`);
+        serverLogger.warn("anti-cheat", `Fly/Hover detected for ${player.name} (Height: ${heightAboveGround.toFixed(1)}m). Resetting.`);
         socket.emit("move_sync", { pos: [validated.pos[0], groundY, validated.pos[2]], rot: validated.rot });
         player.airTime = 0;
         return;
@@ -72,7 +72,7 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     }
   }
   
-  const oldPos = [...player.pos] as [number, number, number];
+  const oldPos = [...(player.pos || [0, 0, 0])] as [number, number, number];
   let finalPos = await resolveWorldCollision(oldPos, validated.pos);
   
   // Ground Enforcement: Keep players from falling THROUGH the ground or objects
@@ -169,7 +169,7 @@ export const handleTeleport = async (socket: Socket, data: any, io: Server) => {
     return;
   }
 
-  const oldPos = [...player.pos] as [number, number, number];
+  const oldPos = [...(player.pos || [0, 0, 0])] as [number, number, number];
   player.pos = validated.pos;
   player.lastMoveTime = Date.now(); // Reset to avoid speed check delta issues
   player.airTime = 0; // Reset air time for fly detection
@@ -200,5 +200,5 @@ export const handleTeleport = async (socket: Socket, data: any, io: Server) => {
     }
   }
 
-  serverLogger.info("net", `Player ${player.characterName} teleported to ${validated.pos}`);
+  serverLogger.info("net", `Player ${player.name} teleported to ${validated.pos}`);
 };

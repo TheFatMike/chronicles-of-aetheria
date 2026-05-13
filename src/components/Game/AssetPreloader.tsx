@@ -7,7 +7,7 @@
 import { useEffect } from "react";
 import { useGLTF, useTexture, useProgress } from "@react-three/drei";
 import { logger } from "../../lib/logger";
-import { OBJECT_TEMPLATES } from "../../data/world/templates";
+import { OBJECT_TEMPLATES } from "@shared/data/world/templates";
 import { useGameStore } from "../../store/useGameStore";
 
 // Essential assets to preload

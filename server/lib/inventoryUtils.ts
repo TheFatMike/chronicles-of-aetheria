@@ -2,7 +2,7 @@
  * @file server/lib/inventoryUtils.ts
  * @description Centralized utility functions for managing player inventory and items.
  */
-import { InventoryItem } from "../../src/types";
+import { InventoryItem } from "../../shared/types";
 
 export function addItemToItems(items: (InventoryItem | null)[], item: InventoryItem, maxSlots: number = 30): { success: boolean, newItems: (InventoryItem | null)[], remaining: number } {
   const newItems = [...items];

@@ -6,7 +6,7 @@
  */
 import { getAccountRole } from "../../lib/permissions";
 import { motion } from "motion/react";
-import { Character } from "../../types";
+import { Character } from "@shared/types";
 
 interface PlayerHUDProps {
   character: Character;

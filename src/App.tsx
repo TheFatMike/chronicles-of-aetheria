@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { auth, db } from "./lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { Character } from "./types";
+import { Character } from "@shared/types";
 import { useSocket } from "./hooks/useSocket";
 import { useGameStore } from "./store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -34,12 +34,30 @@ import { AssetPreloader } from "./components/Game/AssetPreloader";
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [showEscapeMenu, setShowEscapeMenu] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const initialFetchAttempted = useRef(false);
+
+  // Zustand Store Selectors
+  const { 
+    localPlayer, 
+    setLocalPlayer, 
+    activeMenu, 
+    devMode, 
+    setActiveMenu, 
+    setDevMode 
+  } = useGameStore(
+    useShallow((s) => ({
+      localPlayer: s.localPlayer,
+      setLocalPlayer: s.setLocalPlayer,
+      activeMenu: s.activeMenu,
+      devMode: s.devMode,
+      setActiveMenu: s.setActiveMenu,
+      setDevMode: s.setDevMode
+    }))
+  );
 
   // Custom Hooks
   const { socket, sendMove, sendJoin, sendChat, requestWorldSync, connected } = useSocket(token);
@@ -55,21 +73,9 @@ export default function App() {
     deleteCharacter
   } = useCharacters(user, socket);
 
-  const { moveItem, splitStack, updateHotbar, equipItem, unequipItem } = useInventory(user, selectedCharacter, setSelectedCharacter, socket);
-  const { executeCommand } = useChatCommands(user, selectedCharacter, setSelectedCharacter, socket);
-  const { useSlot, basicAttack, stopCombat } = useCombat(selectedCharacter, setSelectedCharacter, socket);
-
-  const {
-    activeMenu,
-    devMode,
-  } = useGameStore(
-    useShallow((s) => ({
-      activeMenu: s.activeMenu,
-      devMode: s.devMode,
-    }))
-  );
-  const setActiveMenu = useGameStore(s => s.setActiveMenu);
-  const setDevMode = useGameStore(s => s.setDevMode);
+  const { moveItem, splitStack, updateHotbar, equipItem, unequipItem } = useInventory(socket);
+  const { executeCommand } = useChatCommands(user, socket);
+  const { useSlot, basicAttack, stopCombat } = useCombat(socket);
 
   // DevMode Toggle Shortcut
   useEffect(() => {
@@ -101,7 +107,7 @@ export default function App() {
 
   // Keybindings
   useKeybindings({
-    enabled: !!user && !!selectedCharacter && !isCreating,
+    enabled: !!user && !!localPlayer && !isCreating,
     onEscape: () => {
       stopCombat();
       setShowEscapeMenu(prev => !prev);
@@ -139,47 +145,26 @@ export default function App() {
       } else {
         setLoading(false);
         setToken(null);
-        setSelectedCharacter(null);
+        setLocalPlayer(null);
       }
     });
     return unsubscribe;
-  }, []);
-
-  // Synchronize local character state with the Store to ensure optimistic updates (like gold) reflect in UI
-  const players = useGameStore(s => s.players);
-  useEffect(() => {
-    if (socket?.id && players[socket.id] && selectedCharacter) {
-      const storeData = players[socket.id];
-      const hasGoldChange = storeData.gold !== undefined && storeData.gold !== selectedCharacter.gold;
-      const hasInventoryChange = storeData.inventory !== undefined && storeData.inventory !== selectedCharacter.inventory;
-      
-      if (hasGoldChange || hasInventoryChange) {
-        setSelectedCharacter(prev => {
-          if (!prev) return null;
-          return { 
-            ...prev, 
-            gold: storeData.gold !== undefined ? storeData.gold : prev.gold,
-            inventory: storeData.inventory !== undefined ? storeData.inventory : prev.inventory
-          };
-        });
-      }
-    }
-  }, [players, socket?.id, selectedCharacter?.id]);
+  }, [setLocalPlayer]);
 
   // Initial Data Fetch
   useEffect(() => {
-    if (user && !loading && !charsLoading && characters.length === 0 && !selectedCharacter && !isCreating && !initialFetchAttempted.current) {
+    if (user && !loading && !charsLoading && characters.length === 0 && !localPlayer && !isCreating && !initialFetchAttempted.current) {
       initialFetchAttempted.current = true;
       fetchCharacters();
     }
-  }, [user, loading, charsLoading, fetchCharacters, characters.length, selectedCharacter, isCreating]);
+  }, [user, loading, charsLoading, fetchCharacters, characters.length, localPlayer, isCreating]);
 
   // Game State & Connection Hooks
-  useGameSync({ socket, selectedCharacter, setSelectedCharacter, connected });
-  useGameJoin({ user, selectedCharacter, connected, socket, sendJoin, requestWorldSync, setIsJoining });
+  useGameSync({ socket, connected });
+  useGameJoin({ user, connected, socket, sendJoin, requestWorldSync, setIsJoining });
 
   if (loading) return <LoadingScreen message="AWAKENING THE REALM..." />;
-  const showDisconnected = !!(selectedCharacter && !connected && !loading);
+  const showDisconnected = !!(localPlayer && !connected && !loading);
 
   return (
     <div className="w-full h-dvh overflow-hidden relative">
@@ -200,7 +185,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {!selectedCharacter && (
+      {!localPlayer && (
         <div id="pre-game-bg-container" className="fixed inset-0 bg-[#0d0907] -z-10 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')] opacity-20" />
           <div className="absolute inset-0 bg-linear-to-b from-[#1a1410] via-transparent to-[#0d0907] opacity-80" />
@@ -208,17 +193,17 @@ export default function App() {
         </div>
       )}
 
-      {selectedCharacter && (
+      {localPlayer && (
         <div className={`absolute inset-0 z-0 ${!connected ? "opacity-50 grayscale pointer-events-none" : ""}`}>
           <GameView 
             onMove={sendMove} 
             onAttack={basicAttack} 
             onLoot={(id) => socket?.emit("loot_entity", { targetId: id })}
-            playerColor={selectedCharacter.color} 
+            playerColor={localPlayer.color} 
             socketId={socket?.id || null} 
             socket={socket}
-            initialPos={selectedCharacter.pos}
-            initialRot={selectedCharacter.rot}
+            initialPos={localPlayer.pos}
+            initialRot={localPlayer.rot}
           />
         </div>
       )}
@@ -235,12 +220,12 @@ export default function App() {
             >
               <LoadingScreen message="LOST CONNECTION... WEAVING RECONNECION THREADS" />
             </motion.div>
-          ) : !selectedCharacter ? (
+          ) : !localPlayer ? (
             <PreGameView 
               user={user}
               setUser={setUser}
               characters={characters}
-              setSelectedCharacter={setSelectedCharacter}
+              setSelectedCharacter={setLocalPlayer}
               isCreating={isCreating}
               setIsCreating={setIsCreating}
               createCharacter={createCharacter}
@@ -252,18 +237,12 @@ export default function App() {
             />
           ) : (
             <InGameView 
-              selectedCharacter={selectedCharacter}
               userEmail={user?.email}
               socket={socket as any}
               showEscapeMenu={showEscapeMenu}
               setShowEscapeMenu={setShowEscapeMenu}
               onLogout={() => auth.signOut()}
-              onSelectCharacter={() => { setSelectedCharacter(null); setShowEscapeMenu(false); }}
-              updateHotbar={updateHotbar}
-              moveItem={moveItem}
-              splitStack={splitStack}
-              equipItem={equipItem}
-              unequipItem={unequipItem}
+              onSelectCharacter={() => { setLocalPlayer(null); setShowEscapeMenu(false); }}
               handleSendMessage={handleSendMessage}
             />
           )}
