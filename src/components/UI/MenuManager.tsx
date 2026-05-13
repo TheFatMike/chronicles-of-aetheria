@@ -309,6 +309,10 @@ export const MenuManager = ({
           onMoveBankItem={(from, to) => {
             if (socket) socket.emit("bank_move", { fromIndex: from, toIndex: to });
           }}
+          onMoveInventoryItem={moveItem}
+          onDepositAll={() => {
+            if (socket) socket.emit("bank_deposit_all");
+          }}
         />
       )}
       {activeMenu === 'spawners' && (players[socket?.id || '']?.role === 'dev' || players[socket?.id || '']?.role === 'admin' || players[socket?.id || '']?.role === 'mod') && (

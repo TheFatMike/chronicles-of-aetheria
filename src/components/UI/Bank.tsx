@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { InventoryItem } from "../../types";
 import * as Icons from "lucide-react";
-import { Landmark, X, ArrowLeftRight } from "lucide-react";
+import { Landmark, X, ArrowLeftRight, ChevronUp } from "lucide-react";
 import { useGameStore } from "../../store/useGameStore";
 import { useScaffold } from "./GameScaffold";
 import { InventorySlot } from "./InventorySlot";
@@ -22,6 +22,8 @@ interface BankProps {
   onDeposit: (inventoryIndex: number, bankIndex?: number, amount?: number, all?: boolean) => void;
   onWithdraw: (bankIndex: number, inventoryIndex?: number, amount?: number, all?: boolean) => void;
   onMoveBankItem: (fromIndex: number, toIndex: number) => void;
+  onMoveInventoryItem: (fromIndex: number, toIndex: number) => void;
+  onDepositAll: () => void;
 }
 
 export const Bank = React.memo(({ 
@@ -30,7 +32,9 @@ export const Bank = React.memo(({
   onClose, 
   onDeposit, 
   onWithdraw,
-  onMoveBankItem 
+  onMoveBankItem,
+  onMoveInventoryItem,
+  onDepositAll
 }: BankProps) => {
   const [dragOverIndex, setDragOverIndex] = useState<{type: 'bank' | 'inventory', index: number} | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -85,9 +89,11 @@ export const Bank = React.memo(({
       if (data.type === 'inventory' && toType === 'bank') {
         onDeposit(data.fromIndex, toIndex);
       } else if (data.type === 'bank' && toType === 'inventory') {
-        onWithdraw(data.fromIndex, undefined);
+        onWithdraw(data.fromIndex, toIndex);
       } else if (data.type === 'bank' && toType === 'bank') {
         if (data.fromIndex !== toIndex) onMoveBankItem(data.fromIndex, toIndex);
+      } else if (data.type === 'inventory' && toType === 'inventory') {
+        if (data.fromIndex !== toIndex) onMoveInventoryItem(data.fromIndex, toIndex);
       }
     } catch (err) {
       console.error("Bank Drop Error:", err);
@@ -173,16 +179,24 @@ export const Bank = React.memo(({
           </div>
 
           <div className="flex justify-center">
-             <div className="flex items-center gap-4 py-2 px-4 bg-[#c2a472]/10 border border-[#c2a472]/20 rounded-full">
+             <div className="flex items-center gap-4 py-2 px-6 bg-[#c2a472]/10 border border-[#c2a472]/20 rounded-full group">
                <div className="w-12 h-px bg-[#c2a472]/30" />
-               <ArrowLeftRight className="w-4 h-4 text-[#c2a472]" />
+               <button 
+                 onClick={onDepositAll}
+                 className="flex items-center gap-3 px-4 py-1 rounded-full hover:bg-[#c2a472]/20 transition-all text-[#c2a472] hover:text-[#fbbf24] active:scale-95"
+                 title="Deposit All Items"
+               >
+                 <ChevronUp className="w-4 h-4" />
+                 <span className="text-[9px] font-bold uppercase tracking-widest">Deposit All</span>
+                 <ChevronUp className="w-4 h-4" />
+               </button>
                <div className="w-12 h-px bg-[#c2a472]/30" />
              </div>
           </div>
 
           {/* Quick Access Inventory (Bottom) */}
           <div className="space-y-3">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4d] font-bold">Your Pack</h3>
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#8b6b4d] font-bold">Your Inventory</h3>
             <div className="grid grid-cols-10 gap-2 bg-black/20 p-3 rounded-lg border border-[#4a3a2a]/30">
               {inventoryItems.slice(0, 20).map((item, i) => (
                 <InventorySlot
