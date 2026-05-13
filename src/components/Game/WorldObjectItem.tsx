@@ -255,8 +255,8 @@ export const WorldObjectItem = memo(({
           </mesh>
         )}
 
-      {/* Permanent visual indicator so we know it's there even if model is missing */}
-      {(!isWaypoint || isWaypointActive) && (
+      {/* Permanent visual indicator so we know it's there even if model is missing (Editor Only) */}
+      {isEditorOpen && (!isWaypoint || isWaypointActive) && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} name="editor_helper">
           <ringGeometry args={[0.8, 1, 32]} />
           <meshBasicMaterial color={obj.modelUrl ? "#3b82f6" : "#ffffff"} transparent opacity={0.3} depthWrite={false} />
