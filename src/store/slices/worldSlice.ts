@@ -64,10 +64,11 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
 
     dataArray.forEach(p => {
       const key = `${p.x}_${p.z}`;
+      const exists = !!newTerrain[key];
       const current = newTerrain[key] || { y: 0, type: 'grass' };
       
       const update: { y: number; type: string } = { ...current };
-      let itemChanged = false;
+      let itemChanged = !exists; // If it didn't exist in our map yet, it's a "change" for the local state
 
       if (p.y !== undefined && !isNaN(p.y) && update.y !== p.y) {
         update.y = p.y;

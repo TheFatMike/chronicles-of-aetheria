@@ -7,6 +7,7 @@
 import { worldObjects, players } from "../state";
 import * as THREE from 'three';
 import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
+import { getDistanceSq2D, getDistance2D, normalizeScale, getScaleRadius } from "../../shared/logic/math";
 
 // Cache for loaded THREE groups associated with objects
 export const meshInstances = new Map<string, THREE.Group>();
@@ -62,9 +63,10 @@ export function getNearbyGridKeys(pos: [number, number, number], radius: number 
 /**
  * Broadcasts a socket event only to players within a specific radius.
  */
-export function broadcastToNearbyPlayers(io: any, pos: [number, number, number], radius: number, event: string, payload: any) {
+export function broadcastToNearbyPlayers(io: any, pos: [number, number, number], radius: number, event: string, payload: any, excludeId?: string) {
   const nearbyKeys = getNearbyGridKeys(pos, radius);
   const processed = new Set<string>();
+  if (excludeId) processed.add(excludeId);
   
   for (const key of nearbyKeys) {
     const occupantIds = entityGrid.get(key);
@@ -116,11 +118,8 @@ export function getObjectDimensions(type: string, scale: any) {
   // World objects now use mesh-based collision instead of primitives.
   // We only keep primitive dimensions for entities that don't have static world meshes.
   if (t === 'npc' || t === 'enemy' || t === 'spawner') {
-    const s = scale || 1;
-    const width = Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1);
-    const height = Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1);
-    const depth = Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1);
-    return { width, height, depth, shapeType: 'circle' };
+    const s = normalizeScale(scale);
+    return { width: s[0], height: s[1], depth: s[2], shapeType: 'circle' };
   }
 
   return null;
@@ -151,12 +150,8 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
         // we must be careful. However, we don't await between setting mesh pos and raycasting.
         _tempPos.set(pos[0], pos[1], pos[2]);
         _tempRot.set(rot[0], rot[1], rot[2]);
-        const s = scale || 1;
-        _tempScale.set(
-          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1),
-          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1),
-          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1)
-        );
+        const s = normalizeScale(scale);
+        _tempScale.set(s[0], s[1], s[2]);
         
         mesh.position.copy(_tempPos);
         mesh.rotation.copy(_tempRot);
@@ -231,7 +226,6 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
   const result: T[] = [];
   const isMap = items instanceof Map;
   const itemMap = isMap ? (items as Map<string, T>) : null;
-  const itemArray = isMap ? null : (items as T[]);
 
   for (const key of nearbyKeys) {
     const ids = grid.get(key);
@@ -242,15 +236,13 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
       
       if (itemMap) {
         item = itemMap.get(id);
-      } else if (itemArray) {
-        // Optimized: only look for it if we don't have a map, but we should really always use maps
-        item = itemArray.find(i => i.id === id);
+      } else {
+        // If it's an array, we have to find it. But we should really avoid this.
+        item = (items as T[]).find(i => i.id === id);
       }
       
       if (item) {
-        const dx = item.pos[0] - playerPos[0];
-        const dz = item.pos[2] - playerPos[2];
-        if ((dx * dx + dz * dz) < radiusSq) {
+        if (getDistanceSq2D(item.pos, playerPos) < radiusSq) {
           result.push(item);
         }
       }
@@ -261,7 +253,7 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
 }
 
 export async function getGroundHeight(pos: [number, number, number], terrainData: any): Promise<number> {
-  let groundHeight = -100;
+  let groundHeight = 0; // Default to sea level instead of -100 to prevent 'falling through the world' logic errors
 
   // 1. Check Terrain
   if (terrainData) {
@@ -293,12 +285,8 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
         _tempPos.set(objPos[0], objPos[1], objPos[2]);
         _tempRot.set(rot[0], rot[1], rot[2]);
         
-        const s = scale || 1;
-        _tempScale.set(
-          Array.isArray(s) ? s[0] : (typeof s === 'number' ? s : 1),
-          Array.isArray(s) ? s[1] : (typeof s === 'number' ? s : 1),
-          Array.isArray(s) ? s[2] : (typeof s === 'number' ? s : 1)
-        );
+        const s = normalizeScale(scale);
+        _tempScale.set(s[0], s[1], s[2]);
         
         mesh.position.copy(_tempPos);
         mesh.rotation.copy(_tempRot);

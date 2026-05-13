@@ -6,6 +6,7 @@
  */
 import { ALL_SKILLS } from "../../shared/data/skills";
 import { calculateTotalStats, calculatePhysicalDamage, calculateMagicDamage } from "../../shared/logic/gameRules";
+import { getDistance2D, getScaleRadius } from "../../shared/logic/math";
 import { players, entities, lastSkillUse, parties, dirtyEntities, dirtyPlayers } from "../state";
 import { db } from "../db";
 import { serverLogger } from "../logger";
@@ -18,7 +19,35 @@ import { broadcastToNearbyPlayers } from "../systems/spatial";
 import { CastSkillSchema } from "../lib/schemas";
 import { validatePayload } from "../lib/validation";
 
-export const handleCastSkill = (socket: any, io: any, data: any) => {
+/**
+ * Sends synchronized player stats to both the target player (private) and others nearby (public).
+ */
+function sendPlayerStats(io: any, socket: any, player: any) {
+  // Public update (HP/MP) for others
+  io.emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
+  
+  // Private update for the specific player (includes XP/Gold/etc)
+  const privateStats = { 
+    id: player.id, 
+    hp: player.hp, 
+    mp: player.mp, 
+    maxHp: player.maxHp,
+    maxMp: player.maxMp,
+    level: player.level, 
+    exp: player.exp, 
+    maxExp: player.maxExp, 
+    gold: player.gold,
+    passivePoints: player.passivePoints
+  };
+  
+  if (socket && socket.id === player.id) {
+    socket.emit("player_stats", privateStats);
+  } else {
+    io.to(player.id).emit("player_stats", privateStats);
+  }
+}
+
+export const handleCastSkill = (io: any, socket: any, data: any) => {
   const validated = validatePayload(socket, CastSkillSchema, data, "cast_skill");
   if (!validated) return;
 
@@ -54,15 +83,10 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   // Range check (Offensive)
   let targetEntity = validated.targetId ? entities.get(validated.targetId) : null;
   if (targetEntity && skill.targetType === 'target') {
-    const dist = Math.sqrt(
-      Math.pow(player.pos[0] - targetEntity.pos[0], 2) +
-      Math.pow(player.pos[2] - targetEntity.pos[2], 2)
-    );
+    const dist = getDistance2D(player.pos, targetEntity.pos);
     
     // Account for target size (radius) in the range check
-    // We add half the target's scale to the allowable range
-    const scaleVal = Array.isArray(targetEntity.scale) ? targetEntity.scale[0] : (targetEntity.scale || 1);
-    const targetRadius = scaleVal / 2;
+    const targetRadius = getScaleRadius(targetEntity.scale);
     const maxRange = (skill.range || 3) + targetRadius + 1.5;
     
     if (dist > maxRange) {
@@ -75,10 +99,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   if (skill.healingMultiplier && validated.targetId && validated.targetId !== socket.id) {
     const targetPlayer = players.get(validated.targetId);
     if (targetPlayer) {
-      const dist = Math.sqrt(
-        Math.pow(player.pos[0] - targetPlayer.pos[0], 2) +
-        Math.pow(player.pos[2] - targetPlayer.pos[2], 2)
-      );
+      const dist = getDistance2D(player.pos, targetPlayer.pos);
       if (skill.range && dist > skill.range + 1.5) {
         socket.emit("chat_message", { id: "sys-range-heal", sender: "SYSTEM", text: "Target is too far to heal!", timestamp: Date.now(), color: "#ffaa00" });
         return;
@@ -94,18 +115,8 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
   currentCooldowns[skill.id] = now;
   lastSkillUse.set(socket.id, currentCooldowns);
 
-  // Public update (HP/MP) for others
-  io.emit("player_stats", { id: player.id, hp: player.hp, mp: player.mp });
-  // Private update (Gold/XP) for self
-  socket.emit("player_stats", { 
-    id: player.id, 
-    hp: player.hp, 
-    mp: player.mp, 
-    level: player.level, 
-    exp: player.exp, 
-    maxExp: player.maxExp, 
-    gold: player.gold 
-  });
+  // Update Stats
+  sendPlayerStats(io, socket, player);
 
   // Calculate amount
   const stats = calculateTotalStats(player.stats, player.equipment);
@@ -125,19 +136,9 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
     if (target) {
       target.hp = Math.min(target.maxHp || 100, target.hp + amount);
       markPlayerDirty(target.id, ["hp"]);
-      io.emit("player_stats", { id: target.id, hp: target.hp, mp: target.mp });
-      // If the target is a player, send them their full private stats too
-      io.to(target.id).emit("player_stats", { 
-        id: target.id, 
-        hp: target.hp, 
-        mp: target.mp, 
-        level: target.level, 
-        exp: target.exp, 
-        maxExp: target.maxExp, 
-        gold: target.gold 
-      });
+      sendPlayerStats(io, null, target);
       socket.emit("chat_message", { id: Math.random().toString(), sender: "Combat", text: `You cast ${skill.name} for ${amount} healing!`, timestamp: Date.now(), color: "#22c55e", channel: "combat" });
-      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", {
+      const healEvent = {
         id: Math.random().toString(),
         sourceId: player.id,
         targetId: target.id,
@@ -145,7 +146,15 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         type: "heal",
         pos: target.pos,
         createdAt: Date.now()
-      });
+      };
+
+      // 1. Direct emit to attacker/caster
+      socket.emit("combat_event", healEvent);
+      
+      // 2. Spatial broadcast (excluding the caster)
+      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", healEvent, socket.id);
+
+      serverLogger.debug("combat", `Broadcasted heal event: ${amount} to target ${target.id}`);
     }
     return;
   }
@@ -179,7 +188,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         channel: "combat"
       });
 
-      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", {
+      const combatEvent = {
         id: Math.random().toString(),
         sourceId: player.id,
         targetId: target.id,
@@ -187,7 +196,15 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
         type: "damage",
         pos: target.pos,
         createdAt: Date.now()
-      });
+      };
+
+      // 1. Direct emit to attacker for zero-latency feedback guarantee
+      socket.emit("combat_event", combatEvent);
+      
+      // 2. Spatial broadcast for other nearby players (excluding the attacker who already got it)
+      broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", combatEvent, socket.id);
+      
+      serverLogger.debug("combat", `Broadcasted damage event: ${amount} to target ${target.id}`);
 
       if (target.hp <= 0 && !target.isDead) {
         target.isDead = true;
@@ -248,10 +265,7 @@ export const handleCastSkill = (socket: any, io: any, data: any) => {
           party.members.forEach((mId: string) => {
             const member = players.get(mId);
             if (member) {
-              const dist = Math.sqrt(
-                Math.pow(member.pos[0] - target.pos[0], 2) +
-                Math.pow(member.pos[2] - target.pos[2], 2)
-              );
+              const dist = getDistance2D(member.pos, target.pos);
               // Shared credit range: 50 meters
               if (dist < 50) {
                 const memberSocket = io.sockets.sockets.get(mId);
@@ -312,17 +326,6 @@ export function giveExperience(io: any, player: any, amount: number) {
     }
   }
   
-  io.to(player.id).emit("player_stats", {
-    id: player.id,
-    hp: player.hp,
-    mp: player.mp,
-    maxHp: player.maxHp,
-    maxMp: player.maxMp,
-    level: player.level,
-    exp: player.exp,
-    maxExp: player.maxExp,
-    gold: player.gold,
-    passivePoints: player.passivePoints
-  });
+  sendPlayerStats(io, null, player);
   markPlayerDirty(player.id, ["exp", "level", "gold", "hp", "mp", "passivePoints"]);
 }

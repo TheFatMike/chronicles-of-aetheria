@@ -51,13 +51,13 @@ export const useGameJoin = ({
         }
       }, 500);
 
-      // Safety timeout: 8 seconds
+      // Safety timeout: 15 seconds (Firestore can be slow)
       const timeout = setTimeout(() => {
         setIsJoining(false);
         useGameStore.getState().setWorldLoading(false);
         logger.warn("play", "World loading timed out (Safety Trigger).");
         clearInterval(interval);
-      }, 8000);
+      }, 15000);
 
       return () => {
         clearInterval(interval);

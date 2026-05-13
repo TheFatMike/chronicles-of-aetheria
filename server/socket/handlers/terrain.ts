@@ -68,26 +68,43 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
 
 export const handleRequestTerrainSync = (socket: Socket) => {
   const player = players.get(socket.id);
-  if (!player) return;
+  if (!player || !player.pos) return;
 
-  // OPTIMIZATION: Only send terrain edits within 150 units of the player
   const SYNC_RADIUS = 150;
   const SYNC_RADIUS_SQ = SYNC_RADIUS * SYNC_RADIUS;
 
-  const nearbyTerrain = [...terrainData.entries()]
-    .filter(([key, val]) => {
-      if (isNaN(val.y)) return false;
-      const [x, z] = key.split('_').map(Number);
-      const dx = x - player.pos[0];
-      const dz = z - player.pos[2];
-      return (dx * dx + dz * dz) < SYNC_RADIUS_SQ;
-    })
-    .map(([key, val]) => {
-      const [x, z] = key.split('_').map(Number);
-      return { x, z, ...val };
-    });
+  const nearbyTerrain: any[] = [];
+  
+  // Use chunk-based lookup for much better performance than iterating everything
+  const currentChunkX = Math.floor(player.pos[0] / 100);
+  const currentChunkZ = Math.floor(player.pos[2] / 100);
+
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dz = -2; dz <= 2; dz++) {
+      const tx = currentChunkX + dx;
+      const tz = currentChunkZ + dz;
+      const chunkKey = `${tx},${tz}`;
+      const terrainKeys = chunkToTerrain.get(chunkKey);
+      
+      if (terrainKeys) {
+        for (const tKey of terrainKeys) {
+          const val = terrainData.get(tKey);
+          if (val && !isNaN(val.y)) {
+            const [x, z] = tKey.split('_').map(Number);
+            const dx_dist = x - player.pos[0];
+            const dz_dist = z - player.pos[2];
+            
+            if ((dx_dist * dx_dist + dz_dist * dz_dist) < SYNC_RADIUS_SQ) {
+              nearbyTerrain.push({ x, z, ...val });
+            }
+          }
+        }
+      }
+    }
+  }
   
   if (nearbyTerrain.length > 0) {
+    serverLogger.debug("terrain", `Full Sync: Sending ${nearbyTerrain.length} points to ${player.name}`);
     socket.emit("terrain_sync", nearbyTerrain);
   }
 };

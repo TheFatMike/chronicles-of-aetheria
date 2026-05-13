@@ -22,6 +22,8 @@ import { QuestWindow } from "./QuestWindow";
 import { PassiveTree } from "./PassiveTree";
 
 import { useInventory } from "../../hooks/useInventory";
+import { getDistanceSq2D, getDistance2D } from "@shared/logic/math";
+import { getSystemMessageId } from "../../lib/gameUtils";
 
 interface MenuManagerProps {
   socket: any;
@@ -71,7 +73,8 @@ export const MenuManager = ({
     setQuestOffer,
     isTeleportMenuOpen,
     setTeleportMenuOpen,
-    activeTeleportCrystalId
+    activeTeleportCrystalId,
+    worldObjects
   } = useGameStore(useShallow((s: GameState) => ({
     localPlayer: s.localPlayer,
     activeMenu: s.activeMenu,
@@ -118,90 +121,71 @@ export const MenuManager = ({
 
   // Auto-close logic for distance-based windows
   
-  // Quest Offer Distance check
+  // Consolidated Auto-close logic for distance-based windows
   useEffect(() => {
-    if (activeQuestOffer && activeQuestNPCId && localPlayer?.pos) {
+    if (!localPlayer?.pos) return;
+
+    // 1. Quest Offer
+    if (activeQuestOffer && activeQuestNPCId) {
       const npc = entities[activeQuestNPCId];
-      if (npc) {
-        const [px, , pz] = localPlayer.pos;
-        const dx = px - npc.pos[0];
-        const dz = pz - npc.pos[2];
-        const distSq = dx*dx + dz*dz;
-        if (distSq > 100) { // 10 meters
-          setQuestOffer(null);
-        }
+      if (npc && getDistanceSq2D(localPlayer.pos, npc.pos) > 100) {
+        setQuestOffer(null);
       }
     }
-  }, [activeQuestOffer, activeQuestNPCId, localPlayer?.pos, entities, setQuestOffer]);
 
-  // Bank Distance check
-  useEffect(() => {
-    if (isBankOpen && activeBankNPCId && localPlayer?.pos) {
+    // 2. Bank
+    if (isBankOpen && activeBankNPCId) {
       const npc = entities[activeBankNPCId];
-      if (npc) {
-        const [px, , pz] = localPlayer.pos;
-        const dx = px - npc.pos[0];
-        const dz = pz - npc.pos[2];
-        const distSq = dx*dx + dz*dz;
-        if (distSq > 64) { // 8 meters
-          setBankOpen(false);
-          addMessage({
-            id: `sys-bank-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-            sender: "SYSTEM",
-            text: "Bank closed: You walked too far away.",
-            timestamp: Date.now(),
-            color: "#fbbf24"
-          });
-        }
+      if (npc && getDistanceSq2D(localPlayer.pos, npc.pos) > 64) {
+        setBankOpen(false);
+        addMessage({
+          id: getSystemMessageId('bank-close'),
+          sender: "SYSTEM",
+          text: "Bank closed: You walked too far away.",
+          timestamp: Date.now(),
+          color: "#fbbf24"
+        });
       }
     }
-  }, [isBankOpen, activeBankNPCId, localPlayer?.pos, entities, setBankOpen, addMessage]);
 
-  // Teleport Menu Distance check
-  useEffect(() => {
-    if (isTeleportMenuOpen && activeTeleportCrystalId && localPlayer?.pos) {
-      const crystal = (useGameStore.getState().worldObjects as any)[activeTeleportCrystalId];
-      if (crystal) {
-        const [px, , pz] = localPlayer.pos;
-        const dx = px - crystal.pos[0];
-        const dz = pz - crystal.pos[2];
-        const distSq = dx*dx + dz*dz;
-        if (distSq > 64) { // 8 meters
-          setTeleportMenuOpen(false);
-          addMessage({
-            id: `sys-teleport-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-            sender: "SYSTEM",
-            text: "Network link lost: You walked too far away from the crystal.",
-            timestamp: Date.now(),
-            color: "#fbbf24"
-          });
-        }
+    // 3. Teleport Menu
+    if (isTeleportMenuOpen && activeTeleportCrystalId) {
+      const crystal = (worldObjects as any)[activeTeleportCrystalId];
+      if (crystal && getDistanceSq2D(localPlayer.pos, crystal.pos) > 225) {
+        setTeleportMenuOpen(false);
+        addMessage({
+          id: getSystemMessageId('teleport-close'),
+          sender: "SYSTEM",
+          text: "Network link lost: You walked too far away from the crystal.",
+          timestamp: Date.now(),
+          color: "#fbbf24"
+        });
       }
     }
-  }, [isTeleportMenuOpen, activeTeleportCrystalId, localPlayer?.pos, setTeleportMenuOpen, addMessage]);
 
-  // Shop Distance check
-  useEffect(() => {
-    if (isShopOpen && activeShopNPCId && localPlayer?.pos) {
+    // 4. Shop
+    if (isShopOpen && activeShopNPCId) {
       const npc = entities[activeShopNPCId];
-      if (npc) {
-        const [px, , pz] = localPlayer.pos;
-        const dx = px - npc.pos[0];
-        const dz = pz - npc.pos[2];
-        const distSq = dx*dx + dz*dz;
-        if (distSq > 64) { // 8 meters
-          setShopOpen(false);
-          addMessage({
-            id: `sys-shop-close-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-            sender: "SYSTEM",
-            text: "Shop closed: You walked too far away.",
-            timestamp: Date.now(),
-            color: "#fbbf24"
-          });
-        }
+      if (npc && getDistanceSq2D(localPlayer.pos, npc.pos) > 64) {
+        setShopOpen(false);
+        addMessage({
+          id: getSystemMessageId('shop-close'),
+          sender: "SYSTEM",
+          text: "Shop closed: You walked too far away.",
+          timestamp: Date.now(),
+          color: "#fbbf24"
+        });
       }
     }
-  }, [isShopOpen, activeShopNPCId, localPlayer?.pos, entities, setShopOpen, addMessage]);
+  }, [
+    localPlayer?.pos, 
+    activeQuestOffer, activeQuestNPCId, 
+    isBankOpen, activeBankNPCId, 
+    isTeleportMenuOpen, activeTeleportCrystalId, 
+    isShopOpen, activeShopNPCId, 
+    entities, worldObjects, 
+    setQuestOffer, setBankOpen, setTeleportMenuOpen, setShopOpen, addMessage
+  ]);
 
 
   return (
@@ -414,13 +398,11 @@ export const MenuManager = ({
                     const ent = state.entities[contextMenu.targetId];
                     if (!player || !ent) return;
 
-                    const dx = player.pos[0] - ent.pos[0];
-                    const dz = player.pos[2] - ent.pos[2];
-                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    const dist = getDistance2D(player.pos, ent.pos);
 
                     if (dist > 5) {
                       addMessage({
-                        id: `sys-npc-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+                        id: getSystemMessageId('npc-dist'),
                         sender: "SYSTEM",
                         text: `You are too far away to talk to ${contextMenu.title}.`,
                         timestamp: Date.now(),
@@ -460,13 +442,11 @@ export const MenuManager = ({
                     const ent = state.entities[contextMenu.targetId];
                     if (!player || !ent) return;
 
-                    const dx = player.pos[0] - ent.pos[0];
-                    const dz = player.pos[2] - ent.pos[2];
-                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    const dist = getDistance2D(player.pos, ent.pos);
 
                     if (dist > 5) {
                       addMessage({
-                        id: `sys-shop-dist-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+                        id: getSystemMessageId('shop-dist'),
                         sender: "SYSTEM",
                         text: `You are too far away to shop with ${contextMenu.title}.`,
                         timestamp: Date.now(),
@@ -497,13 +477,11 @@ export const MenuManager = ({
                     const ent = state.entities[contextMenu.targetId];
                     if (!player || !ent) return;
 
-                    const dx = player.pos[0] - ent.pos[0];
-                    const dz = player.pos[2] - ent.pos[2];
-                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    const dist = getDistance2D(player.pos, ent.pos);
 
                     if (dist > 5) {
                       addMessage({
-                        id: `sys-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                        id: getSystemMessageId('bank-dist'),
                         sender: "SYSTEM",
                         text: `You are too far away to access the bank.`,
                         timestamp: Date.now(),

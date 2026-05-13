@@ -48,6 +48,7 @@ export const usePlayerMovement = (
   const accumulator = useRef(0);
   const lastTime = useRef(performance.now());
   const frameCount = useRef(0);
+  const groundingObj = useRef({ current: true });
   const allCollidablesRef = useRef<THREE.Object3D[]>([]);
   const filteredCollidablesRef = useRef<THREE.Object3D[]>([]);
   const playerMeshesRef = useRef<THREE.Object3D[]>([]);
@@ -153,22 +154,30 @@ export const usePlayerMovement = (
     };
   }, [systems]);
 
-  // Full Collidables Scan (Throttled)
+  // Full Collidables Scan (Throttled but reactive to world loading)
+  const worldReady = useGameStore(s => s.worldReady);
+  const assetsReady = useGameStore(s => s.assetsReady);
+  const isWorldLoading = useGameStore(s => s.isWorldLoading);
+
   useEffect(() => {
     const update = () => {
+      if (!scene) return;
       const all: THREE.Object3D[] = [];
       scene.traverse(obj => { if (obj.userData?.isCollidable) all.push(obj); });
       allCollidablesRef.current = all;
+      // Trigger an immediate filter update next frame
+      filteredCollidablesRef.current = [];
     };
+
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [scene]);
+  }, [scene, worldReady, assetsReady, isWorldLoading]);
 
   // MAIN GAME LOOP
   useFrame((_, delta) => {
     const state = useGameStore.getState();
-    if (!meshRef.current || state.isEditorOpen) return;
+    if (!meshRef.current || state.isEditorOpen || state.isWorldLoading) return;
 
     // Handle Teleportation
     if (store.teleportRequest) {
@@ -237,6 +246,10 @@ export const usePlayerMovement = (
       
       const snapSpeed = 5.0; // Higher = faster centering
       cameraState.current.theta += diff * snapSpeed * clampedDelta;
+      
+      // Keep theta within [-PI, PI] to prevent overflow over long sessions
+      if (cameraState.current.theta > Math.PI) cameraState.current.theta -= Math.PI * 2;
+      if (cameraState.current.theta < -Math.PI) cameraState.current.theta += Math.PI * 2;
     }
 
     // Zero-GC World Move Calculation
@@ -245,13 +258,13 @@ export const usePlayerMovement = (
     // 3. PHYSICS (Fixed Timestep)
     accumulator.current += clampedDelta;
     while (accumulator.current >= PHYSICS_STEP) {
-      const groundingObj = { current: isGrounded.current };
+      groundingObj.current.current = isGrounded.current;
       
       systems.physics.update(
         physicsPosition.current,
         velocity.current,
         worldMoveVec.current,
-        groundingObj,
+        groundingObj.current,
         PHYSICS_STEP,
         { ...GAME_CONFIG.MOVEMENT, isEditorOpen: store.isEditorOpen },
         useGameStore.getState().terrainData,
@@ -259,7 +272,7 @@ export const usePlayerMovement = (
         playerMeshesRef.current
       );
 
-      isGrounded.current = groundingObj.current;
+      isGrounded.current = groundingObj.current.current;
       
       // 3.1 Horizontal Collision Resolution (Wall Sliding) - Disabled in Editor
       if (!store.isEditorOpen) {

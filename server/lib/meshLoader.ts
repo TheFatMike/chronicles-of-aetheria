@@ -19,6 +19,13 @@ THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Reusable objects for performance
+const REUSABLE_RAYCASTER = new THREE.Raycaster();
+(REUSABLE_RAYCASTER as any).firstHitOnly = true;
+const _tempOrigin = new THREE.Vector3();
+const _tempDirection = new THREE.Vector3();
+const _tempVec = new THREE.Vector3();
+
 export interface LoadedMesh {
   mesh: THREE.Group;
   bvh?: boolean;
@@ -93,19 +100,14 @@ export async function loadModelMesh(modelName: string): Promise<LoadedMesh | nul
  * Get ground height at a specific point relative to a mesh.
  */
 export function getMeshHeightAt(mesh: THREE.Group, worldPos: [number, number, number]): number | null {
-  const raycaster = new THREE.Raycaster();
-  
   // Start ray slightly above the player's head and cast downwards
   // This ensures we find the floor the player is actually in, rather than the roof.
-  const origin = new THREE.Vector3(worldPos[0], worldPos[1] + 1.5, worldPos[2]);
-  const direction = new THREE.Vector3(0, -1, 0);
+  _tempOrigin.set(worldPos[0], worldPos[1] + 1.5, worldPos[2]);
+  _tempDirection.set(0, -1, 0);
   
-  raycaster.set(origin, direction);
+  REUSABLE_RAYCASTER.set(_tempOrigin, _tempDirection);
   
-  // Important: BVH accelerated raycasting only works if we set firstHitOnly
-  (raycaster as any).firstHitOnly = true;
-
-  const intersections = raycaster.intersectObject(mesh, true);
+  const intersections = REUSABLE_RAYCASTER.intersectObject(mesh, true);
   
   if (intersections.length > 0) {
     // Return the intersection point
@@ -121,17 +123,18 @@ export function getMeshHeightAt(mesh: THREE.Group, worldPos: [number, number, nu
 export function checkMeshCollision(mesh: THREE.Group, worldPos: [number, number, number], radius: number = 0.5): boolean {
   // For a proper mesh collision resolution, we'd need a more complex solver.
   // For now, we can use a small sphere cast or multiple rays.
-  const raycaster = new THREE.Raycaster();
   const directions = [
-    new THREE.Vector3(1, 0, 0),
-    new THREE.Vector3(-1, 0, 0),
-    new THREE.Vector3(0, 0, 1),
-    new THREE.Vector3(0, 0, -1)
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 0, 1],
+    [0, 0, -1]
   ];
 
-  for (const dir of directions) {
-    raycaster.set(new THREE.Vector3(worldPos[0], worldPos[1] + 0.5, worldPos[2]), dir);
-    const intersects = raycaster.intersectObject(mesh, true);
+  for (const [dx, dy, dz] of directions) {
+    _tempOrigin.set(worldPos[0], worldPos[1] + 0.5, worldPos[2]);
+    _tempDirection.set(dx, dy, dz);
+    REUSABLE_RAYCASTER.set(_tempOrigin, _tempDirection);
+    const intersects = REUSABLE_RAYCASTER.intersectObject(mesh, true);
     if (intersects.length > 0 && intersects[0].distance < radius) {
       return true;
     }
