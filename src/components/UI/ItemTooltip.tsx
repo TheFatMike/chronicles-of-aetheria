@@ -7,6 +7,7 @@
 import { motion } from "motion/react";
 import { Info } from "lucide-react";
 import { InventoryItem, ItemRarity } from "../../types";
+import { useScaffold } from "./GameScaffold";
 
 interface ItemTooltipProps {
   item: InventoryItem;
@@ -26,6 +27,7 @@ const getRarityColor = (rarity: ItemRarity | undefined) => {
 };
 
 export const ItemTooltip = ({ item, x, y }: ItemTooltipProps) => {
+  const { dimensions } = useScaffold();
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -33,8 +35,8 @@ export const ItemTooltip = ({ item, x, y }: ItemTooltipProps) => {
       exit={{ opacity: 0, scale: 0.95 }}
       style={{ 
         position: 'fixed',
-        top: Math.min(1080 - 300, y - 10),
-        left: x > 1920 / 2 ? x - 280 : x + 20,
+        top: Math.min(dimensions.height - 200, y - 10),
+        left: x > dimensions.width / 2 ? x - 280 : x + 20,
         pointerEvents: 'none',
         zIndex: 100
       }}

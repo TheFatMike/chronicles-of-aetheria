@@ -22,8 +22,8 @@ export const QuestTracker = () => {
   if (trackedQuests.length === 0) return null;
 
   return (
-    <div className="fixed top-32 right-6 z-40 w-64 pointer-events-none">
-      <div className="space-y-6">
+    <div className="fixed top-32 right-6 z-40 w-64 max-h-[60%] overflow-y-auto custom-scrollbar pr-2 pointer-events-none">
+      <div className="space-y-6 pointer-events-auto">
         <AnimatePresence mode="popLayout">
           {trackedQuests.map((quest) => (
             <motion.div

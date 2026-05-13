@@ -23,7 +23,7 @@ interface CharacterInfoProps {
 export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterInfoProps) => {
   const [contextMenu, setContextMenu] = React.useState<{x: number, y: number, slot: keyof EquipmentSlots, item: InventoryItem} | null>(null);
   const [hoveredItem, setHoveredItem] = React.useState<{item: InventoryItem, x: number, y: number} | null>(null);
-  const { toLogical } = useScaffold();
+  const { toLogical, dimensions } = useScaffold();
 
   const equipment = character.equipment || {
     head: null,
@@ -115,7 +115,7 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       className="fixed top-24 left-8 z-50 pointer-events-none"
     >
-      <div className="bg-[#1a140f]/95 border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-[680px] h-[520px] flex flex-col relative border-t-[#c2a472]/20">
+      <div className="bg-[#1a140f]/95 border-2 border-[#4a3a2a] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9)] pointer-events-auto w-full max-w-3xl h-[85%] flex flex-col relative border-t-[#c2a472]/20">
         
         {/* Header Overlay */}
         <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-[#c2a472]/10 to-transparent pointer-events-none" />
@@ -262,8 +262,8 @@ export const CharacterInfo = memo(({ character, onClose, onUnequip }: CharacterI
             className="pointer-events-none z-100 bg-[#1a140f]/98 backdrop-blur-xl border-2 border-[#c2a472]/40 p-4 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.8)] w-64 lg:w-72"
             style={{ 
               position: 'fixed',
-              top: Math.min(1080 - 300, hoveredItem.y - 10),
-              left: hoveredItem.x > 1920 / 2 ? hoveredItem.x - 280 : hoveredItem.x + 20,
+              top: Math.min(dimensions.height - 300, hoveredItem.y - 10),
+              left: hoveredItem.x > dimensions.width / 2 ? hoveredItem.x - 280 : hoveredItem.x + 20,
               pointerEvents: 'none',
               zIndex: 100
             }}

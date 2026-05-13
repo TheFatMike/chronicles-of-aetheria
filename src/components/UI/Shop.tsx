@@ -57,7 +57,7 @@ export const Shop = React.memo(({ shop, playerGold, playerInventory, onClose, on
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-[#1a140f]/95 backdrop-blur-xl w-full max-w-2xl rounded-2xl border-2 border-[#4a3a2a] shadow-[0_0_100px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden flex flex-col max-h-[80vh]"
+        className="bg-[#1a140f]/95 backdrop-blur-xl w-full max-w-2xl rounded-2xl border-2 border-[#4a3a2a] shadow-[0_0_100px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden flex flex-col max-h-[85%]"
       >
         {/* Header */}
         <div className="bg-[#c2a472] px-6 py-4 flex items-center justify-between border-b-2 border-[#4a3a2a]">

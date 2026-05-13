@@ -127,12 +127,12 @@ export const Bank = React.memo(({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center pointer-events-none p-4" onClick={() => setBankContextMenu(null)}>
+    <div className="fixed inset-0 z-60 flex items-start justify-center pt-[10vh] pointer-events-none p-4" onClick={() => setBankContextMenu(null)}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-[#1a140f]/95 p-6 rounded-2xl border-4 border-[#c2a472]/40 shadow-[0_0_100px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-2xl flex flex-col gap-6"
+        className="bg-[#1a140f]/95 p-6 rounded-2xl border-4 border-[#c2a472]/40 shadow-[0_0_100px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-2xl flex flex-col gap-6 max-h-[85%]"
       >
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')] pointer-events-none rounded-xl" />
         
@@ -152,7 +152,7 @@ export const Bank = React.memo(({
           </button>
         </div>
 
-        <div className="flex flex-col gap-8 relative z-10">
+        <div className="flex-1 flex flex-col gap-8 relative z-10 overflow-y-auto custom-scrollbar pr-2 -mr-2">
           {/* Bank Slots Grid */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

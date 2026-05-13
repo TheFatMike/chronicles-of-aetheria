@@ -38,7 +38,7 @@ export const DialogueBox = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-xl z-100 px-6 pointer-events-auto"
+      className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-xl z-100 px-6 pointer-events-auto max-h-[50%] overflow-y-auto custom-scrollbar"
     >
       <div className="bg-[#1a140f]/95 backdrop-blur-xl border-2 border-[#4a3a2a] p-6 rounded-2xl shadow-2xl relative">
         {/* Speaker Name Tag */}

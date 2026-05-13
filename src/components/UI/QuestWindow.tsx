@@ -41,9 +41,9 @@ export const QuestWindow = ({ quest, onAccept, onDecline, isOffer = true, isComp
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
-      className="fixed inset-0 z-100 flex items-center justify-center p-4 pointer-events-none"
+      className="fixed inset-0 z-100 flex items-start justify-center p-4 pt-[10vh] pointer-events-none"
     >
-      <div className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] w-full max-w-lg overflow-hidden flex flex-col pointer-events-auto relative">
+      <div className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] w-full max-w-lg max-h-[85%] overflow-hidden flex flex-col pointer-events-auto relative">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
         
         {/* Header */}

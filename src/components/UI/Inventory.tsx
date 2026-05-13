@@ -90,7 +90,7 @@ export const Inventory = React.memo(({ items, gold, onClose, onMoveItem, onSplit
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="bg-[#1a140f]/90 p-3 sm:p-4 rounded-xl border-2 sm:border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-sm flex flex-col"
+        className="bg-[#1a140f]/90 p-3 sm:p-4 rounded-xl border-2 sm:border-4 border-[#4a3a2a] shadow-[0_0_50px_rgba(0,0,0,0.9)] pointer-events-auto relative w-full max-w-sm flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
       >
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none rounded-lg" />
         

@@ -41,7 +41,7 @@ export const Chat = memo(({ onSendMessage }: ChatProps) => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col h-[300px] lg:h-[400px] overflow-hidden"
+            className="bg-[#1a1410]/95 backdrop-blur-md border-2 border-[#4a3a2a] rounded shadow-2xl flex flex-col max-h-[85%] overflow-y-auto custom-scrollbar"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 sm:py-3 border-b border-[#4a3a2a] bg-black/20">

@@ -49,7 +49,7 @@ export const Map = memo(({ localPlayerId, worldSize = 400 }: MapProps) => {
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 30 }}
-        className="bg-[#1a140f] w-full max-w-6xl h-full max-h-[90vh] rounded-2xl border-4 border-[#4a3a2a] shadow-[0_0_100px_rgba(0,0,0,0.9)] pointer-events-auto relative overflow-hidden flex flex-col"
+        className="bg-[#1a140f] w-full max-w-6xl h-full max-h-[85%] rounded-2xl border-4 border-[#4a3a2a] shadow-[0_0_100px_rgba(0,0,0,0.9)] pointer-events-auto relative overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Background texture decor */}

@@ -51,19 +51,19 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-100 flex items-center justify-center p-8 pointer-events-none"
+      className="fixed inset-0 z-100 flex items-start justify-center p-8 pt-[5vh] pointer-events-none"
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-2xl shadow-[0_60px_120px_-20px_rgba(0,0,0,1)] w-full max-w-5xl h-[80vh] overflow-hidden flex flex-col relative pointer-events-auto"
+        className="bg-[#1a140f] border-4 border-[#4a3a2a] rounded-2xl shadow-[0_60px_120px_-20px_rgba(0,0,0,1)] w-full max-w-5xl h-[85%] overflow-hidden flex flex-col relative pointer-events-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] pointer-events-none" />
 
         {/* Header */}
-        <div className="bg-[#2d221a] p-8 border-b-4 border-[#4a3a2a] flex items-center justify-between relative z-10">
+        <div className="bg-[#2d221a] p-4 lg:p-8 border-b-4 border-[#4a3a2a] flex items-center justify-between relative z-10">
           <div className="flex items-center gap-6">
             <div className="w-16 h-16 rounded-2xl bg-[#c2a472]/10 border-2 border-[#c2a472]/20 flex items-center justify-center shadow-inner">
               <Scroll size={32} className="text-[#c2a472]" />
@@ -88,7 +88,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
         <div className="flex-1 flex overflow-hidden relative z-10">
 
           {/* Left Column: Quest List */}
-          <div className="w-96 border-r-4 border-[#4a3a2a] bg-black/20 flex flex-col">
+          <div className="w-64 lg:w-96 border-r-4 border-[#4a3a2a] bg-black/20 flex flex-col shrink-0">
             <div className="p-4 bg-black/40 border-b-2 border-[#4a3a2a]/50">
               <p className="text-[10px] text-[#c2a472] font-black uppercase tracking-widest text-center">Active Objectives</p>
             </div>
@@ -138,7 +138,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
           </div>
 
           {/* Right Column: Quest Details */}
-          <div className="flex-1 bg-[rgba(26,20,15,0.4)] overflow-y-auto custom-scrollbar p-12 space-y-10">
+          <div className="flex-1 bg-[rgba(26,20,15,0.4)] overflow-y-auto custom-scrollbar p-6 lg:p-12 space-y-6 lg:space-y-10">
             <AnimatePresence mode="wait">
               {selectedQuest ? (
                 <motion.div
@@ -154,7 +154,7 @@ export const QuestLog = ({ onClose, socket }: { onClose: () => void, socket: any
                       <span className="px-3 py-1 bg-amber-500 text-black font-black text-[9px] uppercase rounded-md">Quest</span>
                       <div className="h-px flex-1 bg-[#4a3a2a]" />
                     </div>
-                    <h2 className="text-[#f4e4bc] font-black text-4xl uppercase tracking-tighter">{selectedQuest.title}</h2>
+                    <h2 className="text-[#f4e4bc] font-black text-2xl lg:text-4xl uppercase tracking-tighter">{selectedQuest.title}</h2>
                     <div className="flex items-center gap-6 text-[#8b6b4d] text-[11px] font-black uppercase tracking-widest">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-[#c2a472]" />

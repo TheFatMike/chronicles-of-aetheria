@@ -42,7 +42,7 @@ export const SkillBook = memo(({ onClose, playerClass, learnedSkills }: SkillBoo
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 pointer-events-none"
     >
-      <div className="bg-[#1a140f]/95 backdrop-blur-md border-2 sm:border-4 border-[#4a3a2a] rounded-xl overflow-hidden shadow-2xl pointer-events-auto w-full max-w-2xl h-full max-h-[85vh] sm:max-h-[700px] flex flex-col relative transition-all duration-300">
+      <div className="bg-[#1a140f]/95 backdrop-blur-md border-2 sm:border-4 border-[#4a3a2a] rounded-xl overflow-hidden shadow-2xl pointer-events-auto w-full max-w-2xl h-full max-h-[85%] sm:max-h-[700px] flex flex-col relative transition-all duration-300">
         {/* Header */}
         <div className="flex justify-between items-center p-4 sm:p-6 border-b border-[#4a3a2a] bg-[#2d221a]/30">
           <div className="flex items-center gap-3">
