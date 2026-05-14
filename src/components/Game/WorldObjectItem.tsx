@@ -111,6 +111,8 @@ export const WorldObjectItem = memo(({
   
   const isSpawner = obj.type.startsWith('spawner_');
   const isNPC = obj.type.startsWith('npc_');
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const mouseDownTime = useRef<number>(0);
 
   // High-performance visibility check
   useFrame((state) => {
@@ -249,7 +251,6 @@ export const WorldObjectItem = memo(({
       e.stopPropagation();
       
       // Strict Guard: If not in editor and not a valid interactable type, ignore completely
-      // Spawners should NEVER be interactable in-game, even if they have 'npc_' in their type name
       if (!isEditorOpen && (isSpawner || (!isNPC && obj.type !== 'teleport_crystal'))) {
         return;
       }
@@ -293,16 +294,56 @@ export const WorldObjectItem = memo(({
         return;
       }
       
-      // If we are in placement mode, let the click pass through to the floor
+      // Editor Logic
       const isPlacing = editorSelectedType && !['edit', 'delete'].includes(editorSelectedType);
       if (isPlacing) return;
 
-      e.stopPropagation();
       if (e.shiftKey || editorSelectedType === 'delete') {
         useGameStore.getState().markObjectDeleted(obj.id);
       } else if (editorSelectedType === 'edit' || !editorSelectedType) {
         setSelectedWorldObjectId(obj.id);
       }
+    },
+    onPointerDown: (e: any) => {
+      if (isEditorOpen) return;
+      if (e.button === 2 || e.button === 0) {
+        e.stopPropagation();
+        mouseDownPos.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+        mouseDownTime.current = Date.now();
+      }
+    },
+    onPointerUp: (e: any) => {
+      if (isEditorOpen) return;
+      if (!mouseDownPos.current) return;
+
+      const dx = Math.abs(e.nativeEvent.clientX - mouseDownPos.current.x);
+      const dy = Math.abs(e.nativeEvent.clientY - mouseDownPos.current.y);
+      const dt = Date.now() - mouseDownTime.current;
+
+      if (dx < 20 && dy < 20 && dt < 500) {
+        if (e.button === 2 && (isNPC || obj.type === 'teleport_crystal')) {
+          e.stopPropagation();
+          
+          // Target first if not targeted
+          if (!isTargetedInGame) {
+            modelProps.onClick(e);
+          }
+
+          const npcType = obj.type.startsWith('npc_') ? obj.type.replace('npc_', '') : obj.type;
+          
+          useGameStore.getState().setContextMenu({
+            x: e.nativeEvent.clientX,
+            y: e.nativeEvent.clientY,
+            title: obj.name || (obj.type === 'teleport_crystal' ? "Teleport Crystal" : "Villager"),
+            targetId: obj.id,
+            targetType: obj.type === 'teleport_crystal' ? 'teleport_crystal' : 'npc',
+            targetRole: obj.type === 'teleport_crystal' ? undefined : npcType
+          });
+        } else if (e.button === 0) {
+          modelProps.onClick(e);
+        }
+      }
+      mouseDownPos.current = null;
     }
   };
 
@@ -354,7 +395,13 @@ export const WorldObjectItem = memo(({
       ref={groupRef}
       userData={{ isCollidable: !isSpawner && !isNPC }}
       {...({ isWorldObject: true } as any)}
-      onClick={(isEditorOpen || (!isSpawner && (isNPC || obj.type === 'teleport_crystal'))) ? modelProps.onClick : undefined}
+      onPointerDown={modelProps.onPointerDown}
+      onPointerUp={modelProps.onPointerUp}
+      onContextMenu={(e) => {
+        if (isEditorOpen) return;
+        e.nativeEvent.preventDefault();
+        e.stopPropagation();
+      }}
       onPointerOver={(e) => {
         if (isEditorOpen) return;
         e.stopPropagation();

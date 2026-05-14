@@ -310,6 +310,10 @@ export const BaseEntity = memo(({
       userData={{ isCollidable: false }} // Living entities don't block movement in WoW
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      onContextMenu={(e) => {
+        e.nativeEvent.preventDefault();
+        e.stopPropagation();
+      }}
       onDoubleClick={handleDoubleClick}
       onPointerOver={(e) => {
         e.stopPropagation();

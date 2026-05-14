@@ -74,7 +74,8 @@ export const MenuManager = ({
     isTeleportMenuOpen,
     setTeleportMenuOpen,
     activeTeleportCrystalId,
-    worldObjects
+    worldObjects,
+    discoveredTeleports
   } = useGameStore(useShallow((s: GameState) => ({
     localPlayer: s.localPlayer,
     activeMenu: s.activeMenu,
@@ -116,6 +117,7 @@ export const MenuManager = ({
     activeTeleportCrystalId: s.activeTeleportCrystalId,
     entities: s.entities,
     worldObjects: s.worldObjects,
+    discoveredTeleports: s.discoveredTeleports,
     playerId: s.id
   })));
 
@@ -395,7 +397,7 @@ export const MenuManager = ({
                     // Check distance
                     const state = useGameStore.getState();
                     const player = state.players[state.id || ""];
-                    const ent = state.entities[contextMenu.targetId];
+                    const ent = state.entities[contextMenu.targetId] || state.worldObjects[contextMenu.targetId];
                     if (!player || !ent) return;
 
                     const dist = getDistance2D(player.pos, ent.pos);
@@ -415,12 +417,16 @@ export const MenuManager = ({
                       activeQuests: activeQuests,
                       quests: SAMPLE_QUESTS
                     });
+
                     if (dialogue) {
                       setActiveDialogue({
                         speaker: contextMenu.title,
                         npcId: contextMenu.targetId,
                         npcType: contextMenu.targetRole || 'npc',
-                        ...dialogue
+                        text: dialogue.text,
+                        options: dialogue.options,
+                        quest: dialogue.quest,
+                        type: dialogue.type
                       });
                     }
                   }
@@ -439,7 +445,7 @@ export const MenuManager = ({
                     // Check distance
                     const state = useGameStore.getState();
                     const player = state.players[state.id || ""];
-                    const ent = state.entities[contextMenu.targetId];
+                    const ent = state.entities[contextMenu.targetId] || state.worldObjects[contextMenu.targetId];
                     if (!player || !ent) return;
 
                     const dist = getDistance2D(player.pos, ent.pos);
@@ -474,7 +480,7 @@ export const MenuManager = ({
                     // Check distance
                     const state = useGameStore.getState();
                     const player = state.players[state.id || ""];
-                    const ent = state.entities[contextMenu.targetId];
+                    const ent = state.entities[contextMenu.targetId] || state.worldObjects[contextMenu.targetId];
                     if (!player || !ent) return;
 
                     const dist = getDistance2D(player.pos, ent.pos);
@@ -502,6 +508,60 @@ export const MenuManager = ({
               });
 
               return options;
+            } else if (contextMenu.targetType === 'teleport_crystal') {
+              const isDiscovered = discoveredTeleports.includes(contextMenu.targetId);
+              return [
+                {
+                  label: isDiscovered ? "Teleport" : "Attune",
+                  icon: <Landmark size={14} />,
+                  onClick: () => {
+                    const state = useGameStore.getState();
+                    const player = state.players[state.id || ""];
+                    const crystal = (state.worldObjects as any)[contextMenu.targetId];
+                    if (!player || !crystal) return;
+
+                    const dist = getDistance2D(player.pos, crystal.pos);
+                    if (dist > 5) {
+                      addMessage({
+                        id: getSystemMessageId('teleport-dist'),
+                        sender: "SYSTEM",
+                        text: `You are too far away to use the crystal.`,
+                        timestamp: Date.now(),
+                        color: "#ff4444"
+                      });
+                      return;
+                    }
+
+                    const isDiscovered = state.discoveredTeleports.includes(contextMenu.targetId);
+                    if (isDiscovered) {
+                      state.setTeleportMenuOpen(true, contextMenu.targetId);
+                    } else {
+                      if (state.castState?.name === "Attuning Crystal") return;
+                      state.startCast("Attuning Crystal", 5000);
+                      setTimeout(() => {
+                        const latestState = useGameStore.getState();
+                        if (latestState.castState?.name === "Attuning Crystal") {
+                          latestState.discoverTeleport(contextMenu.targetId);
+                          latestState.completeCast();
+                          latestState.setTeleportMenuOpen(true, contextMenu.targetId);
+                          latestState.addMessage({
+                            id: "sys-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9),
+                            sender: "SYSTEM",
+                            text: `Successfully attuned to ${contextMenu.title}!`,
+                            timestamp: Date.now(),
+                            color: "#22c55e"
+                          });
+                        }
+                      }, 5000);
+                    }
+                  }
+                },
+                {
+                  label: "Cancel",
+                  icon: <X size={14} />,
+                  onClick: () => {}
+                }
+              ];
             } else if (contextMenu.targetType === 'enemy') {
               return [
                 {

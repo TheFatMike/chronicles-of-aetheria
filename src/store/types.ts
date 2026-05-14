@@ -156,7 +156,7 @@ export interface UISlice {
     y: number; 
     title: string; 
     targetId: string;
-    targetType?: 'player' | 'npc' | 'enemy';
+    targetType?: 'player' | 'npc' | 'enemy' | 'teleport_crystal';
     targetRole?: string;
   } | null;
   activeLoot: { targetId: string; items: (InventoryItem | null)[]; gold: number } | null;
@@ -199,7 +199,7 @@ export interface UISlice {
     y: number; 
     title: string; 
     targetId: string;
-    targetType?: 'player' | 'npc' | 'enemy';
+    targetType?: 'player' | 'npc' | 'enemy' | 'teleport_crystal';
     targetRole?: string;
   } | null) => void;
   setActiveLoot: (loot: { targetId: string; items: (InventoryItem | null)[]; gold: number } | null) => void;
