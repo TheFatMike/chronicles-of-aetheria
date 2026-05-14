@@ -106,30 +106,27 @@ export class PhysicsEngine {
     const rayDir = new THREE.Vector3(0, -1, 0);
     const hit = getFirstCollision(rayOrigin, rayDir, meshes, 2.0, {
       ...DEFAULT_COLLISION_CONFIG,
-      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, "terrain_chunk", ...playerMeshes.map(m => m.name)]
+      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
     });
 
     if (hit) {
-      // Only use the object height if it's actually higher than the terrain
-      const isTerrain = hit.object.name.includes("terrain");
-      if (!isTerrain) {
-        const MAX_STEP_HEIGHT = 0.5;
-        const heightDiff = hit.point.y - pos.y;
-        
-        if (heightDiff <= MAX_STEP_HEIGHT) {
-          if (hit.point.y > groundHeight) {
-            groundHeight = hit.point.y;
-            groundNormal.copy(hit.normal);
-          }
+      const MAX_STEP_HEIGHT = 0.5;
+      const heightDiff = hit.point.y - pos.y;
+      
+      // If we hit something low enough to stand on (including terrain chunks)
+      if (heightDiff <= MAX_STEP_HEIGHT) {
+        if (hit.point.y > groundHeight) {
+          groundHeight = hit.point.y;
+          groundNormal.copy(hit.normal);
         }
       }
     }
     
     // 5. Slope Handling & Sliding
-    const SLOPE_LIMIT = 0.7; // Approx 45 degrees. Higher = stricter.
-    const isTooSteep = groundNormal.y < SLOPE_LIMIT;
-
-    // 6. Resolution
+    // Use the same slope limit as the collision system (0.4 = 66 degrees)
+    const isTooSteep = groundNormal.y < DEFAULT_COLLISION_CONFIG.maxSlopeY;
+    
+    let finalGroundY = groundHeight;
     const SNAP_THRESHOLD = 0.5; 
     
     // Snap to ground if close enough. 

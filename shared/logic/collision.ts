@@ -25,7 +25,7 @@ export interface CollisionConfig {
 export const DEFAULT_COLLISION_CONFIG: CollisionConfig = {
   radius: 0.5,
   heightOffset: 0.5,
-  maxSlopeY: 0.6,
+  maxSlopeY: 0.4,
   stepHeight: 0.5,
   ignoredNames: ["editor_helper", "trigger", "spawn_point", "helper", "wireframe", "selection_hitbox", "interaction_hitbox"]
 };

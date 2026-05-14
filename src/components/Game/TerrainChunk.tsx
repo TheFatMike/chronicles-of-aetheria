@@ -77,6 +77,8 @@ export const TerrainChunk = memo(({ x, z, size, segments, resolution, textures, 
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
         meshRef.current.geometry.computeVertexNormals();
+        meshRef.current.geometry.computeBoundingBox();
+        meshRef.current.geometry.computeBoundingSphere();
       }
     };
 
