@@ -328,7 +328,7 @@ export const TeleportCrystal = memo(({ position, rotation = [0, 0, 0], scale = 1
       )}
 
       {/* Invisible Hitbox: Makes clicking much easier */}
-      <mesh position={[0, 1, 0]}>
+      <mesh position={[0, 1, 0]} userData={{ isCollidable: false }}>
         <cylinderGeometry args={[1, 1, 2, 8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>

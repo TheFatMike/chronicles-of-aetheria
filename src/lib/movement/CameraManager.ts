@@ -6,25 +6,24 @@
  */
 import * as THREE from "three";
 import { CameraState } from "@shared/types";
+import { getFirstCollision, DEFAULT_COLLISION_CONFIG } from "../../../shared/logic/collision";
 
 export class CameraManager {
   private targetCamPos = new THREE.Vector3();
   private lookTarget = new THREE.Vector3();
   private tempVec = new THREE.Vector3();
-  private raycaster = new THREE.Raycaster();
 
   public update(
     camera: THREE.Camera,
     state: CameraState,
     playerPos: THREE.Vector3,
     delta: number,
-    collidables: THREE.Object3D[],
+    meshes: THREE.Object3D[],
     playerMeshes: THREE.Object3D[]
   ): void {
     const { theta, phi, radius } = state;
     
     // Calculate offsets based on standard spherical coordinates
-    // Phi = Angle from Y-axis (top)
     const offsetX = radius * Math.sin(phi) * Math.sin(theta);
     const offsetY = radius * Math.cos(phi);
     const offsetZ = radius * Math.sin(phi) * Math.cos(theta);
@@ -42,36 +41,23 @@ export class CameraManager {
     );
 
     // Camera Collision Detection (Spring Arm)
-    this.tempVec.copy(this.targetCamPos).sub(this.lookTarget);
-    const rayDist = this.tempVec.length();
-    this.tempVec.normalize();
+    const direction = this.tempVec.copy(this.targetCamPos).sub(this.lookTarget);
+    const rayDist = direction.length();
+    direction.normalize();
     
-    this.raycaster.set(this.lookTarget, this.tempVec);
-    this.raycaster.far = rayDist;
-    
-    const intersects = this.raycaster.intersectObjects(collidables, true);
-    let finalPos = this.targetCamPos;
+    const hit = getFirstCollision(this.lookTarget, direction, meshes, rayDist, {
+      ...DEFAULT_COLLISION_CONFIG,
+      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
+    });
 
-    for (const hit of intersects) {
-      if (this.isIgnored(hit.object, playerMeshes)) continue;
+    if (hit) {
       // Push camera forward slightly from hit point
-      this.targetCamPos.copy(hit.point).add(this.tempVec.multiplyScalar(-0.3));
-      break;
+      this.targetCamPos.copy(hit.point).add(direction.multiplyScalar(-0.3));
     }
     
     // Butter smooth frame-rate independent lerp
     camera.position.lerp(this.targetCamPos, lerpFactor);
     camera.lookAt(this.lookTarget);
   }
-
-  private isIgnored(obj: THREE.Object3D, playerMeshes: THREE.Object3D[]): boolean {
-    const name = obj.name || "";
-    // Ignore players, helpers, and wireframes for camera collision
-    return (
-      playerMeshes.includes(obj) || 
-      (obj as any).material?.wireframe ||
-      name.includes("editor_helper") ||
-      name.includes("spawn_point")
-    );
-  }
 }
+

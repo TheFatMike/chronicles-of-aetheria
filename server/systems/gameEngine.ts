@@ -52,6 +52,9 @@ export const startHeartbeat = (io: Server) => {
           if (entity) dirtyEntityList.push(entity);
         }
 
+        // OPTIMIZATION: Cache nearby entity lookups per grid cell to avoid redundant work for players in the same area
+        const nearbyCache = new Map<string, any[]>();
+
         for (const player of players.values()) {
           const currentCell = getGridKey(player.pos);
           const lastCell = playerLastGridCell.get(player.id);
@@ -60,7 +63,12 @@ export const startHeartbeat = (io: Server) => {
             if (currentCell !== lastCell) playerLastGridCell.set(player.id, currentCell);
             
             // Only fetch nearby entities if cell changed or we have dirty updates
-            const nearbyEntities = filterNearby(entities, player.pos, 150, 'entity');
+            let nearbyEntities = nearbyCache.get(currentCell);
+            if (!nearbyEntities) {
+              nearbyEntities = filterNearby(entities, player.pos, 150, 'entity');
+              nearbyCache.set(currentCell, nearbyEntities);
+            }
+
             const known = playerKnownEntities.get(player.id) || new Set<string>();
             
             const nearbyIds = new Set<string>();

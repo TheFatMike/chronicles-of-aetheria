@@ -15,10 +15,10 @@ import { isDebugEnabled } from "../debug.config";
 // Modular Imports
 import { InputHandler } from "../lib/movement/InputHandler";
 import { PhysicsEngine } from "../lib/movement/PhysicsEngine";
-import { CollisionSystem } from "../lib/movement/CollisionSystem";
 import { CameraManager } from "../lib/movement/CameraManager";
 import { CameraState } from "@shared/types";
 import { logger } from "../lib/logger";
+import { collectMeshes } from "../../shared/logic/collision";
 
 const PHYSICS_STEP = 1/60;
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
@@ -35,7 +35,6 @@ export const usePlayerMovement = (
   const systems = useMemo(() => ({
     input: new InputHandler(),
     physics: new PhysicsEngine(),
-    collision: new CollisionSystem(),
     camera: new CameraManager()
   }), []);
 
@@ -52,6 +51,7 @@ export const usePlayerMovement = (
   const allCollidablesRef = useRef<THREE.Object3D[]>([]);
   const filteredCollidablesRef = useRef<THREE.Object3D[]>([]);
   const playerMeshesRef = useRef<THREE.Object3D[]>([]);
+  const _tempVec = useRef(new THREE.Vector3());
   
   const cameraState = useRef<CameraState>({
     theta: 0,
@@ -163,9 +163,32 @@ export const usePlayerMovement = (
     const update = () => {
       if (!scene) return;
       const all: THREE.Object3D[] = [];
-      scene.traverse(obj => { if (obj.userData?.isCollidable) all.push(obj); });
+      
+      // Custom recursive scan to avoid redundant children
+      const scan = (obj: THREE.Object3D) => {
+        if (obj.userData?.isCollidable) {
+          // Sync world matrix once during scan for distance filtering
+          obj.updateWorldMatrix(true, true);
+          
+          // Pre-collect meshes for this collidable root to avoid traversal in the physics loop
+          if (!(obj as any)._cachedMeshes) {
+            const meshes: THREE.Object3D[] = [];
+            obj.traverse(child => {
+              if ((child as any).isMesh) meshes.push(child);
+            });
+            (obj as any)._cachedMeshes = meshes;
+          }
+          all.push(obj);
+          return;
+        }
+        for (const child of obj.children) {
+          scan(child);
+        }
+      };
+      
+      scan(scene);
+
       allCollidablesRef.current = all;
-      // Trigger an immediate filter update next frame
       filteredCollidablesRef.current = [];
     };
 
@@ -191,16 +214,20 @@ export const usePlayerMovement = (
 
     const clampedDelta = Math.min(delta, 0.1);
     
-    // 1. Spatial Filtering (Every 10 frames)
+    // 1. DYNAMIC COLLIDABLE FILTERING (Optimized)
+    // We check distance once per frame. We assume matrixWorld was synced in the 1s scan.
+    const pPos = physicsPosition.current;
+    filteredCollidablesRef.current = allCollidablesRef.current.filter(obj => {
+      if (!obj) return false;
+      
+      const worldPos = _tempVec.current.setFromMatrixPosition(obj.matrixWorld);
+      const distSq = worldPos.distanceToSquared(pPos);
+      
+      // Terrain chunks (150m), World Objects (60m)
+      if (obj.userData?.isTerrain) return distSq < 150 * 150;
+      return distSq < 60 * 60;
+    });
     frameCount.current++;
-    if (frameCount.current % 10 === 0 || filteredCollidablesRef.current.length === 0) {
-      filteredCollidablesRef.current = allCollidablesRef.current.filter(obj => {
-        const distSq = obj.position.distanceToSquared(meshRef.current!.position);
-        // Terrain chunks are large (100m), so we need a larger radius (150m) to catch them
-        if (obj.userData?.isTerrain) return distSq < 150 * 150;
-        return distSq < 400; // 20m for normal objects
-      });
-    }
     
     // 2. INPUT & ROTATION
     const { direction: inputDir, turn } = systems.input.getMovementInput(store.isEditorOpen, store.isWorldLoading);
@@ -212,7 +239,7 @@ export const usePlayerMovement = (
     isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
     // 2.1 Interrupt casting on movement
-    if (isMoving.current && state.castState?.active && state.castState.skillName !== "Basic Attack") {
+    if (isMoving.current && state.castState?.active && state.castState.name !== "Basic Attack") {
       state.cancelCast();
     }
 
@@ -257,6 +284,10 @@ export const usePlayerMovement = (
 
     // 3. PHYSICS (Fixed Timestep)
     accumulator.current += clampedDelta;
+    
+    // Pre-calculate collision meshes once per frame to avoid redundant traversals
+    const currentFrameMeshes = collectMeshes(filteredCollidablesRef.current);
+
     while (accumulator.current >= PHYSICS_STEP) {
       groundingObj.current.current = isGrounded.current;
       
@@ -268,22 +299,13 @@ export const usePlayerMovement = (
         PHYSICS_STEP,
         { ...GAME_CONFIG.MOVEMENT, isEditorOpen: store.isEditorOpen },
         useGameStore.getState().terrainData,
-        filteredCollidablesRef.current,
+        currentFrameMeshes, // Pass pre-collected meshes
         playerMeshesRef.current
       );
 
       isGrounded.current = groundingObj.current.current;
       
-      // 3.1 Horizontal Collision Resolution (Wall Sliding) - Disabled in Editor
-      if (!store.isEditorOpen) {
-        systems.collision.resolveSliding(
-          physicsPosition.current,
-          velocity.current,
-          filteredCollidablesRef.current,
-          playerMeshesRef.current
-        );
-      }
-
+      // 3.1 Jump Logic
       if (systems.input.isJumpPressed() && isGrounded.current) {
         velocity.current.y = GAME_CONFIG.MOVEMENT.JUMP_FORCE;
         isGrounded.current = false;
@@ -307,7 +329,7 @@ export const usePlayerMovement = (
         cameraState.current,
         meshRef.current.position,
         clampedDelta,
-        filteredCollidablesRef.current,
+        currentFrameMeshes, // Pass pre-collected meshes
         playerMeshesRef.current
       );
     }

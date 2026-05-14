@@ -8,6 +8,7 @@ import { worldObjects, players } from "../state";
 import * as THREE from 'three';
 import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
 import { getDistanceSq2D, getDistance2D, normalizeScale, getScaleRadius } from "../../shared/logic/math";
+import { resolveMovementCollision, resolveOverlap, DEFAULT_COLLISION_CONFIG } from "../../shared/logic/collision";
 
 // Cache for loaded THREE groups associated with objects
 export const meshInstances = new Map<string, THREE.Group>();
@@ -46,6 +47,11 @@ export function updateInGrid(grid: Map<string, Set<string>>, id: string, oldPos:
   grid.get(newKey)!.add(id);
 }
 
+/**
+ * Reusable keys array to avoid GC pressure in hot loops.
+ */
+const _gridKeysPool: string[] = [];
+
 export function getNearbyGridKeys(pos: [number, number, number], radius: number = GRID_SIZE): string[] {
   const centerX = Math.floor(pos[0] / GRID_SIZE);
   const centerZ = Math.floor(pos[2] / GRID_SIZE);
@@ -58,6 +64,22 @@ export function getNearbyGridKeys(pos: [number, number, number], radius: number 
     }
   }
   return keys;
+}
+
+/**
+ * Optimized version for internal use that populates an existing array.
+ */
+function populateNearbyGridKeys(pos: [number, number, number], radius: number, outKeys: string[]) {
+  outKeys.length = 0;
+  const centerX = Math.floor(pos[0] / GRID_SIZE);
+  const centerZ = Math.floor(pos[2] / GRID_SIZE);
+  const range = Math.ceil(radius / GRID_SIZE);
+  
+  for (let dx = -range; dx <= range; dx++) {
+    for (let dz = -range; dz <= range; dz++) {
+      outKeys.push(`${centerX + dx},${centerZ + dz}`);
+    }
+  }
 }
 
 /**
@@ -108,55 +130,21 @@ export function broadcastToNearbyPlayers(io: any, pos: [number, number, number],
   }
 }
 
-/**
- * Transforms world coordinates to a local space relative to an object's position and rotation.
- */
-export function toLocalSpace(worldPos: [number, number, number], objPos: [number, number, number], rotY: number): { x: number, z: number, y: number } {
-  const dx = worldPos[0] - objPos[0];
-  const dz = worldPos[2] - objPos[2];
-  const cos = Math.cos(rotY);
-  const sin = Math.sin(rotY);
-  
-  return {
-    x: dx * cos - dz * sin,
-    z: dx * sin + dz * cos,
-    y: worldPos[1]
-  };
-}
-
-/**
- * Transforms local push vector back to world space.
- */
-export function toWorldVector(localX: number, localZ: number, rotY: number): { x: number, z: number } {
-  const cos = Math.cos(rotY);
-  const sin = Math.sin(rotY);
-  return {
-    x: localX * cos + localZ * sin,
-    z: -localX * sin + localZ * cos
-  };
-}
-
-export function getObjectDimensions(type: string, scale: any) {
-  const t = (type || "").toLowerCase();
-  
-  // World objects now use mesh-based collision instead of primitives.
-  // We only keep primitive dimensions for entities that don't have static world meshes.
-  if (t === 'npc' || t === 'enemy' || t === 'spawner') {
-    const s = normalizeScale(scale);
-    return { width: s[0], height: s[1], depth: s[2], shapeType: 'circle' };
-  }
-
-  return null;
-}
-
 const PUSHBACK_DIRECTIONS = [
   [1,0,0], [-1,0,0], [0,0,1], [0,0,-1],
   [0.7,0,0.7], [-0.7,0,0.7], [0.7,0,-0.7], [-0.7,0,-0.7]
 ];
 
-export async function resolveWorldCollision(oldPos: [number, number, number], newPos: [number, number, number], radius: number = 0.25): Promise<[number, number, number]> {
-  let resolvedPos: [number, number, number] = [...newPos];
-  const nearbyKeys = getNearbyGridKeys(resolvedPos, 10);
+export async function resolveWorldCollision(oldPos: [number, number, number], newPos: [number, number, number], radius: number = 0.4): Promise<[number, number, number]> {
+  const startPos = new THREE.Vector3(oldPos[0], oldPos[1], oldPos[2]);
+  const velocity = new THREE.Vector3(newPos[0] - oldPos[0], 0, newPos[2] - oldPos[2]);
+  
+  if (velocity.lengthSq() < 0.0001) {
+    return newPos;
+  }
+
+  const nearbyKeys = getNearbyGridKeys(newPos, 15);
+  const collidables: THREE.Object3D[] = [];
 
   for (const key of nearbyKeys) {
     const ids = objectGrid.get(key);
@@ -164,81 +152,49 @@ export async function resolveWorldCollision(oldPos: [number, number, number], ne
 
     for (const id of ids) {
       const obj = worldObjects.get(id);
-      if (!obj) continue;
+      if (!obj || !obj.type) continue;
 
-      const { pos, rot, type, scale } = obj;
-      const t = (type || "").toLowerCase();
+      const t = obj.type.toLowerCase();
+      if (t.startsWith('npc_') || t.startsWith('spawner_')) continue;
 
-      // 1. Try Mesh Collision first
-      const loaded = await loadModelMesh(t);
-      if (loaded) {
-        // BROADPHASE: Skip if player is nowhere near the object's center
-        const distSq = getDistanceSq2D(resolvedPos, pos);
-        const s = normalizeScale(scale);
-        const maxDim = Math.max(s[0], s[1], s[2]) * 2; // Rough bounding sphere
-        if (distSq > (maxDim + radius) * (maxDim + radius)) continue;
-
-        const mesh = loaded.mesh;
-        
-        // Temporarily move the SHARED mesh to the object's position for collision check
-        _tempPos.set(pos[0], pos[1], pos[2]);
-        _tempRot.set(rot[0], rot[1], rot[2]);
-        _tempScale.set(s[0], s[1], s[2]);
-        
-        mesh.position.copy(_tempPos);
-        mesh.rotation.copy(_tempRot);
-        mesh.scale.copy(_tempScale);
-        mesh.updateMatrixWorld();
-
-        // Mesh-based pushback: check 8 directions around the player
-        for (const [dx, dy, dz] of PUSHBACK_DIRECTIONS) {
-          _tempDir.set(dx, dy, dz);
-          // Cast from slightly above ground
-          _tempVec.set(resolvedPos[0], resolvedPos[1] + 0.5, resolvedPos[2]);
-          REUSABLE_RAYCASTER.set(_tempVec, _tempDir);
-          
-          const intersects = REUSABLE_RAYCASTER.intersectObject(mesh, true);
-          if (intersects.length > 0 && intersects[0].distance < radius) {
-            const pushDist = radius - intersects[0].distance;
-            resolvedPos[0] -= _tempDir.x * pushDist;
-            resolvedPos[2] -= _tempDir.z * pushDist;
-          }
+      // Use the cached mesh instance if available, otherwise load and cache it
+      let mesh = meshInstances.get(id);
+      if (!mesh) {
+        const loaded = await loadModelMesh(t);
+        if (loaded) {
+          const s = normalizeScale(obj.scale);
+          mesh = loaded.mesh.clone(true); // Server-side clone for unique transform
+          mesh.position.set(obj.pos[0], obj.pos[1], obj.pos[2]);
+          mesh.rotation.set(obj.rot[0], obj.rot[1], obj.rot[2]);
+          mesh.scale.set(s[0], s[1], s[2]);
+          mesh.updateMatrixWorld(true);
+          meshInstances.set(id, mesh);
         }
-        continue;
       }
 
-      // 2. Fallback to primitive if it's an NPC or has no mesh
-      const dims = getObjectDimensions(type, scale);
-      if (!dims) continue;
-
-      const rotY = rot[1] || 0;
-      const local = toLocalSpace(resolvedPos, pos, rotY);
-      const { width, height, depth, shapeType } = dims;
-      const hTop = height;
-
-      if (local.y >= -0.5 && local.y <= hTop) {
-        if (shapeType === 'circle') {
-          const hdx = local.x;
-          const hdz = local.z;
-          const distSq = hdx * hdx + hdz * hdz;
-          const minDist = width / 2 + radius;
-          
-          if (distSq < minDist * minDist) {
-            const dist = Math.sqrt(distSq);
-            if (dist < 0.001) continue;
-
-            const overlap = minDist - dist;
-            const push = toWorldVector((hdx / dist) * overlap, (hdz / dist) * overlap, rotY);
-
-            resolvedPos[0] += push.x;
-            resolvedPos[2] += push.z;
-          }
+      if (mesh) {
+        const distSq = getDistanceSq2D(newPos, obj.pos);
+        const s = normalizeScale(obj.scale);
+        const maxDim = Math.max(s[0], s[1], s[2]) * 5;
+        if (distSq < maxDim * maxDim) {
+          collidables.push(mesh);
         }
       }
     }
   }
-  return resolvedPos;
+
+  // Use the shared robust logic (delta=1.0 as velocity is the total frame move)
+  const resolution = resolveMovementCollision(startPos, velocity, 1.0, collidables, {
+    ...DEFAULT_COLLISION_CONFIG,
+    radius: radius
+  });
+
+  // Maintain intended Y unless we stepped up
+  const finalY = resolution.stepped ? resolution.position.y : newPos[1];
+
+  return [resolution.position.x, finalY, resolution.position.z];
 }
+
 
 export function filterNearby<T extends { id: string, pos: [number, number, number] }>(
   items: Map<string, T> | T[],
@@ -302,55 +258,35 @@ export async function getGroundHeight(pos: [number, number, number], terrainData
     for (const id of ids) {
       const obj = worldObjects.get(id);
       if (!obj) continue;
-      const { pos: objPos, rot, scale, type } = obj;
       
-      // Try to load mesh for ALL objects (Mesh-First)
-      const t = (type || "").toLowerCase();
-      const loaded = await loadModelMesh(t);
-      if (loaded) {
-        const s = normalizeScale(scale);
-        const maxDim = Math.max(s[0], s[1], s[2]) * 5; // Search radius for the mesh
-        const distSq = getDistanceSq2D(pos, objPos);
-        
-        if (distSq < maxDim * maxDim) {
-          const mesh = loaded.mesh;
-          _tempPos.set(objPos[0], objPos[1], objPos[2]);
-          _tempRot.set(rot[0], rot[1], rot[2]);
-          _tempScale.set(s[0], s[1], s[2]);
-          
-          mesh.position.copy(_tempPos);
-          mesh.rotation.copy(_tempRot);
-          mesh.scale.copy(_tempScale);
-          mesh.updateMatrixWorld();
+      const t = (obj.type || "").toLowerCase();
+      if (t.startsWith('npc_') || t.startsWith('spawner_')) continue;
 
-          const meshY = getMeshHeightAt(mesh, pos);
-          if (meshY !== null) {
-            groundHeight = Math.max(groundHeight, meshY);
-            continue; 
-          }
-        } else {
-          continue; // Too far
+      // Use cached mesh instance
+      let mesh = meshInstances.get(id);
+      if (!mesh) {
+        const loaded = await loadModelMesh(t);
+        if (loaded) {
+          const s = normalizeScale(obj.scale);
+          mesh = loaded.mesh.clone(true);
+          mesh.position.set(obj.pos[0], obj.pos[1], obj.pos[2]);
+          mesh.rotation.set(obj.rot[0], obj.rot[1], obj.rot[2]);
+          mesh.scale.set(s[0], s[1], s[2]);
+          mesh.updateMatrixWorld(true);
+          meshInstances.set(id, mesh);
         }
       }
 
-      // Fallback to primitive for entities (NPCs/Spawners)
-      const dims = getObjectDimensions(type, scale);
-      if (!dims) continue;
-
-      const { width, height, shapeType } = dims;
-      const local = toLocalSpace(pos, objPos, rot[1] || 0);
-      let isInside = false;
-
-      if (shapeType === 'circle') {
-        const radiusSq = Math.pow(width / 2, 2);
-        isInside = (local.x * local.x + local.z * local.z) < radiusSq;
-      }
-
-      if (isInside) {
-        const topY = objPos[1] + height;
-        const bottomY = objPos[1];
-        if (pos[1] >= bottomY - 0.5 && pos[1] <= topY + 1.0) {
-          groundHeight = Math.max(groundHeight, topY);
+      if (mesh) {
+        const s = normalizeScale(obj.scale);
+        const maxDim = Math.max(s[0], s[1], s[2]) * 5;
+        const distSq = getDistanceSq2D(pos, obj.pos);
+        
+        if (distSq < maxDim * maxDim) {
+          const meshY = getMeshHeightAt(mesh, pos);
+          if (meshY !== null) {
+            groundHeight = Math.max(groundHeight, meshY);
+          }
         }
       }
     }

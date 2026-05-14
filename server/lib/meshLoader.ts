@@ -10,6 +10,7 @@ if (typeof self === 'undefined') {
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { getFirstCollision, DEFAULT_COLLISION_CONFIG } from "../../shared/logic/collision";
 
 // Add BVH support to THREE
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -130,15 +131,14 @@ export function getMeshHeightAt(mesh: THREE.Group, worldPos: [number, number, nu
  * Helper to check if a point is colliding with a mesh (crude approximation).
  */
 export function checkMeshCollision(mesh: THREE.Group, worldPos: [number, number, number], radius: number = 0.5): boolean {
+  const origin = new THREE.Vector3(worldPos[0], worldPos[1] + 0.5, worldPos[2]);
+  
   for (const [dx, dy, dz] of COLLISION_DIRECTIONS) {
-    _tempOrigin.set(worldPos[0], worldPos[1] + 0.5, worldPos[2]);
-    _tempDirection.set(dx, dy, dz);
-    REUSABLE_RAYCASTER.set(_tempOrigin, _tempDirection);
-    const intersects = REUSABLE_RAYCASTER.intersectObject(mesh, true);
-    if (intersects.length > 0 && intersects[0].distance < radius) {
-      return true;
-    }
+    const direction = new THREE.Vector3(dx, dy, dz);
+    const hit = getFirstCollision(origin, direction, [mesh], radius);
+    if (hit) return true;
   }
 
   return false;
 }
+

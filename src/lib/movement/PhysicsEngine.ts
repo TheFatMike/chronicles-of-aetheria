@@ -8,11 +8,9 @@ import * as THREE from "three";
 import { MovementConfig } from "./types";
 import { getInterpolatedHeight } from "../terrainUtils";
 import { logger } from "../logger";
+import { getFirstCollision, DEFAULT_COLLISION_CONFIG, resolveMovementCollision } from "../../../shared/logic/collision";
 
 export class PhysicsEngine {
-  private raycaster = new THREE.Raycaster();
-  private rayOrigin = new THREE.Vector3();
-  private rayDir = new THREE.Vector3(0, -1, 0);
 
   public update(
     pos: THREE.Vector3,
@@ -22,7 +20,7 @@ export class PhysicsEngine {
     delta: number,
     config: MovementConfig,
     terrainData: any,
-    collidables: THREE.Object3D[],
+    meshes: THREE.Object3D[],
     playerMeshes: THREE.Object3D[]
   ): void {
     const { MOVE_SPEED, FRICTION, GRAVITY } = config;
@@ -70,13 +68,21 @@ export class PhysicsEngine {
     }
 
     // 3. Move Position with Collision Check
-    const nextX = pos.x + velocity.x * delta;
-    const nextZ = pos.z + velocity.z * delta;
-    const nextY = pos.y + velocity.y * delta;
+    // We use the centralized shared logic for horizontal movement and wall sliding
+    const resolution = resolveMovementCollision(pos, velocity, delta, meshes, {
+      ...DEFAULT_COLLISION_CONFIG,
+      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
+    });
 
-    pos.x = nextX;
-    pos.z = nextZ;
-    pos.y = nextY;
+    // Update position from resolution (handles horizontal + steps)
+    pos.copy(resolution.position);
+    
+    // Apply vertical movement (Gravity/Jump) which isn't handled by the horizontal resolver
+    pos.y += velocity.y * delta;
+    
+    // Update velocity (might have been modified by sliding)
+    velocity.x = resolution.velocity.x;
+    velocity.z = resolution.velocity.z;
 
     // 4. Ground Detection
     if (config.isEditorOpen) {
@@ -94,27 +100,27 @@ export class PhysicsEngine {
 
     let groundNormal = new THREE.Vector3(0, 1, 0);
     
-    // B. Object & Terrain Height (Nearby Only)
-    this.rayOrigin.set(pos.x, pos.y + 1.5, pos.z); // Start ray higher to catch steep terrain
-    this.raycaster.set(this.rayOrigin, this.rayDir);
-    this.raycaster.far = 3.0;
+    // B. Object Height (Nearby Only)
+    // We start the ray at waist height (0.8m) to avoid hitting ceilings in interiors
+    const rayOrigin = new THREE.Vector3(pos.x, pos.y + 0.8, pos.z);
+    const rayDir = new THREE.Vector3(0, -1, 0);
+    const hit = getFirstCollision(rayOrigin, rayDir, meshes, 2.0, {
+      ...DEFAULT_COLLISION_CONFIG,
+      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, "terrain_chunk", ...playerMeshes.map(m => m.name)]
+    });
 
-    const intersects = this.raycaster.intersectObjects(collidables, true);
-    for (const hit of intersects) {
-      if (!hit.object.visible || playerMeshes.includes(hit.object)) continue;
-      
-      const isTerrain = hit.object.userData?.isTerrain;
-      const MAX_STEP_HEIGHT = isTerrain ? 1.5 : 0.5;
-      const heightDiff = hit.point.y - pos.y;
-      
-      if (heightDiff > MAX_STEP_HEIGHT) continue;
-
-      if (hit.point.y > groundHeight) {
-        groundHeight = hit.point.y;
-        if (hit.face) {
-          // Calculate world normal
-          const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
-          groundNormal.copy(hit.face.normal).applyMatrix3(normalMatrix).normalize();
+    if (hit) {
+      // Only use the object height if it's actually higher than the terrain
+      const isTerrain = hit.object.name.includes("terrain");
+      if (!isTerrain) {
+        const MAX_STEP_HEIGHT = 0.5;
+        const heightDiff = hit.point.y - pos.y;
+        
+        if (heightDiff <= MAX_STEP_HEIGHT) {
+          if (hit.point.y > groundHeight) {
+            groundHeight = hit.point.y;
+            groundNormal.copy(hit.normal);
+          }
         }
       }
     }
@@ -126,6 +132,8 @@ export class PhysicsEngine {
     // 6. Resolution
     const SNAP_THRESHOLD = 0.5; 
     
+    // Snap to ground if close enough. 
+    // We only snap if we are falling or standing still (velocity.y <= 0)
     if (velocity.y <= 0 && pos.y <= groundHeight + SNAP_THRESHOLD && !isTooSteep) {
       pos.y = groundHeight;
       velocity.y = 0;

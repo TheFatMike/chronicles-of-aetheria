@@ -143,7 +143,7 @@ export const WorldObjectItem = memo(({
     // 2. "Aggressive Frustum Bleed": Use a large 20m radius for the frustum check.
     // This ensures objects are rendered long before they actually hit the screen edges.
     _sphere.current.set(_point.current, 50); 
-    const isVisible = SHARED_FRUSTUM.intersectsSphere(_sphere.current);
+    const isVisible = distSq < 10000 || SHARED_FRUSTUM.intersectsSphere(_sphere.current);
     
     if (groupRef.current.visible !== isVisible) {
       groupRef.current.visible = isVisible;
@@ -393,6 +393,7 @@ export const WorldObjectItem = memo(({
       rotation={obj.rot} 
       scale={obj.scale}
       ref={groupRef}
+      name={`world_obj_${obj.type}_${obj.id}`}
       userData={{ isCollidable: !isSpawner && !isNPC }}
       {...({ isWorldObject: true } as any)}
       onPointerDown={modelProps.onPointerDown}
@@ -467,8 +468,10 @@ export const WorldObjectItem = memo(({
       {/* Invisible Selection Hitbox: Makes small/thin objects easier to click */}
       {(!isWaypoint || isWaypointActive) && (
         <mesh 
+          name="selection_hitbox"
           position={[0, 1, 0]} 
           visible={false} 
+          userData={{ isCollidable: false }}
         >
           <boxGeometry args={[2, 4, 2]} />
           <meshBasicMaterial transparent opacity={0} />
