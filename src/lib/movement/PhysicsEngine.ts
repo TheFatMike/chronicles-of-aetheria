@@ -11,6 +11,8 @@ import { logger } from "../logger";
 import { getFirstCollision, DEFAULT_COLLISION_CONFIG, resolveMovementCollision } from "../../../shared/logic/collision";
 
 export class PhysicsEngine {
+  private _tempVec = new THREE.Vector3();
+  private _rayDir = new THREE.Vector3(0, -1, 0);
 
   public update(
     pos: THREE.Vector3,
@@ -23,10 +25,43 @@ export class PhysicsEngine {
     meshes: THREE.Object3D[],
     playerMeshes: THREE.Object3D[]
   ): void {
-    const { MOVE_SPEED, FRICTION, GRAVITY } = config;
+    const clampedDelta = Math.min(delta, 0.1);
 
-    // 1. Horizontal Movement
-    if (isGrounded.current) {
+    // 1. Calculate Horizontal & Vertical Velocity
+    this.applyInputVelocity(velocity, moveVec, isGrounded.current, clampedDelta, config);
+    this.applyGravity(velocity, moveVec, clampedDelta, config);
+
+    // 2. Resolve Collisions & Steps (Horizontal + Climb)
+    const resolution = resolveMovementCollision(pos, velocity, clampedDelta, meshes, {
+      ...DEFAULT_COLLISION_CONFIG,
+      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
+    });
+
+    // Sync position and horizontal velocity from resolver
+    pos.copy(resolution.position);
+    pos.y += velocity.y * clampedDelta; // Apply gravity separately
+    velocity.x = resolution.velocity.x;
+    velocity.z = resolution.velocity.z;
+
+    // 3. Ground Detection & Snapping
+    if (!config.isEditorOpen) {
+      this.resolveGrounding(pos, velocity, isGrounded, meshes, playerMeshes, terrainData, clampedDelta);
+    } else {
+      isGrounded.current = false;
+    }
+
+    // 4. Void Recovery
+    if (pos.y < -500) {
+      logger.warn("physics", "Recovering from void", { pos });
+      pos.set(0, 5, 0);
+      velocity.set(0, 0, 0);
+    }
+  }
+
+  private applyInputVelocity(velocity: THREE.Vector3, moveVec: THREE.Vector3, isGrounded: boolean, delta: number, config: MovementConfig) {
+    const { MOVE_SPEED, FRICTION } = config;
+
+    if (isGrounded) {
       if (moveVec.lengthSq() > 0) {
         // Snappy ground response
         velocity.x = moveVec.x * MOVE_SPEED;
@@ -40,7 +75,7 @@ export class PhysicsEngine {
         if (Math.abs(velocity.z) < 0.1) velocity.z = 0;
       }
     } else {
-      // Air control (Increased for WoW-like responsiveness)
+      // Air control
       const airAccel = 75;
       velocity.x += moveVec.x * airAccel * delta;
       velocity.z += moveVec.z * airAccel * delta;
@@ -52,59 +87,44 @@ export class PhysicsEngine {
         velocity.z = horizontalVel.y;
       }
     }
+  }
 
-    // 2. Gravity (Disabled in Editor for "Fly" mode)
-    if (!config.isEditorOpen) {
-      velocity.y -= GRAVITY * delta;
-      if (velocity.y < -50) velocity.y = -50;
-    } else {
-      // Vertical Movement in Editor
+  private applyGravity(velocity: THREE.Vector3, moveVec: THREE.Vector3, delta: number, config: MovementConfig) {
+    if (config.isEditorOpen) {
+      // Free-fly vertical movement in editor
       if (moveVec.y !== 0) {
-        velocity.y = moveVec.y * MOVE_SPEED;
+        velocity.y = moveVec.y * config.MOVE_SPEED;
       } else {
-        velocity.y -= velocity.y * FRICTION * 5 * delta;
+        velocity.y -= velocity.y * config.FRICTION * 5 * delta;
         if (Math.abs(velocity.y) < 0.1) velocity.y = 0;
       }
+    } else {
+      velocity.y -= config.GRAVITY * delta;
+      if (velocity.y < -50) velocity.y = -50;
     }
+  }
 
-    // 3. Move Position with Collision Check
-    // We use the centralized shared logic for horizontal movement and wall sliding
-    const resolution = resolveMovementCollision(pos, velocity, delta, meshes, {
-      ...DEFAULT_COLLISION_CONFIG,
-      ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
-    });
-
-    // Update position from resolution (handles horizontal + steps)
-    pos.copy(resolution.position);
-    
-    // Apply vertical movement (Gravity/Jump) which isn't handled by the horizontal resolver
-    pos.y += velocity.y * delta;
-    
-    // Update velocity (might have been modified by sliding)
-    velocity.x = resolution.velocity.x;
-    velocity.z = resolution.velocity.z;
-
-    // 4. Ground Detection
-    if (config.isEditorOpen) {
-      isGrounded.current = false;
-      return;
-    }
-
+  private resolveGrounding(
+    pos: THREE.Vector3,
+    velocity: THREE.Vector3,
+    isGrounded: { current: boolean },
+    meshes: THREE.Object3D[],
+    playerMeshes: THREE.Object3D[],
+    terrainData: any,
+    delta: number
+  ) {
     let groundHeight = -100;
-    
-    // A. Terrain Height
+    let groundNormal = new THREE.Vector3(0, 1, 0);
+
+    // 1. Initial Terrain Height from data (as baseline)
     if (terrainData) {
       const h = getInterpolatedHeight(pos.x, pos.z, terrainData);
       if (h !== null) groundHeight = h;
     }
 
-    let groundNormal = new THREE.Vector3(0, 1, 0);
-    
-    // B. Object Height (Nearby Only)
-    // We start the ray at waist height (0.8m) to avoid hitting ceilings in interiors
-    const rayOrigin = new THREE.Vector3(pos.x, pos.y + 0.8, pos.z);
-    const rayDir = new THREE.Vector3(0, -1, 0);
-    const hit = getFirstCollision(rayOrigin, rayDir, meshes, 2.0, {
+    // 2. Precise Object/Terrain Detection via Raycast
+    const rayOrigin = this._tempVec.set(pos.x, pos.y + 0.8, pos.z);
+    const hit = getFirstCollision(rayOrigin, this._rayDir, meshes, 2.0, {
       ...DEFAULT_COLLISION_CONFIG,
       ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
     });
@@ -121,38 +141,27 @@ export class PhysicsEngine {
         }
       }
     }
-    
-    // 5. Slope Handling & Sliding
-    // Use the same slope limit as the collision system (0.4 = 66 degrees)
+
+    // 3. Slope Handling & Snapping
     const isTooSteep = groundNormal.y < DEFAULT_COLLISION_CONFIG.maxSlopeY;
-    
-    let finalGroundY = groundHeight;
     const SNAP_THRESHOLD = 0.5; 
     
-    // Snap to ground if close enough. 
-    // We only snap if we are falling or standing still (velocity.y <= 0)
     if (velocity.y <= 0 && pos.y <= groundHeight + SNAP_THRESHOLD && !isTooSteep) {
+      // On Ground
       pos.y = groundHeight;
       velocity.y = 0;
       isGrounded.current = true;
     } else {
+      // In Air or Sliding
       isGrounded.current = false;
       
-      // Apply sliding force if on a steep slope
       if (isTooSteep && pos.y <= groundHeight + 0.1) {
+        // Slide down steep slopes
         const slideStrength = 15;
         velocity.x += groundNormal.x * slideStrength * delta;
         velocity.z += groundNormal.z * slideStrength * delta;
-        // Also push down slightly to ensure we stay 'on' the slope while sliding
-        velocity.y -= 5 * delta; 
+        velocity.y -= 5 * delta; // Stay pinned to slope
       }
-    }
-
-    // Void Recovery
-    if (pos.y < -500) {
-      logger.warn("physics", "Recovering from void", { pos });
-      pos.set(0, 5, 0);
-      velocity.set(0, 0, 0);
     }
   }
 }
