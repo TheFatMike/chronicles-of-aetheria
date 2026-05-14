@@ -30,7 +30,7 @@ export const useCombat = (socket: any) => {
   const addMessage = useGameStore(state => state.addMessage);
   const setSkillCooldown = useGameStore(state => state.setSkillCooldown);
 
-  const useSkill = useCallback(async (skill: Skill) => {
+  const useSkill = useCallback(async (skill: Skill, silent: boolean = false) => {
     const state = useGameStore.getState();
     const currentTarget = state.currentTarget;
     const players = state.players;
@@ -53,7 +53,7 @@ export const useCombat = (socket: any) => {
     const now = Date.now();
     const lastUsed = state.skillCooldowns[skill.id] || 0;
     if (now - lastUsed < skill.cooldown * 1000) {
-      if (skill.id !== 'basic_attack') {
+      if (skill.id !== 'basic_attack' && !silent) {
         addMessage({
           id: Math.random().toString(),
           sender: "System",
@@ -67,26 +67,30 @@ export const useCombat = (socket: any) => {
 
     // 2. Check Mana
     if (localPlayer.mp < skill.manaCost) {
-      addMessage({
-        id: Math.random().toString(),
-        sender: "System",
-        text: "Not enough mana!",
-        timestamp: now,
-        color: "#3b82f6"
-      });
+      if (!silent) {
+        addMessage({
+          id: Math.random().toString(),
+          sender: "System",
+          text: "Not enough mana!",
+          timestamp: now,
+          color: "#3b82f6"
+        });
+      }
       return;
     }
 
     // 3. Check Target & Range
     if (skill.targetType === 'target') {
       if (!currentTarget) {
-        addMessage({
-          id: Math.random().toString(),
-          sender: "System",
-          text: "No target selected!",
-          timestamp: now,
-          color: "#9ca3af"
-        });
+        if (!silent) {
+          addMessage({
+            id: Math.random().toString(),
+            sender: "System",
+            text: "No target selected!",
+            timestamp: now,
+            color: "#9ca3af"
+          });
+        }
         return;
       }
 
@@ -99,13 +103,15 @@ export const useCombat = (socket: any) => {
             Math.pow(self.pos[2] - ent.pos[2], 2)
           );
           if (skill.range !== undefined && dist > skill.range) {
-            addMessage({
-              id: Math.random().toString(),
-              sender: "System",
-              text: "Target is too far away!",
-              timestamp: now,
-              color: "#9ca3af"
-            });
+            if (!silent) {
+              addMessage({
+                id: Math.random().toString(),
+                sender: "System",
+                text: "Target is too far away!",
+                timestamp: now,
+                color: "#9ca3af"
+              });
+            }
             return;
           }
         } else if (!self) {
@@ -182,9 +188,9 @@ export const useCombat = (socket: any) => {
   }, [localPlayer, socket, addMessage, currentTarget, setSkillCooldown]);
 
 
-  const basicAttack = useCallback(() => {
+  const basicAttack = useCallback((silent: boolean = false) => {
     const basic = ALL_SKILLS.find(s => s.id === 'basic_attack');
-    if (basic) useSkill(basic);
+    if (basic) useSkill(basic, silent);
   }, [useSkill]);
 
   const stopCombat = useCallback(() => {
@@ -204,8 +210,8 @@ export const useCombat = (socket: any) => {
         return;
       }
 
-      basicAttack();
-    }, 950); // Slightly more than cooldown (800ms) to ensure it's ready
+      basicAttack(true); // Silent checks for auto-attack loop
+    }, 100); // High-frequency check for instant response when in range/off cooldown
 
     return () => clearInterval(interval);
   }, [autoAttackTargetId, localPlayer, basicAttack, setAutoAttackTarget]);

@@ -203,6 +203,9 @@ export interface WorldObject {
   respawnTime?: number;
   shopId?: string;
   role?: string;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  agroRange?: number;
+  chaseDistance?: number;
 }
 
 export interface TeleportPoint {
@@ -266,6 +269,16 @@ export interface GameEntity extends GameTarget {
   lastAttackTime?: number;
   isSleeping?: boolean;
   modelUrl?: string;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  agroRange?: number;
+  chaseDistance?: number;
+  isImmune?: boolean;
+  lastAgroTime?: number;
+  stuckTicks?: number;
+  minDamage?: number;
+  maxDamage?: number;
+  attackSpeed?: number;
+  moveSpeed?: number;
 }
 export interface Message {
   id: string;

@@ -212,7 +212,7 @@ export const usePlayerMovement = (
     isMoving.current = velocity.current.lengthSq() > 0.001 || turn !== 0;
 
     // 2.1 Interrupt casting on movement
-    if (isMoving.current && state.castState?.active) {
+    if (isMoving.current && state.castState?.active && state.castState.skillName !== "Basic Attack") {
       state.cancelCast();
     }
 

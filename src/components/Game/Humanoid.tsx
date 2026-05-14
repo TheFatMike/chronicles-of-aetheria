@@ -36,10 +36,6 @@ export const Humanoid = memo(({ color, isMoving = false, isGrounded = true, isAt
 
     if (isAttacking) {
       if (rightArm.current) rightArm.current.rotation.x = -Math.PI * 0.8;
-      if (leftArm.current) resetRotation(leftArm);
-      if (leftLeg.current) resetRotation(leftLeg);
-      if (rightLeg.current) resetRotation(rightLeg);
-      return;
     }
 
     if (isMoving && isGrounded) {

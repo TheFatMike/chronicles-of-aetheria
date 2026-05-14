@@ -244,7 +244,7 @@ export const useSocket = (token: string | null) => {
 
     if (isMoving) {
       const state = useGameStore.getState();
-      if (state.castState?.active) {
+      if (state.castState?.active && state.castState.skillName !== "Basic Attack") {
         state.cancelCast();
       }
     }

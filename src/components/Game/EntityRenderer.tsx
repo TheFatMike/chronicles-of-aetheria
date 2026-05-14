@@ -7,7 +7,7 @@
 import { memo, useState, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { NPC } from "./NPC";
-import { SlimeEnemy, SkeletonEnemy, GoblinEnemy } from "./Enemy";
+import { SlimeEnemy, SkeletonEnemy, GoblinEnemy, WolfEnemy } from "./Enemy";
 import { useGameStore } from "../../store/useGameStore";
 import { useShallow } from "zustand/react/shallow";
 import { SAMPLE_QUESTS } from "@shared/data/quests";
@@ -22,68 +22,26 @@ interface EntityRendererProps {
 
 export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) => {
   const { camera } = useThree();
-  const [nearbyEntities, setNearbyEntities] = useState<any[]>([]);
-  const lastCullPos = useRef(new THREE.Vector3());
+  const entities = useGameStore(state => state.entities);
+  const localPlayerPos = useGameStore(state => state.players[state.id || ""]?.pos);
 
-  // Spatial Culling (Reactive): Only update when player moves > 2m or entities list changes
-  useEffect(() => {
-    const updateNearby = () => {
-      const state = useGameStore.getState();
-      const localPlayer = state.players[state.id || ""];
-      if (!localPlayer) return;
-
-      const playerPos = new THREE.Vector3(localPlayer.pos[0], localPlayer.pos[1], localPlayer.pos[2]);
-      
-      // If we haven't moved much and we have entities, skip (unless list size changed)
-      const distMoved = playerPos.distanceTo(lastCullPos.current);
-      const currentEntities = Object.values(state.entities);
-      
-      let hasUpdates = nearbyEntities.length !== currentEntities.length;
-      if (!hasUpdates) {
-        for (let i = 0; i < nearbyEntities.length; i++) {
-          if (state.entities[nearbyEntities[i].id] !== nearbyEntities[i]) {
-            hasUpdates = true;
-            break;
-          }
-        }
-      }
-
-      if (distMoved < 2 && !hasUpdates && nearbyEntities.length > 0) return;
-
-      lastCullPos.current.copy(playerPos);
-      
-      const CULL_DISTANCE_SQ = 180 * 180;
-      const filtered = currentEntities.filter(ent => {
-        const dx = ent.pos[0] - localPlayer.pos[0];
-        const dz = ent.pos[2] - localPlayer.pos[2];
-        return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
-      });
-      
-      setNearbyEntities(filtered);
-    };
-
-    // Subscribing to entities count changes (add/remove)
-    const unsubscribe = useGameStore.subscribe(
-      (state) => Object.keys(state.entities).length,
-      () => updateNearby()
-    );
-
-    // Frequent check for movement, but thresholded internally
-    const interval = setInterval(updateNearby, 300);
-    
-    updateNearby();
-    return () => {
-      unsubscribe();
-      clearInterval(interval);
-    }
-  }, [camera]); 
+  // Spatial Culling (Reactive & High Performance)
+  const culledEntities = useMemo(() => {
+    if (!localPlayerPos) return [];
+    const CULL_DISTANCE_SQ = 180 * 180;
+    return Object.values(entities).filter(ent => {
+      const dx = ent.pos[0] - localPlayerPos[0];
+      const dz = ent.pos[2] - localPlayerPos[2];
+      return (dx*dx + dz*dz) < CULL_DISTANCE_SQ;
+    });
+  }, [entities, localPlayerPos]);
 
   const setActiveDialogue = useGameStore(state => state.setActiveDialogue);
   const activeQuests = useGameStore(state => state.activeQuests);
 
   return (
     <>
-      {nearbyEntities.map(ent => (
+      {culledEntities.map(ent => (
         ent.type === 'npc' ? (
           <NPC 
             key={ent.id}
@@ -99,7 +57,7 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
             isMoving={ent.isMoving}
             isAttacking={ent.isAttacking}
             modelUrl={ent.modelUrl}
-            scale={ent.scale || 1}
+            scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)}
             onInteract={() => {
               if (useGameStore.getState().isEditorOpen) return;
               
@@ -119,26 +77,29 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
             }}
           />
         ) : (
-          ent.entityClass === 'Skeleton' ? (
-            <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={ent.scale || 1} onAttack={onAttack} onLoot={onLoot} />
-          ) : ent.entityClass === 'Goblin' ? (
-            <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={ent.scale || 1} onAttack={onAttack} onLoot={onLoot} />
-          ) : (
-            <SlimeEnemy 
-              key={ent.id}
-              id={ent.id} 
-              name={ent.name} 
-              level={ent.level} 
-              position={ent.pos} 
-              hp={ent.hp}
-              maxHp={ent.maxHp}
-              isDead={ent.isDead}
-              scale={ent.scale || 1}
-              color={ent.color || "#ef4444"}
-              onAttack={onAttack}
-              onLoot={onLoot}
-            />
-          )
+          (() => {
+            const eClass = (ent.entityClass || "").toLowerCase();
+            if (eClass === 'skeleton') return <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
+            if (eClass === 'goblin') return <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
+            if (eClass === 'wolf') return <WolfEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
+            
+            return (
+              <SlimeEnemy 
+                key={ent.id}
+                id={ent.id} 
+                name={ent.name} 
+                level={ent.level} 
+                position={ent.pos} 
+                hp={ent.hp}
+                maxHp={ent.maxHp}
+                isDead={ent.isDead}
+                scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)}
+                color={ent.color || "#ef4444"}
+                onAttack={onAttack}
+                onLoot={onLoot}
+              />
+            );
+          })()
         )
       ))}
     </>

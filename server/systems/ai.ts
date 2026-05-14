@@ -6,6 +6,8 @@
  */
 import { entities, worldObjects, dirtyEntities, terrainData, players } from "../state";
 import { resolveWorldCollision, updateInGrid, entityGrid, objectGrid, getGroundHeight, isAnyPlayerNearby } from "./spatial";
+import { ENTITY_TEMPLATES } from "../data/entityTemplates";
+import { executeEntityAttack } from "../logic/combat";
 
 const waypointCache = new Map<string, any[]>();
 
@@ -32,7 +34,7 @@ let aiTickCount = 0;
 /**
  * Updates entity AI with LOD (Level of Detail) and Interleaving.
  */
-export const updateEntityAI = async (tickTime: number) => {
+export const updateEntityAI = async (tickTime: number, io: any) => {
   const dt = tickTime / 1000;
   aiTickCount++;
 
@@ -40,6 +42,24 @@ export const updateEntityAI = async (tickTime: number) => {
   for (const entity of entities.values()) {
     index++;
     if (entity.isDead) continue;
+    
+    // Fix existing NaN positions (from previous speed bug)
+    if (isNaN(entity.pos[0]) || isNaN(entity.pos[1]) || isNaN(entity.pos[2])) {
+      entity.pos = [...(entity.homePos || [0, 0, 0])];
+      dirtyEntities.add(entity.id);
+    }
+
+    // --- LIVE PATCHING (Ensure existing entities get the update) ---
+    if (entity.behaviorType === undefined && entity.type !== 'npc') {
+      const template = ENTITY_TEMPLATES[entity.entityClass || ''] || ENTITY_TEMPLATES['slime'];
+      entity.behaviorType = template.behaviorType || (template.type === 'enemy' ? 'aggressive' : 'neutral');
+      entity.agroRange = entity.agroRange || template.aggroRadius || 15;
+      entity.chaseDistance = entity.chaseDistance || template.leashRadius || 40;
+      entity.moveSpeed = entity.moveSpeed || template.moveSpeed || 3;
+      entity.minDamage = entity.minDamage || template.minDamage || 1;
+      entity.maxDamage = entity.maxDamage || template.maxDamage || 2;
+      entity.attackSpeed = entity.attackSpeed || template.attackSpeed || 2;
+    }
 
     // 1. Interleaving: Process movement/gravity every tick, but complex AI every other tick
     const isAITick = (index + aiTickCount) % 2 === 0;
@@ -78,9 +98,9 @@ export const updateEntityAI = async (tickTime: number) => {
     }
 
     // 4. Horizontal Movement AI (Skip for NPCs and sleeping entities)
-    if (entity.type === 'npc' || entity.isSleeping || !isAITick) continue;
+    if (entity.type === 'npc' || entity.isSleeping) continue;
 
-    const speed = entity.stats.moveSpeed * dt * 2; // Compensate for interleaving
+    const speed = (entity.moveSpeed || 3) * dt; 
     
     const moveWithCollision = async (dx: number, dz: number, s: number) => {
       const mag = Math.sqrt(dx*dx + dz*dz);
@@ -88,9 +108,67 @@ export const updateEntityAI = async (tickTime: number) => {
       const nx = (dx/mag) * s;
       const nz = (dz/mag) * s;
       
+      if (isNaN(nx) || isNaN(nz)) return;
+      
       const nextPos: [number, number, number] = [entity.pos[0] + nx, entity.pos[1], entity.pos[2] + nz];
-      entity.pos = await resolveWorldCollision(entity.pos, nextPos, 0.5);
+      const resolved = await resolveWorldCollision(entity.pos, nextPos, 0.5);
+      
+      // Stuck Detection: If we didn't move much despite trying
+      const moveDistSq = (resolved[0]-entity.pos[0])**2 + (resolved[2]-entity.pos[2])**2;
+      if (moveDistSq < (s * 0.1)**2) {
+        entity.stuckTicks = (entity.stuckTicks || 0) + 1;
+      } else {
+        entity.stuckTicks = 0;
+      }
+      
+      entity.pos = resolved;
     };
+
+    // --- AGGRO & TARGETING LOGIC (Interleaved) ---
+    if (isAITick && !entity.isDead && entity.aiState !== 'RETURN') {
+      const behavior = entity.behaviorType || 'neutral';
+      
+      // If aggressive, look for nearby players
+      if (behavior === 'aggressive' && !entity.targetId) {
+        const range = entity.agroRange || 15;
+        const rangeSq = range * range;
+        
+        for (const player of players.values()) {
+          const dx = player.pos[0] - entity.pos[0];
+          const dz = player.pos[2] - entity.pos[2];
+          if (dx*dx + dz*dz < rangeSq) {
+            entity.targetId = player.id;
+            entity.aiState = 'CHASE';
+            break;
+          }
+        }
+      }
+      
+      // Check if target is still valid/nearby
+      if (entity.targetId) {
+        const target = players.get(entity.targetId) || entities.get(entity.targetId);
+        if (!target || target.hp! <= 0) {
+          entity.targetId = null;
+          entity.aiState = 'RETURN';
+        } else {
+          const dx = target.pos[0] - entity.pos[0];
+          const dz = target.pos[2] - entity.pos[2];
+          const distSq = dx*dx + dz*dz;
+          const maxChase = entity.chaseDistance || 40;
+          
+          // Leashing logic: too far from home or target too far
+          const hPos = entity.homePos || entity.pos;
+          const hdx = hPos[0] - entity.pos[0];
+          const hdz = hPos[2] - entity.pos[2];
+          const homeDistSq = hdx*hdx + hdz*hdz;
+
+          if (distSq > maxChase * maxChase || homeDistSq > (maxChase * 2.5)**2 || (entity.stuckTicks || 0) > 60) {
+            entity.targetId = null;
+            entity.aiState = 'RETURN';
+          }
+        }
+      }
+    }
 
     switch (entity.aiState) {
       case 'IDLE':
@@ -104,14 +182,80 @@ export const updateEntityAI = async (tickTime: number) => {
         const rdx = hPos[0] - entity.pos[0];
         const rdz = hPos[2] - entity.pos[2];
         const rdSq = rdx*rdx + rdz*rdz;
-        if (rdSq < 0.25) { 
+        
+        entity.isImmune = true; // Immune while returning
+        entity.targetId = null;
+
+        if (rdSq < 1.0) { 
           entity.aiState = entity.pathId ? 'PATROL' : 'IDLE';
           entity.isMoving = false;
+          entity.isImmune = false;
+          entity.hp = entity.maxHp; // Full heal upon return
+          entity.stuckTicks = 0;
         } else {
           entity.isMoving = true;
+          entity.rot[1] = Math.atan2(rdx, rdz);
           await moveWithCollision(rdx, rdz, speed * 1.5);
         }
         break;
+      case 'CHASE': {
+        if (!entity.targetId) {
+          entity.aiState = 'RETURN';
+          break;
+        }
+        const target = players.get(entity.targetId) || entities.get(entity.targetId);
+        if (!target) break;
+
+        const cdx = target.pos[0] - entity.pos[0];
+        const cdz = target.pos[2] - entity.pos[2];
+        const cdy = target.pos[1] - entity.pos[1];
+        const cdSq = cdx*cdx + cdz*cdz;
+        
+        // Vertical check: If player is more than 3 units above/below and we are close horizontally
+        if (Math.abs(cdy) > 3.0 && cdSq < 16) {
+          entity.stuckTicks = (entity.stuckTicks || 0) + 1;
+        }
+
+        // Stop if close enough to attack (melee range ~2 units)
+        if (cdSq < 4 && Math.abs(cdy) < 2.5) {
+          entity.isMoving = false;
+          entity.rot[1] = Math.atan2(cdx, cdz);
+          
+          // Attack Logic
+          const now = Date.now();
+          const attackInterval = (entity.attackSpeed || 2) * 1000;
+          if (now - (entity.lastAttackTime || 0) > attackInterval) {
+            executeEntityAttack(io, entity, target);
+          }
+        } else {
+          entity.isMoving = true;
+          entity.rot[1] = Math.atan2(cdx, cdz);
+          await moveWithCollision(cdx, cdz, speed * 1.2);
+        }
+        break;
+      }
+      case 'FLEE': {
+        if (!entity.targetId) {
+          entity.aiState = 'RETURN';
+          break;
+        }
+        const target = players.get(entity.targetId) || entities.get(entity.targetId);
+        if (!target) break;
+
+        const fdx = entity.pos[0] - target.pos[0];
+        const fdz = entity.pos[2] - target.pos[2];
+        
+        entity.isMoving = true;
+        entity.rot[1] = Math.atan2(fdx, fdz);
+        await moveWithCollision(fdx, fdz, speed * 1.3);
+
+        // Stop fleeing if far enough
+        if (fdx*fdx + fdz*fdz > 25*25) {
+          entity.targetId = null;
+          entity.aiState = 'RETURN';
+        }
+        break;
+      }
       case 'PATROL': {
         if (!entity.pathId) {
           entity.aiState = 'IDLE';

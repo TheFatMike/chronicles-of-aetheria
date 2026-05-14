@@ -85,7 +85,8 @@ export const TargetFrame = () => {
                      )}
                   </div>
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-aetheria-400 text-aetheria-950 font-mono font-black text-[9px] px-1.5 py-0.5 rounded border border-aetheria-200/30 shadow-sm">
+                {/* Level Badge */}
+                <div className="absolute bottom-0 right-0 w-5 h-5 bg-aetheria-800 rounded-full border-2 border-aetheria-950 flex items-center justify-center text-[9px] font-black text-aetheria-200 shadow-aetheria-sm z-20 text-center leading-none translate-x-1 translate-y-1">
                   {liveTarget.level || 1}
                 </div>
               </div>

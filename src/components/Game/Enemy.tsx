@@ -172,7 +172,62 @@ export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534",
   );
 });
 
+export const WolfEnemy = memo(({ id, name, level, position, color = "#4b5563", hp, maxHp, isDead, scale = 1, onAttack, onLoot }: EnemyProps) => {
+  return (
+    <BaseEntity
+      id={id}
+      name={name}
+      type="enemy"
+      level={level}
+      position={position}
+      color={color}
+      hp={hp}
+      maxHp={maxHp}
+      isDead={isDead}
+      scale={scale}
+      nameOffset={isDead ? 0.5 : 1.8}
+      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      onInteract={isDead ? () => onLoot?.(id) : undefined}
+      onAttack={onAttack}
+    >
+      <group position={[0, isDead ? 0.2 : 0.6, 0]} rotation={isDead ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        {/* Body */}
+        <mesh castShadow>
+          <boxGeometry args={[0.6, 0.7, 1.2]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Head */}
+        <mesh position={[0, 0.5, 0.6]} castShadow>
+          <boxGeometry args={[0.5, 0.5, 0.5]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Snout */}
+        <mesh position={[0, 0.45, 1.0]} castShadow>
+          <boxGeometry args={[0.25, 0.25, 0.4]} />
+          <meshStandardMaterial color="#1f2937" />
+        </mesh>
+        {/* Ears */}
+        <mesh position={[-0.15, 0.8, 0.5]} rotation={[0.2, 0, 0]}>
+          <boxGeometry args={[0.1, 0.3, 0.1]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <mesh position={[0.15, 0.8, 0.5]} rotation={[0.2, 0, 0]}>
+          <boxGeometry args={[0.1, 0.3, 0.1]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        {/* Tail */}
+        {!isDead && (
+          <mesh position={[0, 0.1, -0.7]} rotation={[-0.5, 0, 0]}>
+            <boxGeometry args={[0.15, 0.15, 0.6]} />
+            <meshStandardMaterial color={color} />
+          </mesh>
+        )}
+      </group>
+    </BaseEntity>
+  );
+});
 
 SlimeEnemy.displayName = "SlimeEnemy";
 SkeletonEnemy.displayName = "SkeletonEnemy";
 GoblinEnemy.displayName = "GoblinEnemy";
+WolfEnemy.displayName = "WolfEnemy";

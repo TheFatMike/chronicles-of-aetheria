@@ -16,7 +16,7 @@ import { autosavePlayers } from "./persistence";
 import { markPlayerDirty } from "../lib/stateUtils";
 
 export const startHeartbeat = (io: Server) => {
-  const TICK_TIME = 100; // 10 ticks per second
+  const TICK_TIME = 50; // 20 ticks per second (Matches GAME_CONFIG.NETWORK.SYNC_RATE_MS)
   
   initAIWorker();
 
@@ -41,7 +41,7 @@ export const startHeartbeat = (io: Server) => {
 
       // 2. Entity AI (Asynchronous via Worker Thread)
       // We pass the actual dt so movement is smooth even if tick rate fluctuates
-      await updateEntityAI(dt);
+      await updateEntityAI(dt, io);
 
       // 3. Broadcast (True Delta Syncing)
       if (players.size > 0) {

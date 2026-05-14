@@ -19,15 +19,20 @@ export const PlayerHUD = ({ character, userEmail }: PlayerHUDProps) => {
   return (
     <div className="fixed top-2 left-2 lg:top-6 lg:left-6 z-60 bg-aetheria-950/90 backdrop-blur-md p-2 lg:p-4 rounded-xl border-2 border-aetheria-800 text-aetheria-400 shadow-aetheria-lg select-none w-full max-w-48 lg:max-w-none lg:w-auto">
       <div className="flex items-center gap-2 sm:gap-4">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-aetheria-900 rounded border-2 border-aetheria-800 flex items-center justify-center font-black text-aetheria-200 text-xs sm:text-base shrink-0">
-          {character.class?.[0]?.toUpperCase() || "?"}
+        <div className="relative shrink-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-aetheria-900 rounded border-2 border-aetheria-800 flex items-center justify-center font-black text-aetheria-200 text-xs sm:text-base">
+            {character.class?.[0]?.toUpperCase() || "?"}
+          </div>
+          {/* Level Badge */}
+          <div className="absolute bottom-0 right-0 w-5 h-5 sm:w-6 sm:h-6 bg-aetheria-800 rounded-full border-2 border-aetheria-950 flex items-center justify-center text-[8px] sm:text-[10px] font-black text-aetheria-200 shadow-aetheria-sm z-20 text-center leading-none translate-x-1 translate-y-1">
+            {character.level || 1}
+          </div>
         </div>
         <div className="min-w-0">
           <div className="flex gap-1 sm:gap-2 items-baseline flex-wrap min-w-0">
             <h2 className="text-sm sm:text-lg font-black text-aetheria-200 uppercase tracking-tight truncate max-w-[80px] sm:max-w-none">
               {character.name}
             </h2>
-            <span className="text-[8px] sm:text-[10px] font-bold text-aetheria-600">LVL {character.level}</span>
           </div>
           <div className="space-y-1 mt-1 min-w-[120px] sm:min-w-[180px]">
             {/* HP Bar */}

@@ -9,8 +9,8 @@ import { calculateMaxHP, calculateMaxMP } from "../../shared/logic/gameRules";
 
 export function createNPCEntity(id: string, worldObjectId: string | null, type: string, pos: [number, number, number], rot: [number, number, number], metadata?: any) {
   const npcKey = type.replace('npc_', '');
-  const template = ENTITY_TEMPLATES[npcKey] || ENTITY_TEMPLATES['guard'];
-  const stats = template.baseStats;
+  const template = ENTITY_TEMPLATES[npcKey] || Object.values(ENTITY_TEMPLATES)[0];
+  const stats = template.baseStats || { strength: 5, dexterity: 5, wisdom: 5, intelligence: 5, stamina: 10 };
   const maxHp = calculateMaxHP(stats);
   const maxMp = calculateMaxMP(stats);
 
@@ -35,6 +35,12 @@ export function createNPCEntity(id: string, worldObjectId: string | null, type: 
     stats: stats,
     isMoving: false,
     aiState: 'IDLE',
+    behaviorType: template.behaviorType || (template.type === 'enemy' ? 'aggressive' : 'neutral'),
+    agroRange: template.aggroRadius || 15,
+    chaseDistance: template.leashRadius || 40,
+    minDamage: template.minDamage || 1,
+    maxDamage: template.maxDamage || 2,
+    attackSpeed: template.attackSpeed || 2.0,
     lastUpdate: Date.now()
   };
 }

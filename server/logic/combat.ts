@@ -178,6 +178,29 @@ export const handleCastSkill = (io: any, socket: any, data: any) => {
         return;
       }
 
+      // 0. IMMUNITY CHECK
+      if (target.isImmune) {
+        socket.emit("chat_message", { 
+          id: Math.random().toString(), 
+          sender: "SYSTEM", 
+          text: "The target is returning and immune to damage!", 
+          timestamp: Date.now(), 
+          color: "#ffaa00" 
+        });
+        return;
+      }
+
+      // AGGRESSION TRIGGER
+      if (target.aiState !== 'CHASE' && target.aiState !== 'FLEE' && target.aiState !== 'RETURN') {
+        if (target.behaviorType === 'neutral') {
+          target.targetId = player.id;
+          target.aiState = 'CHASE';
+        } else if (target.behaviorType === 'passive') {
+          target.targetId = player.id;
+          target.aiState = 'FLEE';
+        }
+      }
+
       target.hp = Math.max(0, target.hp - amount);
       target.lastUpdate = Date.now();
       dirtyEntities.add(target.id);
@@ -331,4 +354,36 @@ export function giveExperience(io: any, player: any, amount: number) {
   
   sendPlayerStats(io, null, player);
   markPlayerDirty(player.id, ["exp", "level", "gold", "hp", "mp", "passivePoints"]);
+}
+
+export function executeEntityAttack(io: any, entity: any, target: any) {
+  if (!entity || !target || entity.isDead || (target.hp !== undefined && target.hp <= 0)) return;
+
+  const min = entity.minDamage || 1;
+  const max = entity.maxDamage || 2;
+  const amount = Math.floor(Math.random() * (max - min + 1)) + min;
+
+  target.hp = Math.max(0, target.hp - amount);
+  
+  const combatEvent = {
+    id: Math.random().toString(),
+    sourceId: entity.id,
+    targetId: target.id,
+    amount: amount,
+    type: "damage",
+    pos: target.pos,
+    createdAt: Date.now()
+  };
+
+  // Broadcast to target player and nearby players
+  if (players.has(target.id)) {
+    io.to(target.id).emit("combat_event", combatEvent);
+    sendPlayerStats(io, null, target);
+    markPlayerDirty(target.id, ["hp"]);
+  }
+  
+  broadcastToNearbyPlayers(io, target.pos, 150, "combat_event", combatEvent, target.id);
+  
+  entity.lastAttackTime = Date.now();
+  dirtyEntities.add(entity.id);
 }

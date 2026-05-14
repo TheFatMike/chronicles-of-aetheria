@@ -55,7 +55,6 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   // Spawners
   spawner_slime: { type: 'spawner_slime', scale: 1, category: 'spawners', label: 'Slime Spawner' },
   spawner_wolf: { type: 'spawner_wolf', scale: 1, category: 'spawners', label: 'Wolf Spawner' },
-  spawner_guard: { type: 'spawner_guard', scale: 1, category: 'spawners', label: 'Guard Spawner' },
 
   // NPCs
   'npc_elder_thorne': { type: 'npc_elder_thorne', label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1 },

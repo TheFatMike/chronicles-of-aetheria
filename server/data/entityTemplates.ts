@@ -11,23 +11,27 @@ export interface EntityTemplate {
   name: string;
   class: string;
   type: 'enemy' | 'npc' | 'neutral';
-  baseStats: {
+  baseStats?: {
     strength: number;
     dexterity: number;
     wisdom: number;
     intelligence: number;
     stamina: number;
   };
-  aggroRadius: number;
-  attackRadius: number;
-  leashRadius: number;
-  moveSpeed: number;
-  respawnTime: number;
+  aggroRadius?: number;
+  attackRadius?: number;
+  leashRadius?: number;
+  moveSpeed?: number;
+  respawnTime?: number;
   level?: number;
-  expReward: number;
-  lootTable: LootTable; 
+  expReward?: number;
+  lootTable?: LootTable;
   modelUrl?: string;
   color?: string;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  minDamage?: number;
+  maxDamage?: number;
+  attackSpeed?: number; // in seconds
 }
 
 export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
@@ -39,11 +43,15 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     baseStats: { strength: 4, dexterity: 3, wisdom: 1, intelligence: 1, stamina: 8 },
     aggroRadius: 6,
     attackRadius: 1.5,
-    leashRadius: 12,
-    moveSpeed: 0.03,
+    leashRadius: 30,
+    moveSpeed: 2.5,
     respawnTime: 15,
     expReward: 15,
-    lootTable: LOOT_TABLES.slime
+    lootTable: LOOT_TABLES.slime,
+    behaviorType: 'neutral',
+    minDamage: 2,
+    maxDamage: 5,
+    attackSpeed: 2.0
   },
   wolf: {
     id: 'wolf',
@@ -53,108 +61,70 @@ export const ENTITY_TEMPLATES: Record<string, EntityTemplate> = {
     baseStats: { strength: 10, dexterity: 12, wisdom: 5, intelligence: 5, stamina: 15 },
     aggroRadius: 10,
     attackRadius: 2.0,
-    leashRadius: 18,
-    moveSpeed: 0.06,
+    leashRadius: 40,
+    moveSpeed: 4.8,
     respawnTime: 20,
     expReward: 45,
-    lootTable: LOOT_TABLES.wolf
+    lootTable: LOOT_TABLES.wolf,
+    behaviorType: 'aggressive',
+    minDamage: 8,
+    maxDamage: 14,
+    attackSpeed: 1.5
   },
   guard: {
     id: 'guard',
     name: 'Guard Captain',
     class: 'Guard',
     type: 'npc',
-    baseStats: { strength: 50, dexterity: 30, wisdom: 20, intelligence: 20, stamina: 100 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0.05,
     respawnTime: 60,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   },
   instructor_kael: {
     id: 'instructor_kael',
     name: 'Instructor Kael',
     class: 'Instructor',
     type: 'npc',
-    baseStats: { strength: 100, dexterity: 100, wisdom: 100, intelligence: 100, stamina: 500 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.instructor_kael
   },
   elder_thorne: {
     id: 'elder_thorne',
     name: 'Elder Thorne',
     class: 'Elder',
     type: 'npc',
-    baseStats: { strength: 10, dexterity: 10, wisdom: 80, intelligence: 70, stamina: 50 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   },
   merchant_silas: {
     id: 'merchant_silas',
     name: 'Merchant Silas',
     class: 'Merchant',
     type: 'npc',
-    baseStats: { strength: 15, dexterity: 20, wisdom: 40, intelligence: 50, stamina: 60 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   },
   blacksmith_torin: {
     id: 'blacksmith_torin',
     name: 'Blacksmith Torin',
     class: 'Blacksmith',
     type: 'npc',
-    baseStats: { strength: 60, dexterity: 30, wisdom: 20, intelligence: 20, stamina: 90 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   },
   banker: {
     id: 'banker',
     name: 'Banker',
     class: 'Banker',
     type: 'npc',
-    baseStats: { strength: 10, dexterity: 10, wisdom: 50, intelligence: 80, stamina: 40 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   },
   farmer_bob: {
     id: 'farmer_bob',
     name: 'Farmer Bob',
     class: 'Farmer',
     type: 'npc',
-    baseStats: { strength: 20, dexterity: 15, wisdom: 20, intelligence: 10, stamina: 40 },
-    aggroRadius: 0,
-    attackRadius: 2.0,
-    leashRadius: 5,
     moveSpeed: 0,
     respawnTime: 10,
-    expReward: 0,
-    lootTable: LOOT_TABLES.guard
   }
 };
