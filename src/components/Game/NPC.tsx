@@ -31,11 +31,13 @@ interface NPCProps {
   isAttacking?: boolean;
   modelUrl?: string;
   scale?: number;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  aiState?: string;
 }
 
 
 
-export const NPC = memo(({ id, name, role, entityClass, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false, modelUrl, scale = 1 }: NPCProps) => {
+export const NPC = memo(({ id, name, role, entityClass, position, rotation = [0, 0, 0], color = "#facc15", level = 1, onInteract, onAttack, hp, maxHp, isMoving = false, isAttacking = false, modelUrl, scale = 1, behaviorType, aiState }: NPCProps) => {
   const activeQuests = useGameStore(useShallow(state => state.activeQuests));
   
   // Find quests associated with this NPC
@@ -82,6 +84,8 @@ export const NPC = memo(({ id, name, role, entityClass, position, rotation = [0,
         onInteract={onInteract}
         onAttack={onAttack}
         scale={scale}
+        behaviorType={behaviorType}
+        aiState={aiState}
       >
         {modelUrl ? (
           <GLBModel url={modelUrl} scale={1} position={[0, 0, 0]} rotation={[0, 0, 0]} isCollidable={false} />

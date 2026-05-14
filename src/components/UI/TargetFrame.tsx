@@ -30,6 +30,38 @@ export const TargetFrame = () => {
     return "bg-red-500";
   };
 
+  const getHostilityColor = () => {
+    if (liveTarget.type === 'player') return 'text-blue-400';
+    
+    // Aggressive if base behavior is aggressive OR if currently chasing someone
+    const isAggressive = liveTarget.behaviorType === 'aggressive' || liveTarget.aiState === 'CHASE';
+    
+    if (isAggressive) return 'text-red-500';
+    if (liveTarget.behaviorType === 'neutral') return 'text-yellow-400';
+    if (liveTarget.behaviorType === 'passive') return 'text-green-500';
+    return 'text-aetheria-400';
+  };
+
+  const getHostilityBg = () => {
+    const isAggressive = liveTarget.behaviorType === 'aggressive' || liveTarget.aiState === 'CHASE';
+    
+    if (isAggressive) return 'bg-red-500/10 border-red-500/20';
+    if (liveTarget.behaviorType === 'neutral') return 'bg-yellow-500/10 border-yellow-500/20';
+    if (liveTarget.behaviorType === 'passive') return 'bg-green-500/10 border-green-500/20';
+    return 'bg-aetheria-900/40 border-aetheria-800/40';
+  };
+
+  const getHostilityLabel = () => {
+    if (liveTarget.type === 'player') return 'Player';
+    
+    const isAggressive = liveTarget.behaviorType === 'aggressive' || liveTarget.aiState === 'CHASE';
+    
+    if (isAggressive) return 'Hostile';
+    if (liveTarget.behaviorType === 'neutral') return 'Neutral';
+    if (liveTarget.behaviorType === 'passive') return 'Passive';
+    return liveTarget.type;
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -99,11 +131,27 @@ export const TargetFrame = () => {
                     <>
                       Teleport Crystal <span style={{ color: liveTarget.color }}>●</span>
                     </>
-                  ) : liveTarget.name}
+                  ) : (
+                    <>
+                      {liveTarget.name}
+                      {liveTarget.behaviorType && (
+                        <span className={`ml-2 text-[10px] ${getHostilityColor()} opacity-80`}>
+                          ●
+                        </span>
+                      )}
+                    </>
+                  )}
                 </span>
-                <span className="text-[8px] text-aetheria-600 font-black uppercase tracking-[0.2em] opacity-80">
-                   {liveTarget.class || (liveTarget.type === 'teleport_crystal' ? "Travel Network" : liveTarget.type)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] text-aetheria-600 font-black uppercase tracking-[0.2em] opacity-80">
+                    {liveTarget.class || (liveTarget.type === 'teleport_crystal' ? "Travel Network" : liveTarget.type)}
+                  </span>
+                  {liveTarget.behaviorType && (
+                    <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${getHostilityBg()} ${getHostilityColor()}`}>
+                      {getHostilityLabel()}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

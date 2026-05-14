@@ -227,6 +227,7 @@ export interface GameTarget {
   class?: string;
   role?: string;
   isDead?: boolean;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
 }
 
 export interface Spawner {

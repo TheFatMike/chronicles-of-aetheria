@@ -58,6 +58,8 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
             isAttacking={ent.isAttacking}
             modelUrl={ent.modelUrl}
             scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)}
+            behaviorType={ent.behaviorType}
+            aiState={ent.aiState}
             onInteract={() => {
               if (useGameStore.getState().isEditorOpen) return;
               
@@ -79,9 +81,9 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
         ) : (
           (() => {
             const eClass = (ent.entityClass || "").toLowerCase();
-            if (eClass === 'skeleton') return <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
-            if (eClass === 'goblin') return <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
-            if (eClass === 'wolf') return <WolfEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} onAttack={onAttack} onLoot={onLoot} />;
+            if (eClass === 'skeleton') return <SkeletonEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} behaviorType={ent.behaviorType} aiState={ent.aiState} onAttack={onAttack} onLoot={onLoot} />;
+            if (eClass === 'goblin') return <GoblinEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} behaviorType={ent.behaviorType} aiState={ent.aiState} onAttack={onAttack} onLoot={onLoot} />;
+            if (eClass === 'wolf') return <WolfEnemy key={ent.id} id={ent.id} name={ent.name} level={ent.level} position={ent.pos} hp={ent.hp} maxHp={ent.maxHp} isDead={ent.isDead} scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)} behaviorType={ent.behaviorType} aiState={ent.aiState} onAttack={onAttack} onLoot={onLoot} />;
             
             return (
               <SlimeEnemy 
@@ -95,6 +97,8 @@ export const EntityRenderer = memo(({ onAttack, onLoot }: EntityRendererProps) =
                 isDead={ent.isDead}
                 scale={Array.isArray(ent.scale) ? ent.scale[0] : (ent.scale || 1)}
                 color={ent.color || "#ef4444"}
+                behaviorType={ent.behaviorType}
+                aiState={ent.aiState}
                 onAttack={onAttack}
                 onLoot={onLoot}
               />

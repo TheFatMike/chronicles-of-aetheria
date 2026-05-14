@@ -15,6 +15,7 @@ export interface ObjectTemplate {
   role?: string;
   color?: string;
   shopId?: string;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
 }
 
 // Helper for quick GLB registration
@@ -57,11 +58,11 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   spawner_wolf: { type: 'spawner_wolf', scale: 1, category: 'spawners', label: 'Wolf Spawner' },
 
   // NPCs
-  'npc_elder_thorne': { type: 'npc_elder_thorne', label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1 },
-  'npc_merchant_silas': { type: 'npc_merchant_silas', label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1, shopId: 'general_merchant' },
-  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1, shopId: 'blacksmith' },
-  'npc_guard_captain': { type: 'npc_guard_captain', label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1 },
-  'npc_instructor_kael': { type: 'npc_instructor_kael', label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1 },
-  'npc_banker': { type: 'npc_banker', label: 'Banker', role: 'Banker', color: '#fbbf24', category: 'npcs', scale: 1 },
-  'npc_farmer_bob': { type: 'npc_farmer_bob', label: 'Farmer Bob', role: 'Farmer', color: '#f97316', category: 'npcs', scale: 1 },
+  'npc_elder_thorne': { type: 'npc_elder_thorne', label: 'Elder Thorne', role: 'Village Elder', color: '#10b981', category: 'npcs', scale: 1, behaviorType: 'passive' },
+  'npc_merchant_silas': { type: 'npc_merchant_silas', label: 'Merchant Silas', role: 'Merchant', color: '#a855f7', category: 'npcs', scale: 1, shopId: 'general_merchant', behaviorType: 'passive' },
+  'npc_blacksmith_torin': { type: 'npc_blacksmith_torin', label: 'Blacksmith Torin', role: 'Blacksmith', color: '#ef4444', category: 'npcs', scale: 1, shopId: 'blacksmith', behaviorType: 'passive' },
+  'npc_guard_captain': { type: 'npc_guard_captain', label: 'Guard Captain', role: 'Guard Captain', color: '#3b82f6', category: 'npcs', scale: 1, behaviorType: 'neutral' },
+  'npc_instructor_kael': { type: 'npc_instructor_kael', label: 'Instructor Kael', role: 'Skill Instructor', color: '#fbbf24', category: 'npcs', scale: 1, behaviorType: 'passive' },
+  'npc_banker': { type: 'npc_banker', label: 'Banker', role: 'Banker', color: '#fbbf24', category: 'npcs', scale: 1, behaviorType: 'passive' },
+  'npc_farmer_bob': { type: 'npc_farmer_bob', label: 'Farmer Bob', role: 'Farmer', color: '#f97316', category: 'npcs', scale: 1, behaviorType: 'passive' },
 };

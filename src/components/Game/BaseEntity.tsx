@@ -36,6 +36,8 @@ interface BaseEntityProps {
   isDead?: boolean;
   isGrounded?: boolean;
   scale?: number;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  aiState?: string;
 }
 
 export const BaseEntity = memo(({
@@ -57,7 +59,9 @@ export const BaseEntity = memo(({
   onAttack,
   isDead,
   isGrounded = true,
-  scale = 1
+  scale = 1,
+  behaviorType,
+  aiState
 }: BaseEntityProps) => {
   const groupRef = useRef<THREE.Group>(null);
   const _point = useRef(new THREE.Vector3());
@@ -119,7 +123,8 @@ export const BaseEntity = memo(({
         hp,
         maxHp,
         role,
-        isDead
+        isDead,
+        behaviorType
       };
       setTarget(target);
       return;
@@ -172,7 +177,7 @@ export const BaseEntity = memo(({
     if (!localPlayer) return;
 
     // Target first
-    const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead };
+    const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead, behaviorType };
     setTarget(targetData);
 
     const dx = localPlayer.pos[0] - position[0];
@@ -192,8 +197,12 @@ export const BaseEntity = memo(({
     if (isDead) return "#ffd700"; // Gold for loot
     switch (type) {
       case "player": return "#3b82f6"; // Blue
-      case "npc": return "#facc15";    // Yellow
-      case "enemy": return "#ef4444";  // Red
+      case "npc": return "#10b981";    // Green (Passive NPC)
+      case "enemy": 
+        if (aiState === 'CHASE' || behaviorType === 'aggressive') return "#ef4444"; // Red
+        if (behaviorType === 'neutral') return "#facc15"; // Yellow
+        if (behaviorType === 'passive') return "#10b981"; // Green
+        return "#ef4444";  // Default Red for enemies
       default: return "#ffffff";
     }
   };
@@ -221,7 +230,7 @@ export const BaseEntity = memo(({
     if (dx < 20 && dy < 20 && dt < 500) {
       e.stopPropagation();
       
-      const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead };
+      const targetData: GameTarget = { id, name, type, level, color, hp, maxHp, role, isDead, behaviorType };
 
       if (e.button === 2 && (type === "player" || type === "npc" || type === "enemy")) {
         // Target first if not targeted

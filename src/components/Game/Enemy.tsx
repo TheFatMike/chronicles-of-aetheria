@@ -21,9 +21,11 @@ interface EnemyProps {
   onAttack?: () => void;
   onLoot?: (id: string) => void;
   scale?: number;
+  behaviorType?: 'aggressive' | 'neutral' | 'passive';
+  aiState?: string;
 }
 
-export const SlimeEnemy = memo(({ id, name, level, position, color = "#22c55e", hp, maxHp, isDead, scale = 1, onAttack, onLoot }: EnemyProps) => {
+export const SlimeEnemy = memo(({ id, name, level, position, color = "#22c55e", hp, maxHp, isDead, scale = 1, behaviorType, aiState, onAttack, onLoot }: EnemyProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   
@@ -53,9 +55,10 @@ export const SlimeEnemy = memo(({ id, name, level, position, color = "#22c55e", 
       hp={hp}
       maxHp={maxHp}
       nameOffset={1.2}
-      selectionColor="#ef4444"
       isDead={isDead}
       scale={scale}
+      behaviorType={behaviorType}
+      aiState={aiState}
       onInteract={isDead ? () => onLoot?.(id) : undefined}
       onAttack={onAttack}
     >
@@ -86,7 +89,7 @@ export const SlimeEnemy = memo(({ id, name, level, position, color = "#22c55e", 
   );
 });
 
-export const SkeletonEnemy = memo(({ id, name, level, position, color = "#d1d5db", hp, maxHp, isDead, scale = 1, onAttack, onLoot }: EnemyProps) => {
+export const SkeletonEnemy = memo(({ id, name, level, position, color = "#d1d5db", hp, maxHp, isDead, scale = 1, behaviorType, aiState, onAttack, onLoot }: EnemyProps) => {
   return (
     <BaseEntity
       id={id}
@@ -99,8 +102,10 @@ export const SkeletonEnemy = memo(({ id, name, level, position, color = "#d1d5db
       maxHp={maxHp}
       isDead={isDead}
       scale={scale}
+      behaviorType={behaviorType}
+      aiState={aiState}
       nameOffset={isDead ? 0.5 : 2.2}
-      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      selectionColor={isDead ? "#ffd700" : undefined}
       onInteract={isDead ? () => onLoot?.(id) : undefined}
       onAttack={onAttack}
     >
@@ -129,7 +134,7 @@ export const SkeletonEnemy = memo(({ id, name, level, position, color = "#d1d5db
   );
 });
 
-export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534", hp, maxHp, isDead, scale = 1, onAttack, onLoot }: EnemyProps) => {
+export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534", hp, maxHp, isDead, scale = 1, behaviorType, aiState, onAttack, onLoot }: EnemyProps) => {
   return (
     <BaseEntity
       id={id}
@@ -142,8 +147,10 @@ export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534",
       maxHp={maxHp}
       isDead={isDead}
       scale={scale}
+      behaviorType={behaviorType}
+      aiState={aiState}
       nameOffset={isDead ? 0.5 : 1.5}
-      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      selectionColor={isDead ? "#ffd700" : undefined}
       onInteract={isDead ? () => onLoot?.(id) : undefined}
       onAttack={onAttack}
     >
@@ -172,7 +179,7 @@ export const GoblinEnemy = memo(({ id, name, level, position, color = "#166534",
   );
 });
 
-export const WolfEnemy = memo(({ id, name, level, position, color = "#4b5563", hp, maxHp, isDead, scale = 1, onAttack, onLoot }: EnemyProps) => {
+export const WolfEnemy = memo(({ id, name, level, position, color = "#4b5563", hp, maxHp, isDead, scale = 1, behaviorType, aiState, onAttack, onLoot }: EnemyProps) => {
   return (
     <BaseEntity
       id={id}
@@ -185,8 +192,10 @@ export const WolfEnemy = memo(({ id, name, level, position, color = "#4b5563", h
       maxHp={maxHp}
       isDead={isDead}
       scale={scale}
+      behaviorType={behaviorType}
+      aiState={aiState}
       nameOffset={isDead ? 0.5 : 1.8}
-      selectionColor={isDead ? "#ffd700" : "#ef4444"}
+      selectionColor={isDead ? "#ffd700" : undefined}
       onInteract={isDead ? () => onLoot?.(id) : undefined}
       onAttack={onAttack}
     >
