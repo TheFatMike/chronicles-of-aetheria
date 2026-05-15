@@ -122,13 +122,25 @@ export const WorldObjectsRenderer = memo(({ socket }: { socket: any }) => {
     useGameStore.getState().updateWorldObject(selectedWorldObjectId, {
       pos: [position.x, position.y, position.z],
       rot: [rotation.x, rotation.y, rotation.z],
-      scale: scale.x
+      scale: [scale.x, scale.y, scale.z]
     });
   }, [selectedWorldObjectId, transformRef, isTransforming]);
 
   const onTransformMouseUp = useCallback(() => {
     setTransforming(false);
-  }, [setTransforming]);
+    
+    // If we just finished moving a water source, trigger a re-flood at the new height
+    if (selectedWorldObjectId) {
+      const obj = useGameStore.getState().worldObjects[selectedWorldObjectId];
+      if (obj?.type === 'water_source') {
+        useGameStore.getState().floodFillWater(
+          Math.round(obj.pos[0] / 2) * 2,
+          Math.round(obj.pos[2] / 2) * 2,
+          obj.pos[1]
+        );
+      }
+    }
+  }, [setTransforming, selectedWorldObjectId]);
 
   const onTransformStart = useCallback(() => {
     setTransforming(true);

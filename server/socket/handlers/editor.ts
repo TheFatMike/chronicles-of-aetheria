@@ -286,7 +286,9 @@ export const handleBatchSaveWorldObjects = async (io: Server, socket: Socket, da
 
           if (!terrainByChunk.has(chunkId)) terrainByChunk.set(chunkId, {});
           const chunkPoints = terrainByChunk.get(chunkId)!;
-          const key = `${p.x}_${p.z}`;
+          const ix = Math.round(Number(p.x));
+          const iz = Math.round(Number(p.z));
+          const key = `${ix}_${iz}`;
           
           // DELTA COMPRESSION: If point is default (flat grass), delete it to save space
           if (Number(p.y) === 0 && (p.type === 'grass' || !p.type)) {

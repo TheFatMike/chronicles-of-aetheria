@@ -23,6 +23,7 @@ const TERRAIN_TOOLS = [
   { id: 'terrain_paint_dirt', label: 'Paint Dirt', category: 'terrain' },
   { id: 'terrain_paint_stone', label: 'Paint Stone', category: 'terrain' },
   { id: 'terrain_paint_sand', label: 'Paint Sand', category: 'terrain' },
+  { id: 'terrain_paint_water', label: 'Paint Water', category: 'terrain' },
 ];
 
 export const AssetLibrary = () => {
@@ -184,6 +185,7 @@ export const AssetLibrary = () => {
             </div>
           )}
         </div>
+
 
         {/* Dynamic Settings */}
         <AnimatePresence>

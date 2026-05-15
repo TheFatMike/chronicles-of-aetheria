@@ -4,7 +4,7 @@
  * Includes trees, rocks, buildings, and other decorative elements that populate the world.
  * @importance Essential: Provides the visual foundation and atmosphere of the game world.
  */
-import { memo, useRef } from "react";
+import { memo, useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { GLBModel } from "./GLBModel";
@@ -13,11 +13,16 @@ import { GLBModel } from "./GLBModel";
 interface EnvironmentProps {
   position?: [number, number, number];
   rotation?: [number, number, number];
-  scale?: number;
+  scale?: number | [number, number, number];
   onClick?: (e: any) => void;
   isGhost?: boolean;
   modelUrl?: string;
 }
+
+const adjustScale = (s: number | [number, number, number], m: number): number | [number, number, number] => {
+  if (Array.isArray(s)) return [s[0] * m, s[1] * m, s[2] * m];
+  return (s as number) * m;
+};
 
 export const Tree = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost, modelUrl }: EnvironmentProps) => {
   if (modelUrl) {
@@ -83,7 +88,7 @@ export const Tent = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, 
       url={modelUrl || "/assets/models/tent.glb"}
       position={position}
       rotation={rotation}
-      scale={scale * (modelUrl ? 1 : 0.01)}
+      scale={adjustScale(scale, modelUrl ? 1 : 0.01)}
       onClick={onClick}
       isGhost={isGhost}
     />
@@ -336,5 +341,183 @@ export const TeleportCrystal = memo(({ position, rotation = [0, 0, 0], scale = 1
   );
 });
 
+export const WaterPlane = memo(({ position, rotation = [0, 0, 0], scale = 20, onClick, isGhost }: EnvironmentProps) => {
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color("#0ea5e9") },
+        uDeepColor: { value: new THREE.Color("#075985") },
+      },
+      transparent: true,
+      opacity: 0.7,
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vElevation;
+        uniform float uTime;
+        void main() {
+          vUv = uv;
+          vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+          float elevation = sin(modelPosition.x * 0.2 + uTime) * sin(modelPosition.z * 0.2 + uTime) * 0.15;
+          modelPosition.y += elevation;
+          vElevation = elevation;
+          gl_Position = projectionMatrix * viewMatrix * modelPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uDeepColor;
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vElevation;
 
+        // Procedural noise for water texture
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
 
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }
+
+        void main() {
+          // Layered noise for "textured" look
+          float n = noise(vUv * 10.0 + uTime * 0.5);
+          n += noise(vUv * 20.0 - uTime * 0.8) * 0.5;
+          
+          float mixStrength = (vElevation + 0.15) * 3.0;
+          vec3 baseColor = mix(uDeepColor, uColor, mixStrength);
+          
+          // Add highlights based on noise
+          vec3 highlight = vec3(0.5, 0.8, 1.0) * pow(n, 4.0);
+          
+          gl_FragColor = vec4(baseColor + highlight, 0.75);
+        }
+      `,
+    });
+  }, []);
+
+  useFrame((state) => {
+    if (material.uniforms.uTime) {
+      material.uniforms.uTime.value = state.clock.getElapsedTime();
+    }
+  });
+
+  return (
+    <mesh 
+      position={position} 
+      rotation={[-Math.PI / 2, 0, 0]} 
+      scale={scale} 
+      onClick={onClick}
+      userData={{ isWater: true, waterLevel: position?.[1] || 0, isCollidable: false }}
+    >
+      <planeGeometry args={[1, 1, 32, 32]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
+});
+
+export const Waterfall = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick }: EnvironmentProps) => {
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color("#7dd3fc") },
+        uDeepColor: { value: new THREE.Color("#0ea5e9") },
+      },
+      transparent: true,
+      opacity: 0.8,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uDeepColor;
+        uniform float uTime;
+        varying vec2 vUv;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }
+
+        void main() {
+          // Vertical scrolling noise for "textured" waterfall
+          float v = vUv.y + uTime * 2.0;
+          float n = noise(vec2(vUv.x * 20.0, v * 5.0));
+          n += noise(vec2(vUv.x * 40.0, v * 10.0)) * 0.5;
+          
+          // Mist / Froth streaks
+          float streaks = pow(n, 3.0);
+          
+          vec3 baseColor = mix(uDeepColor, uColor, streaks);
+          vec3 highlight = vec3(1.0, 1.0, 1.0) * pow(n, 8.0); // Bright white foam
+          
+          gl_FragColor = vec4(baseColor + highlight, 0.85);
+        }
+      `,
+    });
+  }, []);
+
+  useFrame((state) => {
+    if (material.uniforms.uTime) {
+      material.uniforms.uTime.value = state.clock.getElapsedTime();
+    }
+  });
+
+  return (
+    <mesh 
+      position={position} 
+      rotation={rotation} 
+      scale={scale} 
+      onClick={onClick}
+      userData={{ isCollidable: false }}
+    >
+      <planeGeometry args={[1, 1, 1, 1]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
+});
+
+export const WaterSource = memo(({ position, rotation = [0, 0, 0], scale = 1, onClick, isGhost }: EnvironmentProps) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.position.y = Math.sin(state.clock.getElapsedTime() * 2) * 0.1 + 1.0;
+      meshRef.current.rotation.y += 0.02;
+    }
+  });
+
+  const matProps = isGhost ? { transparent: true, opacity: 0.5, depthWrite: false } : {};
+  
+  return (
+    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
+      <mesh ref={meshRef} castShadow={!isGhost}>
+        <octahedronGeometry args={[0.5, 0]} />
+        <meshStandardMaterial 
+          color="#0ea5e9" 
+          emissive="#0284c7" 
+          emissiveIntensity={2} 
+          {...matProps} 
+        />
+      </mesh>
+      <pointLight color="#0ea5e9" intensity={2} distance={5} />
+    </group>
+  );
+});

@@ -133,7 +133,13 @@ export const startHeartbeat = (io: Server) => {
 
       // 5. Decoupled Subsystem: Autosave (Every 60 seconds)
       if (timeSinceLastAutosave >= 60000) {
-        autosavePlayers().catch(e => serverLogger.error("game", "Autosave failed", e.message));
+        autosavePlayers().catch(e => serverLogger.error("game", "Player Autosave failed", e.message));
+        
+        // Ensure terrain modifications are also persisted periodically
+        import("./persistence").then(m => {
+          m.autosaveTerrain().catch(e => serverLogger.error("game", "Terrain Autosave failed", e.message));
+        });
+
         import("../redis").then(m => m.cleanupGhostPlayers());
         timeSinceLastAutosave -= 60000;
       }

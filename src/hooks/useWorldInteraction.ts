@@ -92,6 +92,7 @@ export const useWorldInteraction = (socket: any) => {
             if (editorSelectedType === 'terrain_paint_dirt') update.type = 'dirt';
             if (editorSelectedType === 'terrain_paint_stone') update.type = 'stone';
             if (editorSelectedType === 'terrain_paint_sand') update.type = 'sand';
+            if (editorSelectedType === 'terrain_paint_water') update.type = 'water';
 
             points.push(update);
           }
@@ -124,6 +125,15 @@ export const useWorldInteraction = (socket: any) => {
       } 
     });
     window.dispatchEvent(placeEvent);
+
+    // If it's a water source, trigger flood fill
+    if (editorSelectedType === 'water_source') {
+      useGameStore.getState().floodFillWater(
+        Math.round(point.x / 2) * 2,
+        Math.round(point.z / 2) * 2,
+        point.y
+      );
+    }
   }, [editorSelectedType, gridSnap, isEditorOpen, socket, raycaster, mouse, camera, scene]);
 
   const handlePointerMove = useCallback((e: any) => {

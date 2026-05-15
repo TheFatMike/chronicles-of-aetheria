@@ -166,7 +166,7 @@ export const usePlayerMovement = (
       
       // Custom recursive scan to avoid redundant children
       const scan = (obj: THREE.Object3D) => {
-        if (obj.userData?.isCollidable) {
+        if (obj.userData?.isCollidable || obj.userData?.isWater) {
           // Sync world matrix once during scan for distance filtering
           obj.updateWorldMatrix(true, true);
           
@@ -332,6 +332,24 @@ export const usePlayerMovement = (
         currentFrameMeshes, // Pass pre-collected meshes
         playerMeshesRef.current
       );
+
+      // Underwater effects
+      const cameraWorldPos = _tempVec.current.setFromMatrixPosition(camera.matrixWorld);
+      const isCameraUnderwater = cameraWorldPos.y < 0;
+      
+      if (isCameraUnderwater) {
+        if (!scene.userData.wasUnderwater) {
+          scene.userData.oldFog = scene.fog;
+          scene.userData.oldBackground = scene.background;
+          scene.fog = new THREE.FogExp2("#0ea5e9", 0.2);
+          scene.background = new THREE.Color("#075985");
+          scene.userData.wasUnderwater = true;
+        }
+      } else if (scene.userData.wasUnderwater) {
+        scene.fog = scene.userData.oldFog;
+        scene.background = scene.userData.oldBackground;
+        scene.userData.wasUnderwater = false;
+      }
     }
 
     // 6. NETWORK SYNC (15Hz)

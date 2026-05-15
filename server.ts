@@ -135,6 +135,10 @@ async function bootstrap() {
 
   // 5. Game Engine
   await initializeWorld();
+  
+  // Start background persistence tasks (Autosaves, Unloading, Redis Flush)
+  import("./server/systems/persistence").then(m => m.startPeriodicTasks());
+  
   startHeartbeat(io);
 
   // 7. MMO Global Services (Redis Pub/Sub)

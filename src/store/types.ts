@@ -83,19 +83,20 @@ export interface WorldSlice {
   worldObjects: Record<string, WorldObject>;
   worldEditorBuffer: Record<string, Partial<WorldObject>>;
   worldEditorDeleted: { id: string, pos?: [number, number, number] }[];
-  terrainData: Record<string, { y: number; type: string }>;
-  terrainDirtyPoints: { x: number; z: number; y: number; type: string }[];
+  terrainData: Record<string, { y: number; type: string; waterLevel?: number }>;
+  terrainDirtyPoints: { x: number; z: number; y: number; type: string; waterLevel?: number }[];
   setSpawners: (spawners: Spawner[]) => void;
   setWorldObjects: (objects: WorldObject[]) => void;
   addWorldObjects: (objects: WorldObject[]) => void;
-  setTerrainData: (data: { x: number; z: number; y: number; type: string }[]) => void;
-  updateTerrainData: (data: { x: number; z: number; y?: number; deltaY?: number; type?: string }[]) => void;
+  setTerrainData: (data: { x: number; z: number; y: number; type: string; waterLevel?: number }[]) => void;
+  updateTerrainData: (data: { x: number; z: number; y?: number; deltaY?: number; type?: string; waterLevel?: number }[]) => void;
+  floodFillWater: (startX: number, startZ: number, level: number) => void;
   addWorldObject: (obj: WorldObject) => void;
   updateWorldObject: (id: string, data: Partial<WorldObject>) => void;
   removeWorldObject: (id: string) => void;
   addToEditorBuffer: (id: string, data: Partial<WorldObject>) => void;
   markObjectDeleted: (id: string) => void;
-  terrainEditorBuffer: Record<string, { y: number; type: string }>;
+  terrainEditorBuffer: Record<string, { y: number; type: string; waterLevel?: number }>;
   clearEditorBuffer: () => void;
 }
 

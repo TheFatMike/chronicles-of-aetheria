@@ -58,8 +58,9 @@ export const handleMove = async (socket: Socket, data: any, io: Server) => {
     // Get authoritative ground height (terrain + objects)
     const groundY = await getGroundHeight(validated.pos, terrainData);
     const heightAboveGround = validated.pos[1] - groundY;
+    const isSwimming = validated.pos[1] < 0; // Authoritative sea level
 
-    if (heightAboveGround > 5.0 && !validated.isGrounded) {
+    if (heightAboveGround > 5.0 && !validated.isGrounded && !isSwimming) {
       player.airTime = (player.airTime || 0) + dt;
       if (player.airTime > 3.0) { // Suspended for more than 3 seconds
         serverLogger.warn("anti-cheat", `Fly/Hover detected for ${player.name} (Height: ${heightAboveGround.toFixed(1)}m). Resetting.`);

@@ -40,11 +40,11 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
   }),
 
   setTerrainData: (dataArray) => set((state) => {
-    const terrainObj: Record<string, { y: number; type: string }> = { ...state.terrainData };
-    const dirty: { x: number; z: number; y: number; type: string }[] = [];
+    const terrainObj: Record<string, { y: number; type: string; waterLevel?: number }> = { ...state.terrainData };
+    const dirty: { x: number; z: number; y: number; type: string; waterLevel?: number }[] = [];
     
     dataArray.forEach(p => {
-      const data = { y: p.y, type: p.type };
+      const data = { y: p.y, type: p.type, waterLevel: p.waterLevel };
       terrainObj[`${p.x}_${p.z}`] = data;
       dirty.push({ x: p.x, z: p.z, ...data });
     });
@@ -59,16 +59,16 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
     if (!dataArray || dataArray.length === 0) return state;
     
     const newTerrain = { ...state.terrainData };
-    const dirty: { x: number; z: number; y: number; type: string }[] = [];
+    const dirty: { x: number; z: number; y: number; type: string; waterLevel?: number }[] = [];
     let hasChanges = false;
 
     dataArray.forEach(p => {
       const key = `${p.x}_${p.z}`;
       const exists = !!newTerrain[key];
-      const current = newTerrain[key] || { y: 0, type: 'grass' };
+      const current = newTerrain[key] || { y: 0, type: 'grass', waterLevel: -1000 };
       
-      const update: { y: number; type: string } = { ...current };
-      let itemChanged = !exists; // If it didn't exist in our map yet, it's a "change" for the local state
+      const update: { y: number; type: string; waterLevel?: number } = { ...current };
+      let itemChanged = !exists;
 
       if (p.y !== undefined && !isNaN(p.y) && update.y !== p.y) {
         update.y = p.y;
@@ -82,6 +82,10 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
         update.type = p.type;
         itemChanged = true;
       }
+      if (p.waterLevel !== undefined && update.waterLevel !== p.waterLevel) {
+        update.waterLevel = p.waterLevel;
+        itemChanged = true;
+      }
       
       if (itemChanged) {
         newTerrain[key] = update;
@@ -92,11 +96,10 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
 
     if (!hasChanges) return state;
     
-    // Only buffer changes if the editor is open (to avoid buffering initial load or syncs)
     if (state.isEditorOpen) {
-      const bufferedChanges: Record<string, { y: number; type: string }> = { ...state.terrainEditorBuffer };
+      const bufferedChanges: Record<string, { y: number; type: string; waterLevel?: number }> = { ...state.terrainEditorBuffer };
       dirty.forEach(p => {
-        bufferedChanges[`${p.x}_${p.z}`] = { y: p.y, type: p.type };
+        bufferedChanges[`${p.x}_${p.z}`] = { y: p.y, type: p.type, waterLevel: p.waterLevel };
       });
 
       return { 
@@ -110,6 +113,65 @@ export const createWorldSlice: StateCreator<GameState, [], [], WorldSlice> = (se
       terrainData: newTerrain,
       terrainDirtyPoints: dirty
     };
+  }),
+
+  floodFillWater: (startX, startZ, level) => set((state) => {
+    const queue: [number, number][] = [[startX, startZ]];
+    const visited = new Set<string>();
+    const key = (x: number, z: number) => `${x}_${z}`;
+    
+    const updates: { x: number; z: number; waterLevel: number }[] = [];
+    const resolution = 2;
+
+    while (queue.length > 0) {
+      const [currX, currZ] = queue.shift()!;
+      const k = key(currX, currZ);
+      if (visited.has(k)) continue;
+      visited.add(k);
+
+      const point = state.terrainData[k] || { y: 0 };
+      if (point.y < level + 0.5) {
+        updates.push({ x: currX, z: currZ, waterLevel: level });
+        
+        // Neighbors
+        [[2, 0], [-2, 0], [0, 2], [0, -2]].forEach(([dx, dz]) => {
+          const nx = currX + dx;
+          const nz = currZ + dz;
+          const nk = key(nx, nz);
+          if (!visited.has(nk)) {
+            queue.push([nx, nz]);
+          }
+        });
+      }
+
+      if (updates.length > 5000) break; // Safety limit
+    }
+
+    if (updates.length > 0) {
+      // Reuse updateTerrainData logic via a separate set call or just calculate here
+      const newTerrain = { ...state.terrainData };
+      const dirty: any[] = [];
+      const bufferedChanges = { ...state.terrainEditorBuffer };
+
+      updates.forEach(u => {
+        const k = key(u.x, u.z);
+        const current = newTerrain[k] || { y: 0, type: 'grass', waterLevel: -1000 };
+        const updated = { ...current, waterLevel: u.waterLevel, type: 'water' };
+        newTerrain[k] = updated;
+        dirty.push({ x: u.x, z: u.z, ...updated });
+        if (state.isEditorOpen) {
+          bufferedChanges[k] = updated;
+        }
+      });
+
+      return {
+        terrainData: newTerrain,
+        terrainDirtyPoints: dirty,
+        terrainEditorBuffer: bufferedChanges
+      };
+    }
+
+    return state;
   }),
 
   addWorldObject: (obj) => set((state) => {

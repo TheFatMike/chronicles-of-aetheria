@@ -26,12 +26,48 @@ export class PhysicsEngine {
     playerMeshes: THREE.Object3D[]
   ): void {
     const clampedDelta = Math.min(delta, 0.1);
+    
+    // 1. Dynamic Water Detection
+    let waterLevel = -Infinity;
+    let isSwimming = false;
 
-    // 1. Calculate Horizontal & Vertical Velocity
-    this.applyInputVelocity(velocity, moveVec, isGrounded.current, clampedDelta, config);
-    this.applyGravity(velocity, moveVec, clampedDelta, config);
+    // A. Check terrain data (localized basins)
+    if (terrainData) {
+      const tx = Math.round(pos.x / 2) * 2;
+      const tz = Math.round(pos.z / 2) * 2;
+      const point = terrainData[`${tx}_${tz}`];
+      if (point && point.waterLevel !== undefined && point.waterLevel > -500) {
+        if (pos.y < point.waterLevel) {
+          isSwimming = true;
+          waterLevel = point.waterLevel;
+        }
+      }
+    }
 
-    // 2. Resolve Collisions & Steps (Horizontal + Climb)
+    // B. Check meshes (Water Planes)
+    if (!isSwimming) {
+      for (const mesh of meshes) {
+        if (mesh.userData?.isWater) {
+          const worldPos = this._tempVec.setFromMatrixPosition(mesh.matrixWorld);
+          const scale = mesh.scale;
+          const dx = Math.abs(pos.x - worldPos.x);
+          const dz = Math.abs(pos.z - worldPos.z);
+          
+          if (dx < scale.x / 2 && dz < scale.z / 2) {
+            if (pos.y < worldPos.y) {
+              isSwimming = true;
+              waterLevel = Math.max(waterLevel, worldPos.y);
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Calculate Horizontal & Vertical Velocity
+    this.applyInputVelocity(velocity, moveVec, isGrounded.current, isSwimming, clampedDelta, config);
+    this.applyGravity(velocity, moveVec, isSwimming, clampedDelta, config);
+
+    // 3. Resolve Collisions & Steps (Horizontal + Climb)
     const resolution = resolveMovementCollision(pos, velocity, clampedDelta, meshes, {
       ...DEFAULT_COLLISION_CONFIG,
       ignoredNames: [...DEFAULT_COLLISION_CONFIG.ignoredNames, ...playerMeshes.map(m => m.name)]
@@ -43,14 +79,14 @@ export class PhysicsEngine {
     velocity.x = resolution.velocity.x;
     velocity.z = resolution.velocity.z;
 
-    // 3. Ground Detection & Snapping
+    // 4. Ground Detection & Snapping
     if (!config.isEditorOpen) {
-      this.resolveGrounding(pos, velocity, isGrounded, meshes, playerMeshes, terrainData, clampedDelta);
+      this.resolveGrounding(pos, velocity, isGrounded, isSwimming, meshes, playerMeshes, terrainData, clampedDelta);
     } else {
       isGrounded.current = false;
     }
 
-    // 4. Void Recovery
+    // 5. Void Recovery
     if (pos.y < -500) {
       logger.warn("physics", "Recovering from void", { pos });
       pos.set(0, 5, 0);
@@ -58,14 +94,15 @@ export class PhysicsEngine {
     }
   }
 
-  private applyInputVelocity(velocity: THREE.Vector3, moveVec: THREE.Vector3, isGrounded: boolean, delta: number, config: MovementConfig) {
+  private applyInputVelocity(velocity: THREE.Vector3, moveVec: THREE.Vector3, isGrounded: boolean, isSwimming: boolean, delta: number, config: MovementConfig) {
     const { MOVE_SPEED, FRICTION } = config;
+    const speed = isSwimming ? MOVE_SPEED * 0.6 : MOVE_SPEED;
 
-    if (isGrounded) {
+    if (isGrounded && !isSwimming) {
       if (moveVec.lengthSq() > 0) {
         // Snappy ground response
-        velocity.x = moveVec.x * MOVE_SPEED;
-        velocity.z = moveVec.z * MOVE_SPEED;
+        velocity.x = moveVec.x * speed;
+        velocity.z = moveVec.z * speed;
       } else {
         // Friction when sliding to a stop
         const stopFriction = FRICTION * 1.5;
@@ -75,21 +112,26 @@ export class PhysicsEngine {
         if (Math.abs(velocity.z) < 0.1) velocity.z = 0;
       }
     } else {
-      // Air control
-      const airAccel = 75;
-      velocity.x += moveVec.x * airAccel * delta;
-      velocity.z += moveVec.z * airAccel * delta;
+      // Air or Water control
+      const accel = isSwimming ? 25 : 75;
+      velocity.x += moveVec.x * accel * delta;
+      velocity.z += moveVec.z * accel * delta;
       
+      // Apply drag in water or air
+      const drag = isSwimming ? 5 : 2;
+      velocity.x -= velocity.x * drag * delta;
+      velocity.z -= velocity.z * drag * delta;
+
       const horizontalVel = new THREE.Vector2(velocity.x, velocity.z);
-      if (horizontalVel.length() > MOVE_SPEED) {
-        horizontalVel.setLength(MOVE_SPEED);
+      if (horizontalVel.length() > speed) {
+        horizontalVel.setLength(speed);
         velocity.x = horizontalVel.x;
         velocity.z = horizontalVel.y;
       }
     }
   }
 
-  private applyGravity(velocity: THREE.Vector3, moveVec: THREE.Vector3, delta: number, config: MovementConfig) {
+  private applyGravity(velocity: THREE.Vector3, moveVec: THREE.Vector3, isSwimming: boolean, delta: number, config: MovementConfig) {
     if (config.isEditorOpen) {
       // Free-fly vertical movement in editor
       if (moveVec.y !== 0) {
@@ -98,6 +140,20 @@ export class PhysicsEngine {
         velocity.y -= velocity.y * config.FRICTION * 5 * delta;
         if (Math.abs(velocity.y) < 0.1) velocity.y = 0;
       }
+    } else if (isSwimming) {
+      // Buoyancy: Neutralize some gravity
+      const buoyancy = config.GRAVITY * 0.9;
+      velocity.y -= (config.GRAVITY - buoyancy) * delta;
+
+      // Vertical Swimming (Up with Jump, Down with... maybe future key, for now just float up)
+      if (moveVec.y > 0) {
+        velocity.y += 15 * delta;
+      }
+
+      // Water Drag (Vertical)
+      velocity.y -= velocity.y * 3 * delta;
+      if (velocity.y < -5) velocity.y = -5;
+      if (velocity.y > 8) velocity.y = 8;
     } else {
       velocity.y -= config.GRAVITY * delta;
       if (velocity.y < -50) velocity.y = -50;
@@ -108,6 +164,7 @@ export class PhysicsEngine {
     pos: THREE.Vector3,
     velocity: THREE.Vector3,
     isGrounded: { current: boolean },
+    isSwimming: boolean,
     meshes: THREE.Object3D[],
     playerMeshes: THREE.Object3D[],
     terrainData: any,
@@ -146,10 +203,15 @@ export class PhysicsEngine {
     const isTooSteep = groundNormal.y < DEFAULT_COLLISION_CONFIG.maxSlopeY;
     const SNAP_THRESHOLD = 0.5; 
     
-    if (velocity.y <= 0 && pos.y <= groundHeight + SNAP_THRESHOLD && !isTooSteep) {
-      // On Ground
+    if (velocity.y <= 0 && pos.y <= groundHeight + SNAP_THRESHOLD && !isTooSteep && !isSwimming) {
+      // On Ground (only snap if NOT swimming deep)
       pos.y = groundHeight;
       velocity.y = 0;
+      isGrounded.current = true;
+    } else if (isSwimming && pos.y <= groundHeight + 0.1) {
+      // Touching bottom while swimming
+      pos.y = groundHeight;
+      velocity.y = Math.max(0, velocity.y);
       isGrounded.current = true;
     } else {
       // In Air or Sliding

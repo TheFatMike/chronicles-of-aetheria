@@ -91,11 +91,9 @@ export class InputHandler {
         else turn -= 1;
       }
 
-      // 4. Vertical Movement (Editor Only)
-      if (isEditorOpen) {
-        if (this.keys["Space"]) direction.y += 1;
-        if (this.keys["ShiftLeft"] || this.keys["ShiftRight"]) direction.y -= 1;
-      }
+      // 4. Vertical Movement (Swimming or Editor)
+      if (this.keys["Space"]) direction.y += 1;
+      if (this.keys["ShiftLeft"] || this.keys["ShiftRight"]) direction.y -= 1;
     }
 
     if (direction.lengthSq() > 1) direction.normalize();

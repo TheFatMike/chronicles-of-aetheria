@@ -28,7 +28,9 @@ export const handleUpdateTerrain = (io: Server, socket: Socket, data: {
   const updates: any[] = [];
 
   for (const p of data.points) {
-    const key = `${p.x}_${p.z}`;
+    const ix = Math.round(p.x);
+    const iz = Math.round(p.z);
+    const key = `${ix}_${iz}`;
     const current = terrainData.get(key) || { y: 0, type: 'grass' };
     
     if (p.y !== undefined && !isNaN(p.y)) current.y = p.y;

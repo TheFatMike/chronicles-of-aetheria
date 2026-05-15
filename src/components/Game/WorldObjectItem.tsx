@@ -7,7 +7,7 @@
 import { memo, useRef, useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint, TeleportCrystal } from "./Environment";
+import { Tree, Rock, House, Tent, Bush, Fence, Campfire, Barrel, Dummy, Chest, Well, SignPost, Waypoint, TeleportCrystal, WaterPlane, Waterfall, WaterSource } from "./Environment";
 import { Humanoid } from "./Humanoid";
 import { NPC } from "./NPC";
 import { GLBModel } from "./GLBModel";
@@ -49,6 +49,9 @@ export const ProceduralModel = memo(({
     case 'well': return <Well {...modelProps} modelUrl={obj?.modelUrl} />;
     case 'signpost': return <SignPost {...modelProps} modelUrl={obj?.modelUrl} />;
     case 'teleport_crystal': return <TeleportCrystal {...modelProps} modelUrl={obj?.modelUrl} />;
+    case 'water_plane': return <WaterPlane {...modelProps} />;
+    case 'waterfall': return <Waterfall {...modelProps} />;
+    case 'water_source': return <WaterSource {...modelProps} />;
     case 'waypoint': 
       if (!isSelected && editorSelectedType !== 'waypoint') return null;
       return <Waypoint {...modelProps} />;
@@ -394,7 +397,10 @@ export const WorldObjectItem = memo(({
       scale={obj.scale}
       ref={groupRef}
       name={`world_obj_${obj.type}_${obj.id}`}
-      userData={{ isCollidable: !isSpawner && !isNPC }}
+      userData={{ 
+        isCollidable: !isSpawner && !isNPC && obj.type !== 'water_plane' && obj.type !== 'water_source',
+        isWater: obj.type === 'water_plane'
+      }}
       {...({ isWorldObject: true } as any)}
       onPointerDown={modelProps.onPointerDown}
       onPointerUp={modelProps.onPointerUp}

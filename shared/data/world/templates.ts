@@ -49,6 +49,9 @@ export const OBJECT_TEMPLATES: Record<string, ObjectTemplate> = {
   well: { type: 'well', scale: 1, category: 'buildings', label: 'Village Well' },
   signpost: { type: 'signpost', scale: 1, category: 'props', label: 'Directional Sign' },
   teleport_crystal: { type: 'teleport_crystal', scale: 1, category: 'props', label: 'Teleport Crystal' },
+  water_plane: { type: 'water_plane', scale: 20, category: 'nature', label: 'Water Plane' },
+  waterfall: { type: 'waterfall', scale: 10, category: 'nature', label: 'Waterfall' },
+  water_source: { type: 'water_source', scale: 1, category: 'nature', label: 'Water Source (Fill Basin)' },
   
   // Spread in the custom GLB models
   ...CUSTOM_GLB_MODELS,

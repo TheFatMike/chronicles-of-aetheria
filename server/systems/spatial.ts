@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { loadModelMesh, getMeshHeightAt } from "../lib/meshLoader";
 import { getDistanceSq2D, getDistance2D, normalizeScale, getScaleRadius } from "../../shared/logic/math";
 import { resolveMovementCollision, resolveOverlap, DEFAULT_COLLISION_CONFIG } from "../../shared/logic/collision";
+import { getInterpolatedHeight } from "../../shared/logic/terrain";
 
 // Cache for loaded THREE groups associated with objects
 export const meshInstances = new Map<string, THREE.Group>();
@@ -236,17 +237,11 @@ export function filterNearby<T extends { id: string, pos: [number, number, numbe
 }
 
 export async function getGroundHeight(pos: [number, number, number], terrainData: any): Promise<number> {
-  let groundHeight = 0; // Default to sea level instead of -100 to prevent 'falling through the world' logic errors
+  let groundHeight = -100; // Lowered from 0 to allow holes below sea level
 
   // 1. Check Terrain
   if (terrainData) {
-    const x = Math.round(pos[0]);
-    const z = Math.round(pos[2]);
-    const key = `${x}_${z}`;
-    const data = terrainData.get(key);
-    if (data) {
-      groundHeight = data.y;
-    }
+    groundHeight = getInterpolatedHeight(pos[0], pos[2], terrainData, 2);
   }
 
   // 2. Check Objects
